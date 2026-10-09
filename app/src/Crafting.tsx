@@ -1,0 +1,66 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUpRight, Check, ChevronRight, Hammer, Layers3, LoaderCircle, PackageCheck, Search, ShoppingBasket } from 'lucide-react';
+import { api, asError } from './api';
+import { useCatalog, useCraft } from './store';
+import { count, integer, plainText } from './format';
+import { ItemImage } from './ItemImage';
+import type { CraftInfo, CraftItem, CraftNode, CraftPlan, Recipe } from './craft-types';
+import './crafting.css';
+
+export function Crafting({ session }: { session: number }) {
+  const [info, setInfo] = useState<CraftInfo | null>(null), [plan, setPlan] = useState<CraftPlan | null>(null);
+  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [search, setSearch] = useState('');
+  const state = useCraft(), generation = useRef(0);
+  useEffect(() => {
+    let active = true; setInfo(null); setPlan(null); setError('');
+    api.craftInfo(session).then(value => { if (!active) return; setInfo(value); const selected = useCraft.getState().target; if (!value.targets.some(t => t.key === selected)) useCraft.getState().set({ target: value.targets.find(t => t.key === 50001)?.key ?? value.targets[0]?.key ?? null }); }).catch(e => { if (active) setError(asError(e).message); });
+    return () => { active = false; };
+  }, [session]);
+  const { target, quantity, owned, recipes, choices, acquire } = state;
+  useEffect(() => {
+    const id = ++generation.current;
+    if (!info || target === null) return;
+    if (!quantity || BigInt(quantity) < 1n || BigInt(quantity) > 1_000_000_000_000n) { setError('Bitte eine Zielmenge von 1 bis 1.000.000.000.000 eingeben.'); setPlan(null); setBusy(false); return; }
+    setBusy(true); setError('');
+    const timer = setTimeout(() => api.craftPlan(session, { target, quantity, owned: Object.fromEntries(Object.entries(owned).map(([k,v]) => [k,v || '0'])), recipes, choices, acquire }).then(result => { if (id === generation.current) setPlan(result); }).catch(e => { if (id === generation.current) { setError(asError(e).message); setPlan(null); } }).finally(() => { if (id === generation.current) setBusy(false); }), 180);
+    return () => { clearTimeout(timer); generation.current++; };
+  }, [session, info, target, quantity, owned, recipes, choices, acquire]);
+  const matches = useMemo(() => info?.targets.filter(t => `${t.name} ${t.internal_key} ${t.key}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())) ?? [], [info, search]);
+  const item = info?.targets.find(t => t.key === target);
+  return <div className="crafting-page">
+    <div className="page-heading"><div><div className="eyebrow">VOM ROHSTOFF ZUM GEGENSTAND</div><h1>Herstellungsplan<span>.</span></h1><p>Wähle dein Ziel. Plane jeden Schritt und behalte deine Materialien im Blick.</p></div><span className="craft-count"><Hammer size={17} />{info ? `${count(info.coverage.usable_recipes)} Rezepte` : 'Rezepte lesen …'}</span></div>
+    {error && <div className="craft-error" role="alert">{error}</div>}
+    {!info ? !error && <div className="loading-workspace"><LoaderCircle className="spin" /><p>Rezepttabellen und Materialgruppen prüfen …</p></div> : <>
+      <div className="craft-target-card"><div className="craft-target-search"><label className="input-wrap"><Search size={17} /><input aria-label="Herstellbares Item suchen" value={search} onChange={e => setSearch(e.target.value)} placeholder="Herstellbares Item suchen …" /></label><select aria-label="Herstellungsziel" value={matches.some(t => t.key === target) ? target! : ''} onChange={e => { state.set({ target: Number(e.target.value) }); setSearch(''); }}><option value="" disabled>{matches.length ? 'Ziel auswählen' : 'Keine passenden Rezepte'}</option>{matches.map(t => <option key={t.key} value={t.key}>{plainText(t.name)} · #{t.key}</option>)}</select></div>
+        <div className="craft-target-picked">{item && <><ItemImage session={session} itemKey={item.key} /><div><small>DEIN ZIEL</small><strong>{plainText(item.name)}</strong><span>#{item.key} · {item.internal_key}</span></div></>}</div>
+        <label className="craft-quantity">Gewünschte Menge<input aria-label="Zielmenge" inputMode="numeric" value={quantity} maxLength={13} onChange={e => { if (/^\d*$/.test(e.target.value)) state.set({ quantity: e.target.value }); }} /></label>
+      </div>
+      <div className="craft-status" role="status">{busy ? <><LoaderCircle size={14} className="spin" />Plan wird berechnet …</> : plan ? <><Check size={15} />Materialbedarf berechnet <span>· Ganze Herstellungsvorgänge · Vorräte und Überschüsse gemeinsam verrechnet</span></> : null}</div>
+      {plan && <div className={`craft-workspace ${busy ? 'craft-updating' : ''}`} aria-busy={busy}>
+        <section className="craft-tree-card"><div className="craft-section-heading"><Layers3 size={19} /><div><h2>Materialbaum</h2><p>Wähle Rezepte und austauschbare Zutaten.</p></div></div>{plan.warnings.map(w => <p key={w} className="craft-warning">{w}</p>)}<Tree node={plan.root} session={session} depth={0} />
+          <p className="craft-footnote">„Kein berechenbares Rezept“ schließt weitere Herstellungswege im Spiel nicht aus. Wissen und Freischaltbedingungen werden angezeigt, aber nicht aus einem Spielstand geprüft.</p>
+        </section>
+        <div className="craft-side"><section className="craft-material-card"><div className="craft-section-heading"><ShoppingBasket size={20} /><div><h2>Noch beschaffen</h2><p>Zusammengefasster Bedarf nach Abzug deiner Vorräte</p></div><span className="craft-badge">{plan.materials.length}</span></div>
+          {!plan.materials.length ? <div className="craft-satisfied"><PackageCheck size={26} /><strong>Alles vorhanden</strong><span>Für diesen Plan fehlen keine weiteren Materialien.</span></div> : <div className="craft-materials">{plan.materials.map(m => <details key={m.item.key} className="craft-material" data-material-key={m.item.key}><summary><ItemImage session={session} itemKey={m.item.key} /><div><strong>{plainText(m.item.name)}</strong><small>{m.craftable ? 'Berechenbares Rezept vorhanden' : 'Kein berechenbares Rezept'}</small></div><b>{integer(m.needed)}</b><ChevronRight size={14} /></summary><div className="material-sources"><ItemLink item={m.item} /><p>Händler, Preis, Bestand und Region: noch nicht verifiziert.</p><strong>Referenzierte Dropsets</strong><p>Weltquelle noch nicht zugeordnet. Tabellenraten sind keine bestätigte Fundchance.</p>{!m.drops.length ? <p>Keine interpretierbare Dropset-Referenz. Weitere Quellen sind möglich.</p> : m.drops.map((d,i) => <div className="drop-source" key={`${d.key}:${i}`}><code>{d.internal_key}</code><span>Menge {integer(d.minimum)}–{integer(d.maximum)} · {d.chance_percent === null ? 'Chance unbekannt' : `${d.chance_percent} % innerhalb dieses Dropsets`}</span><small>Rate {integer(d.rate)} / {integer(d.total_rate)} · Rolltyp {d.roll_type} · #{d.key}</small></div>)}</div></details>)}</div>}
+        </section>
+        <section className="craft-inventory-card"><div className="craft-section-heading"><PackageCheck size={20} /><div><h2>Schon vorhanden</h2><p>Gemeinsamer Vorrat für den gesamten Plan</p></div><button className="text-button" onClick={() => state.set({ owned: {} })}>Leeren</button></div><div className="craft-inventory">{[...plan.inventory].sort((a,b) => a.item.name.localeCompare(b.item.name)).map(row => <label className="owned-row" key={row.item.key}><div><strong>{plainText(row.item.name)}</strong><small>Verwendet: {integer(row.used)}{row.surplus !== '0' && ` · Übrig aus Herstellung: ${integer(row.surplus)}`}</small></div><input aria-label={`Vorrat ${plainText(row.item.name)} ${row.item.key}`} inputMode="numeric" maxLength={20} value={owned[row.item.key] ?? '0'} onChange={e => { if (/^\d*$/.test(e.target.value)) state.set({ owned: { ...owned, [row.item.key]: e.target.value } }); }} /></label>)}</div><p className="craft-footnote">Manuelle Mengen bleiben während dieser Sitzung erhalten. Kein automatischer Save-Import.</p></section></div>
+      </div>}
+      <details className="craft-coverage"><summary>Welche Rezepte und Quellen sind berücksichtigt?</summary><p>{info.coverage.source_note}</p><p>{count(info.coverage.recipe_rows)} Rezeptdatensätze und {count(info.coverage.group_rows)} Materialgruppen geprüft. {count(info.coverage.usable_recipes)} Rezepte können berechnet werden. Verstärkungen, Zufallsergebnisse und ungeklärte Sonderfälle bleiben ausgeschlossen.</p><p>Pro Zutatengruppe wählst du eine Materialart. Der Plan optimiert weder Einkaufspreise noch die Mischung unterschiedlicher Alternativen.</p></details>
+    </>}
+  </div>;
+}
+function Tree({ node, session, depth }: { node: CraftNode; session: number; depth: number }) {
+  const state = useCraft();
+  return <div className="craft-node" data-craft-item={node.item.key}><div className="craft-node-head"><ItemImage session={session} itemKey={node.item.key} /><div><strong>{plainText(node.item.name)}</strong><small>{node.reason === 'craft' ? `${integer(node.batches)} Vorgang/Vorgänge → ${integer(node.produced)} Stück` : node.reason === 'owned' ? 'Durch Vorrat oder Überschuss gedeckt' : node.reason === 'cycle' ? 'Rezeptzyklus · beschaffen' : node.reason === 'acquire' ? 'Manuell beschaffen' : 'Kein berechenbares Rezept'}{node.from_owned !== '0' && ` · Vorrat: ${integer(node.from_owned)}`}{node.from_surplus !== '0' && ` · Überschuss: ${integer(node.from_surplus)}`}</small></div><b>{integer(node.requested)}</b></div>
+    {(node.recipe || node.alternatives.length > 0) && <div className="craft-node-controls">{node.alternatives.length > 1 && <label>Rezept<select aria-label={`Rezept für ${node.item.key}`} value={state.recipes[node.item.key] ?? node.recipe?.key ?? node.alternatives[0].key} onChange={e => state.set({ recipes: { ...state.recipes, [node.item.key]: Number(e.target.value) } })}>{node.alternatives.map(r => <option key={r.key} value={r.key}>{r.internal_key} · #{r.key} · {r.output_quantity} Stück</option>)}</select></label>}<button className="text-button" onClick={() => state.set({ acquire: state.acquire.includes(node.item.key) ? state.acquire.filter(k => k !== node.item.key) : [...state.acquire,node.item.key] })}>{state.acquire.includes(node.item.key) ? 'Selbst herstellen' : 'Stattdessen beschaffen'}</button></div>}
+    {node.recipe && <><details className="recipe-requirements"><summary>Werkzeug und Voraussetzungen</summary><span>Werkzeug-ID {node.recipe.tool_key} · Wissen-ID {node.recipe.knowledge_key || 'keine'}</span>{node.recipe.condition_keys.length > 0 && <span>Bedingungen: {node.recipe.condition_keys.join(', ')}</span>}<code>{node.recipe.internal_key} · #{node.recipe.key}</code></details>{node.recipe.ingredients.filter(i => i.choices.length > 1).map(ingredient => <label className="ingredient-choice" key={ingredient.slot}>{ingredient.group_name?.replace('ItemGroup_', '')} · {ingredient.quantity} pro Vorgang<select aria-label={`Zutat ${ingredient.slot}`} value={state.choices[ingredient.slot] ?? ingredient.choices[0].key} onChange={e => state.set({ choices: { ...state.choices, [ingredient.slot]: Number(e.target.value) } })}>{ingredient.choices.map(choice => <option key={choice.key} value={choice.key}>{plainText(choice.name)} · #{choice.key}</option>)}</select></label>)}</>}
+    {node.children.length > 0 && <details className="craft-children" open={depth < 2}><summary>{node.children.length} Zutaten <ChevronRight size={13} /></summary><div>{node.children.map((child,i) => <Tree key={`${i}:${child.item.key}`} node={child} session={session} depth={depth + 1} />)}</div></details>}
+  </div>;
+}
+function ItemLink({ item }: { item: CraftItem }) { return <button className="text-button" onClick={() => { useCatalog.getState().select(item.key); useCatalog.getState().setView('items'); }}>Itemdetails öffnen <ArrowUpRight size={13} /></button>; }
+export function RecipeLinks({ session, itemKey }: { session: number; itemKey: number }) {
+  const [data,setData] = useState<{ recipes: Recipe[]; used_in: Recipe[] } | null>(null), [error,setError] = useState('');
+  useEffect(() => { let active=true;setData(null);setError('');api.craftItem(session,itemKey).then(d => { if(active)setData(d); }).catch(e => { if(active)setError(asError(e).message); });return () => {active=false;}; },[session,itemKey]);
+  const open = (r: Recipe) => { const s=useCraft.getState();s.set({ target:r.output.key, recipes:{...s.recipes,[r.output.key]:r.key} });useCatalog.getState().setView('crafting'); };
+  return <div className="detail-section"><span className="eyebrow">HERSTELLUNGSREZEPTE</span>{error ? <p role="alert">{error}</p> : !data ? <p>Rezeptverknüpfungen lesen …</p> : <><p>{data.recipes.length} berechenbare Rezepte · Zutat in {data.used_in.length} Rezepten</p>{data.recipes.map(r => <button className="reference-link" key={r.key} onClick={() => open(r)}><span><strong>Herstellen: {plainText(r.output.name)}</strong><code>{r.internal_key}</code></span><ArrowUpRight size={16} /></button>)}<details><summary>Als Zutat verwendet</summary>{data.used_in.map(r => <button className="reference-link" key={r.key} onClick={() => open(r)}><span><strong>{plainText(r.output.name)}</strong><code>{r.internal_key}</code></span><ArrowUpRight size={16} /></button>)}</details></>}</div>;
+}

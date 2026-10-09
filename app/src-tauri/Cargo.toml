@@ -1,0 +1,28 @@
+[package]
+name = "app"
+version = "0.5.9"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
+[[bin]]
+name = "crimson-workbench"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+cd-core = { path = "../../crates/cd-core" }
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Pipes", "Win32_System_Threading"] }
+
+[dev-dependencies]
+tempfile.workspace = true

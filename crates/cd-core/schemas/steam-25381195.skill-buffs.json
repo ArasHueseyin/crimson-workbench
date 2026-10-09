@@ -1,0 +1,965 @@
+[
+  {
+    "type_id": 0,
+    "name": "DamageBuffData",
+    "ops": [
+      1,
+      28,
+      28,
+      28,
+      8,
+      1,
+      8,
+      4,
+      1,
+      1,
+      1,
+      1,
+      1,
+      4,
+      1,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 1,
+    "name": "VaryRegenerateValueBuffData",
+    "ops": [
+      1,
+      28
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 2,
+    "name": "VaryCollectDropRateBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 3,
+    "name": "VaryStaticStatBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 4,
+    "name": "VaryStaticStatLevelBuffData",
+    "ops": [
+      4,
+      8,
+      1
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 5,
+    "name": "VaryStatBuffData",
+    "ops": [
+      4,
+      28,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 6,
+    "name": "VaryStatMaxValueBuffData",
+    "ops": [
+      1,
+      28,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 7,
+    "name": "VaryStaticStatRateBuffData",
+    "ops": [
+      4,
+      8,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 8,
+    "name": "VaryStatRateBuffData",
+    "ops": [
+      1,
+      1,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 9,
+    "name": "StatusExpBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 10,
+    "name": "SummonBuffData",
+    "ops": [
+      "summon"
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 11,
+    "name": "LootBuffData",
+    "ops": [
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 12,
+    "name": "VaryDataDefinedStatBuffData",
+    "ops": [
+      4,
+      8,
+      8,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 14,
+    "name": "VaryDataDefinedRegenerateValueBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 15,
+    "name": "RemoveAggroBuffData",
+    "ops": [
+      1,
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 16,
+    "name": "VoidActiveBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 17,
+    "name": "VoidPassiveBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 19,
+    "name": "VaryDataDefinedStatMaxValueBuffData",
+    "ops": [
+      4,
+      8,
+      1
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 20,
+    "name": "ElementalAreaBuffData",
+    "ops": [
+      4,
+      8,
+      40,
+      4,
+      1,
+      1,
+      1,
+      4,
+      4,
+      4,
+      8,
+      8,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 21,
+    "name": "VaryElementalStatBuffData",
+    "ops": [
+      4,
+      8,
+      8,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 23,
+    "name": "AdditionalGoalElementalStatBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 24,
+    "name": "ChangeElementalStatSpeedBuffData",
+    "ops": [
+      4,
+      4,
+      4,
+      1
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 25,
+    "name": "DisableElementalMaterialStateBuffData",
+    "ops": [
+      4,
+      "text"
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 26,
+    "name": "ChangeMaterialKeyBuffData",
+    "ops": [
+      4,
+      1,
+      4,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 28,
+    "name": "WeatherEffectBuffData",
+    "ops": [
+      1
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 29,
+    "name": "VaryDefenceValueBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 30,
+    "name": "DefenceBuffData",
+    "ops": [
+      4,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 31,
+    "name": "AggroBuffData",
+    "ops": [
+      28
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 32,
+    "name": "DamagedActionRestrictionBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 33,
+    "name": "BuffedActionRestrictionBuffData",
+    "ops": [
+      8,
+      4,
+      1,
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 34,
+    "name": "BuffedActionRestrictionPassiveBuffData",
+    "ops": [
+      8,
+      4,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 35,
+    "name": "ReleaseBuffedActionRestrictionBuffData",
+    "ops": [
+      "array4"
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 36,
+    "name": "ImmuneBuffData",
+    "ops": [
+      "immune",
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 38,
+    "name": "ChangeAllyGroupBuffData",
+    "ops": [
+      4,
+      4,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 39,
+    "name": "PlayerAllyBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 40,
+    "name": "DisableObstacleBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 41,
+    "name": "RideLimitBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 42,
+    "name": "ChangeFactionBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 44,
+    "name": "SummonGimmickBuffData",
+    "ops": [
+      "text",
+      12,
+      16,
+      1,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 45,
+    "name": "SendGimmickEventBuffData",
+    "ops": [
+      4,
+      "texts",
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 46,
+    "name": "DetachEquipItemBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 47,
+    "name": "DisableThrowEquipItemBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 48,
+    "name": "VaryEquipItemEnduranceBuffData",
+    "ops": [
+      4,
+      2
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 49,
+    "name": "VaryDataDefinedStatRateBuffData",
+    "ops": [
+      4,
+      8,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 50,
+    "name": "InstantDeathBuffData",
+    "ops": [
+      1,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 51,
+    "name": "DeadReasonBuffData",
+    "ops": [
+      1
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 53,
+    "name": "VarySkillDamagePercentStatBuffData",
+    "ops": [
+      4,
+      2,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 54,
+    "name": "VaryStatOverMaxValueBuffData",
+    "ops": [
+      1,
+      28
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 55,
+    "name": "VaryDataDefinedStatOverMaxValueBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 57,
+    "name": "SetStatRateBuffData",
+    "ops": [
+      1,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 58,
+    "name": "SetStatMinRateBuffData",
+    "ops": [
+      1,
+      8,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 59,
+    "name": "ChangeWeatherBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 61,
+    "name": "ChangeCombinationBuffData",
+    "ops": [
+      "text",
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 62,
+    "name": "RegisterConditionSkillBuffData",
+    "ops": [
+      4,
+      4,
+      4,
+      4,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 63,
+    "name": "DetectPenaltyBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 64,
+    "name": "StealthBuffData",
+    "ops": [
+      4,
+      4,
+      4
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 66,
+    "name": "AddExperienceBuffData",
+    "ops": [
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 67,
+    "name": "RelationConvertBuffData",
+    "ops": [
+      4,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 69,
+    "name": "DampMovementBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 70,
+    "name": "ChangeDetectReactionBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 71,
+    "name": "ChangeBattleOrderTypeBuffData",
+    "ops": [
+      1
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 72,
+    "name": "VaryForceFieldStatBuffData",
+    "ops": [
+      1,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 73,
+    "name": "PlayerSensibleBuffData",
+    "ops": [],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 74,
+    "name": "AddSubLevelBuffData",
+    "ops": [
+      "sub_level"
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 75,
+    "name": "ChangeElementalMaterialBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 76,
+    "name": "DisableDetectingBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 77,
+    "name": "ChangeDetectDistanceBuffData",
+    "ops": [
+      4,
+      4,
+      4
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 78,
+    "name": "ViewerDetectPenaltyBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 79,
+    "name": "ChangeBuffLevelBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 80,
+    "name": "SkinnedDecalBuffData",
+    "ops": [
+      1,
+      1,
+      8,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 81,
+    "name": "ChangeAnimationSpeedBuffData",
+    "ops": [
+      4,
+      4,
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 82,
+    "name": "ActivateUpdateFuelBuffData",
+    "ops": [
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 83,
+    "name": "LimitBuffLevelBuffData",
+    "ops": [
+      4,
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 84,
+    "name": "BlockCrimeBuffData",
+    "ops": [
+      4,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 85,
+    "name": "BlockCrimeNPCBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 86,
+    "name": "GameAudioEffectBuffData",
+    "ops": [
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 87,
+    "name": "MeditationKnowledgeBuffData",
+    "ops": [
+      "array4",
+      1,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 88,
+    "name": "ClimbSlipBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 89,
+    "name": "DetectBrightnessBuffData",
+    "ops": [
+      4,
+      4,
+      4
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 90,
+    "name": "ChangeEquipItemEnduranceBuffData",
+    "ops": [
+      4,
+      4,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 91,
+    "name": "HackingBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 92,
+    "name": "VaryMaxExpandInventorySlotBuffData",
+    "ops": [
+      2,
+      2
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 93,
+    "name": "BlockRegenerateStatBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 94,
+    "name": "ProjectileBuffData",
+    "ops": [
+      4,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 97,
+    "name": "VaryStatMaxValueRateBuffData",
+    "ops": [
+      1,
+      8,
+      1
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 98,
+    "name": "TriggerVolumeBuffData",
+    "ops": [
+      4,
+      4,
+      4,
+      4,
+      1,
+      1,
+      1
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 99,
+    "name": "RegisterItemSellPriceRateBuffData",
+    "ops": [
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 100,
+    "name": "RegisterCrimePriceRateBuffData",
+    "ops": [
+      12
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 101,
+    "name": "RegisterFactionOperationRewardRateBuffData",
+    "ops": [
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 102,
+    "name": "LogoutTimeDropSetKeyBuffData",
+    "ops": [
+      12
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 103,
+    "name": "AddPercentInGameContentsBuffData",
+    "ops": [
+      1,
+      8,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 104,
+    "name": "VaryCustomIntInGameContentsBuffData",
+    "ops": [
+      1,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 105,
+    "name": "TribeAdditionalDamageRateBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 106,
+    "name": "AdditionalBreakingImpulseDamageBuffData",
+    "ops": [
+      1,
+      1
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 108,
+    "name": "AddDamageBonusFromComboBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 110,
+    "name": "IgnoreUseResourceStatBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 111,
+    "name": "BlockAbilityBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 113,
+    "name": "UseGroggyBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 114,
+    "name": "AdditionalUseResourceStatBuffData",
+    "ops": [
+      "additional_costs"
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 115,
+    "name": "AddCritiacalRateByMaterialKeyBuffData",
+    "ops": [
+      4,
+      8
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 116,
+    "name": "BlockDeadBodyGarbageCollectionBuffData",
+    "ops": [],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 117,
+    "name": "DecreaseMercenaryCooltimeBuffData",
+    "ops": [
+      4,
+      1,
+      8
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 120,
+    "name": "AdditionalMovableVoxelBuffData",
+    "ops": [
+      4
+    ],
+    "opaque_layout": true
+  },
+  {
+    "type_id": 121,
+    "name": "BlockUnequipItemBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 122,
+    "name": "BlockChangeEquipBuffData",
+    "ops": [
+      4,
+      4
+    ],
+    "opaque_layout": false
+  },
+  {
+    "type_id": 123,
+    "name": "GlobalDetectTargetBuffData",
+    "ops": [],
+    "opaque_layout": false
+  }
+]

@@ -1,0 +1,442 @@
+{
+  "report_format": 1,
+  "status": "observed_not_certified_vanilla_or_supported",
+  "observed_at": "2026-09-19T13:39:50.9608188Z",
+  "steam_appid": "3321460",
+  "steam_buildid": "25381195",
+  "exe_version": "1.0.0.2944",
+  "reference_commit": "b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0",
+  "files": [
+    {
+      "path": "bin64/CrimsonDesert.exe",
+      "bytes": 397242776,
+      "sha256": "6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7"
+    },
+    {
+      "path": "meta/0.papgt",
+      "bytes": 679,
+      "sha256": "c03ced405f4c409f1472b85465dff763e0fd9ca9c68e29481510780494d4eaea"
+    },
+    {
+      "path": "meta/0.paver",
+      "bytes": 10,
+      "sha256": "a0b7a101fc274fc9f2ee1dd3a7ca2e6b559d5adca50cff5c9ef48e001b09501c"
+    },
+    {
+      "path": "0000/0.pamt",
+      "bytes": 7152001,
+      "sha256": "63a9286ed8712e72bd5d022a96e808bc4a10a2ed29b16bd942ce869e1a82d939"
+    },
+    {
+      "path": "0001/0.pamt",
+      "bytes": 405053,
+      "sha256": "a6d2d21b15ee64c3a6b2ccfbcca5f989a0cfb603123ca17fb8c2e4178785f9f1"
+    },
+    {
+      "path": "0002/0.pamt",
+      "bytes": 9164,
+      "sha256": "ce9ef275e0b5dcf473b205e0e77b59bce336983039053e671209f3ea9d5bc66b"
+    },
+    {
+      "path": "0003/0.pamt",
+      "bytes": 21465,
+      "sha256": "417d1dab2b6583aeb39cc75ca1895832143da5642c16a9bfc31fd6dd434bc8bd"
+    },
+    {
+      "path": "0004/0.pamt",
+      "bytes": 7170346,
+      "sha256": "32bfe2f2d1c8edab14d632d3abee3b9db44f906b9bafe6c6ce3c719c0bc79fe8"
+    },
+    {
+      "path": "0005/0.pamt",
+      "bytes": 2161127,
+      "sha256": "2642a424ffd70b1aa01019e9f519ea02d2aab7cba86bbe96e4bc772cf57ce4ed"
+    },
+    {
+      "path": "0006/0.pamt",
+      "bytes": 2113235,
+      "sha256": "b2222061f80723ccd63fbbf2f20ce5851937cff308e86376edfb2d7ef2dadbf1"
+    },
+    {
+      "path": "0007/0.pamt",
+      "bytes": 521629,
+      "sha256": "896357010e0257ca82e8df65087033bc9e28047f7b5060ec555bec432f636f17"
+    },
+    {
+      "path": "0008/0.pamt",
+      "bytes": 1109183,
+      "sha256": "3723c5d61f6a0e8a9682b549112bbf072c5bb10e1eb8f87155668f65a79cfc90"
+    },
+    {
+      "path": "0009/0.pamt",
+      "bytes": 19583922,
+      "sha256": "c561ae348ba6dea65b0460686dec089b65291bbbeec439643d42bc5f4ead05b9"
+    },
+    {
+      "path": "0010/0.pamt",
+      "bytes": 9435765,
+      "sha256": "c6254efdcf498e020d6dddc3ba2d1b11c245472291f556812a32ac34133749e6"
+    },
+    {
+      "path": "0011/0.pamt",
+      "bytes": 9672,
+      "sha256": "3b17889a9f455833cb9c7caecc62dec5de4720bdab8f19ce8678c79853b0a414"
+    },
+    {
+      "path": "0012/0.pamt",
+      "bytes": 815836,
+      "sha256": "72dc8233e1265022ce09d91e57d621cd8806bb5898e73ff6d16c04ccc8eeace8"
+    },
+    {
+      "path": "0013/0.pamt",
+      "bytes": 174,
+      "sha256": "676fa3215de63f5f002b9119b6c0ad846e064a8daf2859c2574075dfacb603d5"
+    },
+    {
+      "path": "0014/0.pamt",
+      "bytes": 761614,
+      "sha256": "5ff818401438e493382e23032deb7dddbe26177d0991acc91f8f2291ad8879f5"
+    },
+    {
+      "path": "0015/0.pamt",
+      "bytes": 11414800,
+      "sha256": "3d844ef4c206471aed326c3394f180246059165213503446059d9e19672b472f"
+    },
+    {
+      "path": "0016/0.pamt",
+      "bytes": 93,
+      "sha256": "90f906693ec84db510592ecc958d14c03e7ce0119f1d2aaf7338b55ae8d75603"
+    },
+    {
+      "path": "0017/0.pamt",
+      "bytes": 3312467,
+      "sha256": "cbf34041155dfb37feb1f12b83f2961ee452deab60e88ff3741f37244e242566"
+    },
+    {
+      "path": "0019/0.pamt",
+      "bytes": 1743,
+      "sha256": "48c0ae745cad57d1a3fb3271b73e05d05e8a2114395fc1ecf832995c1c622d8b"
+    },
+    {
+      "path": "0020/0.pamt",
+      "bytes": 1743,
+      "sha256": "c222efda2e179de6c3448ec727fd8cb797abc8c1e644f283b189152e389bf9b1"
+    },
+    {
+      "path": "0021/0.pamt",
+      "bytes": 1743,
+      "sha256": "69fa7f2cf47eeae8ed17c65b320b68b523c7a53d28c3a61a0e8ebaf7d9298d6f"
+    },
+    {
+      "path": "0022/0.pamt",
+      "bytes": 1743,
+      "sha256": "6f02be55e186809be30384c94c63ea226c8f70e3e1fa4b9a7af9795751e0f18e"
+    },
+    {
+      "path": "0023/0.pamt",
+      "bytes": 1743,
+      "sha256": "df8eee1f96e6385cb5f79c131cfd556dd264e3bead2c4cd89238aca95331c556"
+    },
+    {
+      "path": "0024/0.pamt",
+      "bytes": 1746,
+      "sha256": "3572b85e51f21e61ccbef8c10a025b22ed982d045940df73ea81ff72d8ba1e8e"
+    },
+    {
+      "path": "0025/0.pamt",
+      "bytes": 1746,
+      "sha256": "6a4b55f434a95eb4108de37dea6f7b8fc8c8fc3b3af90a0be8a4a24508e31e10"
+    },
+    {
+      "path": "0026/0.pamt",
+      "bytes": 1743,
+      "sha256": "1f298b3589c5fe1c60afa11366d09734993509129579bb868b64e8b798ccc830"
+    },
+    {
+      "path": "0027/0.pamt",
+      "bytes": 1743,
+      "sha256": "bf0c05961bc20ec867e82779e666ad6cddb41c57ca2575350654b87b094ece05"
+    },
+    {
+      "path": "0028/0.pamt",
+      "bytes": 1743,
+      "sha256": "e51cf76c6c96e71316217678382ef0b7067088a230513e7e49e632520a105fe5"
+    },
+    {
+      "path": "0029/0.pamt",
+      "bytes": 1743,
+      "sha256": "1409032c028a480ff250a50c04972062693d55e7b789bb116daa66e2cb676c57"
+    },
+    {
+      "path": "0030/0.pamt",
+      "bytes": 1746,
+      "sha256": "282c65a8283220810fb99bc4f5507da0210ab244d1fa529c50063037957c3530"
+    },
+    {
+      "path": "0031/0.pamt",
+      "bytes": 1746,
+      "sha256": "36553723ee64923936e7e30e0e1da09e235d5be9e3262d45c5de7deb6ae844bf"
+    },
+    {
+      "path": "0032/0.pamt",
+      "bytes": 1746,
+      "sha256": "9f99c69086a4650b88f0d37187af6e45c65f3775d764de184a6cd7d072f220e9"
+    },
+    {
+      "path": "0033/0.pamt",
+      "bytes": 1743,
+      "sha256": "e2a5cf29dd411e2318ac512e77800795ed20678b7d8dd7c1e94c481a502aed4f"
+    },
+    {
+      "path": "0035/0.pamt",
+      "bytes": 2127066,
+      "sha256": "8bf20cbb324192a4798d7c533f907003cb78f8b8c4df712c409c944226910cc2"
+    },
+    {
+      "path": "0037/0.pamt",
+      "bytes": 2103875,
+      "sha256": "1cdd8bca5fb9ca77844327ef61d7aa8d9b01c8b27ab71e1ac27c427cda1dec4e"
+    }
+  ],
+  "tables": [
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "characterinfo.staticinfobody",
+      "size": 29002615,
+      "sha256": "0f695844cedc44763407485393443fab975cdb0da5fe6b85c7c73d9c6d0b8af1"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "characterinfo.staticinfoheader",
+      "size": 58002,
+      "sha256": "dd5fc91c31f3a5d5c4372a95027f165263435ccc94a6bf9d77e08680f708e288"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "crafttoolgroupinfo.staticinfobody",
+      "size": 555,
+      "sha256": "1c4142063a612dc46e58ed02aa0b8c80475972bb1de4e64a4a9b776899b37b85"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "crafttoolgroupinfo.staticinfoheader",
+      "size": 74,
+      "sha256": "3e68b4474dda2aa752b731c6d649ba946717970f7c0edb98d48688041450daf8"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "crafttoolinfo.staticinfobody",
+      "size": 706,
+      "sha256": "21dcb1a5288038fd58fab4053c54a28a617d7056526c3ab1078f644d9a7ed1fe"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "crafttoolinfo.staticinfoheader",
+      "size": 116,
+      "sha256": "94b3ad540acfa34ab514b77417a2ff93fcf16fb737e2a9a88ac740369a0825c2"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "dropsetinfo.staticinfobody",
+      "size": 2674515,
+      "sha256": "fc4ce01ff648f244274f11235bccf776310022fcda5179e6bf25586a2c2770f2"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "dropsetinfo.staticinfoheader",
+      "size": 117978,
+      "sha256": "f9cc62fc7f6969cfb247f269e50731c7eacbbef55b24556730a660ad2d32707b"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "fieldinfo.staticinfobody",
+      "size": 1028,
+      "sha256": "dde27f6c0c8fe502a248aa80fe8a1f772da137891a41e334810e2ba23a7b9f72"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "fieldinfo.staticinfoheader",
+      "size": 66,
+      "sha256": "5e07dc6b19988de0522bdc5272c2f83f69c47337300c693a555e513a6b97107d"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "iteminfo.staticinfobody",
+      "size": 6465724,
+      "sha256": "87a1bbcd77bcaf64fd8d615531bd868a3ed0ca1d3f410ce6dbcb51a6f2c628ce"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "iteminfo.staticinfoheader",
+      "size": 54530,
+      "sha256": "b88092f185269215f118d43d35397d64d8dbf9469c85a3d2e15e69990b258dd0"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "questinfo.staticinfobody",
+      "size": 3091818,
+      "sha256": "dc74719d85884ea3c3c6245df51b0a784034739393c12fad2e2dd3325862ce74"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "questinfo.staticinfoheader",
+      "size": 8780,
+      "sha256": "2dc8188d37459a1d5b0dd25fdaaccd306e7f747e71c5fd2d6eff8907bf903ff1"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "regioninfo.staticinfobody",
+      "size": 120118,
+      "sha256": "49cc93e83825beb353e72538b91eb406a7756e032aeaf3ad9286c80c828102ba"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "regioninfo.staticinfoheader",
+      "size": 6044,
+      "sha256": "581315f6af385f8380810b84ea464b263f39e3072ae79071c9461628082dd040"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "skill.staticinfobody",
+      "size": 1271814,
+      "sha256": "1c62b93ea8ec32445d4078becd8e8b451e13ab519bf638721a0ed8258ac01f41"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "skill.staticinfoheader",
+      "size": 16554,
+      "sha256": "be0bce4a25cf8a977e6981eb333e83dcf7f94b5102e6620bdbd7b93d5eea95cb"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "stageinfo.staticinfobody",
+      "size": 28354098,
+      "sha256": "0085b4ca2c633b78f4ee16fc409e547475cb132a358b9241971f99d7ff46825f"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "stageinfo.staticinfoheader",
+      "size": 416644,
+      "sha256": "6178d2b61d8306769f0d91ef6e77c17854adec83afca6f5094aa1501763fa3be"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "storeinfo.staticinfobody",
+      "size": 892537,
+      "sha256": "811360b6ad2cbc0eeb7f0876eb31cb4352991d7eadc92c8e1bc36617566703a4"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "storeinfo.staticinfoheader",
+      "size": 2618,
+      "sha256": "dbb1d07e8f8f91e847f17ed77f1ba009421183e0bab23704523be1af0456c5d6"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "vehicleinfo.staticinfobody",
+      "size": 7173,
+      "sha256": "2a501f6f452e4fdb1bf0c1d15638a0aeac8e0831645f77ef61c5071591efa85b"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "vehicleinfo.staticinfoheader",
+      "size": 206,
+      "sha256": "8c2ef32c90d2d3eabcedbc70776a2745e15b3ae4777a3ec1a5cfd0f0f1eebe3c"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "inventory.staticinfobody",
+      "size": 25767,
+      "sha256": "ee841f4ba922538b32eccb9665f269861099502c66384ce1745503bbce70aaa6"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "inventory.staticinfoheader",
+      "size": 128,
+      "sha256": "9fab547265374c3052be71f1c1cf2da80af641e338f0ab80cfe0778f45b70d32"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "multichangeinfo.staticinfobody",
+      "size": 4578225,
+      "sha256": "b21dcbff4deb62a1c476158632d87b372694ca53e983e901e7cfe23f3a50e301"
+    },
+    {
+      "group": "0008",
+      "directory": "gamedata/binarystaticinfo__/bin",
+      "name": "multichangeinfo.staticinfoheader",
+      "size": 148610,
+      "sha256": "27b8f2b37f0cd90c114e34240c6fe606b17ffbeb7277477b571f6ba468179a80"
+    }
+  ],
+  "item_roundtrip": {
+    "item_count": 6816,
+    "input_size": 6465724,
+    "output_size": 6465724,
+    "input_sha256": "87a1bbcd77bcaf64fd8d615531bd868a3ed0ca1d3f410ce6dbcb51a6f2c628ce",
+    "output_sha256": "87a1bbcd77bcaf64fd8d615531bd868a3ed0ca1d3f410ce6dbcb51a6f2c628ce",
+    "byte_identical": true,
+    "inventory_info_list_lengths": [
+      10
+    ]
+  },
+  "container_roundtrips": [
+    {
+      "file": "meta/0.papgt",
+      "byte_identical": true,
+      "size": 679,
+      "sha256": "c03ced405f4c409f1472b85465dff763e0fd9ca9c68e29481510780494d4eaea"
+    },
+    {
+      "file": "0008/0.pamt",
+      "byte_identical": true,
+      "size": 1109183,
+      "sha256": "3723c5d61f6a0e8a9682b549112bbf072c5bb10e1eb8f87155668f65a79cfc90"
+    }
+  ],
+  "german_item_localization": {
+    "group": "0027",
+    "directory": "gamedata/stringtable/binary__/ger",
+    "name": "item.paloc",
+    "size": 649912,
+    "sha256": "d8fd26ad4a845e4c6434f4c393fbe64866dc1f63f2a07df3be7d61fc9d734e5c",
+    "magic": "paloc",
+    "container_lengths": [
+      649400,
+      1807930
+    ],
+    "namespace_count": 39,
+    "entry_count": 13575,
+    "decoded_size": 1807930,
+    "decoded_sha256": "3d01a87443f62761cbc2d92454bb625c940a4afda95cbccc30f85c3783ac3c7e",
+    "payload_roundtrip_identical": true,
+    "archive_flags": 48
+  }
+}

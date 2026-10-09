@@ -1,0 +1,122 @@
+[
+  {
+    "directory": "gamedata/stringtable/binary__/ara",
+    "group": "0033",
+    "language": "ara",
+    "name": "item.paloc",
+    "sha256": "26de9963bbc0be6c587da3beadd822aba1284f755c863b0b719b718c8646caf9",
+    "size": 659660
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/eng",
+    "group": "0020",
+    "language": "eng",
+    "name": "item.paloc",
+    "sha256": "062f61480d1f883e3568eb2322537b735facdc29c6b9ad3108ce4db667e666e5",
+    "size": 566459
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/fre",
+    "group": "0026",
+    "language": "fre",
+    "name": "item.paloc",
+    "sha256": "3129a1ffc9c8020200a070f269ada094e4d2625a774308377c335fdec431ef4e",
+    "size": 619669
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/ger",
+    "group": "0027",
+    "language": "ger",
+    "name": "item.paloc",
+    "sha256": "d8fd26ad4a845e4c6434f4c393fbe64866dc1f63f2a07df3be7d61fc9d734e5c",
+    "size": 649912
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/ita",
+    "group": "0028",
+    "language": "ita",
+    "name": "item.paloc",
+    "sha256": "66e69e7133a864fd5d37c092fbe96de62884f620d75d60ddca7bb3d3444a6266",
+    "size": 625152
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/jpn",
+    "group": "0021",
+    "language": "jpn",
+    "name": "item.paloc",
+    "sha256": "dfbba09fe619a11dcb667a1d2f69103c9507e099684bfb4bdac7d0dade9b4efa",
+    "size": 588273
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/kor",
+    "group": "0019",
+    "language": "kor",
+    "name": "item.paloc",
+    "sha256": "4bbe8e97ba621d64c0a83cd107641b5ae8e6b73586fcf7ec7354e20f0b4204c4",
+    "size": 567481
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/pol",
+    "group": "0029",
+    "language": "pol",
+    "name": "item.paloc",
+    "sha256": "839e0891a31b5e29745c417fcfb9a751043591fefda466f2a1e92ef96261edd4",
+    "size": 653333
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/por-br",
+    "group": "0030",
+    "language": "por-br",
+    "name": "item.paloc",
+    "sha256": "b5567d2ff685b4627b1f2e693b1ad62311ff1d64f3389157d60668c919eae623",
+    "size": 620237
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/rus",
+    "group": "0022",
+    "language": "rus",
+    "name": "item.paloc",
+    "sha256": "cfd4043f95646b0fe253a1704ad6819ea07388fd4e9e80b319bb58928659d2c3",
+    "size": 767062
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/spa-es",
+    "group": "0024",
+    "language": "spa-es",
+    "name": "item.paloc",
+    "sha256": "05adc80326b44a2ff76333ed768232ac65f032deb540dcf9e477d16e6641095f",
+    "size": 615102
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/spa-mx",
+    "group": "0025",
+    "language": "spa-mx",
+    "name": "item.paloc",
+    "sha256": "f85ec76655e5e9d0a3dbceeec61a1d5ce4c076963cfd702e1da57db6644f8b31",
+    "size": 616107
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/tur",
+    "group": "0023",
+    "language": "tur",
+    "name": "item.paloc",
+    "sha256": "091ce0dc3355c302d638e3995fb49d4766e3feb832e9df0d0ee0249ae1fd323f",
+    "size": 607358
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/zho-cn",
+    "group": "0032",
+    "language": "zho-cn",
+    "name": "item.paloc",
+    "sha256": "44f27f5b1150b5a00878e58784aa4152eb6bb27b934002d6f0d619cf198c515e",
+    "size": 555653
+  },
+  {
+    "directory": "gamedata/stringtable/binary__/zho-tw",
+    "group": "0031",
+    "language": "zho-tw",
+    "name": "item.paloc",
+    "sha256": "4a47f845d780d0bae90ffbcae60ef871ef569146c7e6a768914be35e7787b91b",
+    "size": 559844
+  }
+]

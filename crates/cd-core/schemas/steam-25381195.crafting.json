@@ -1,0 +1,16 @@
+[
+  {
+    "directory": "gamedata/binarystaticinfo__/bin",
+    "group": "0008",
+    "name": "itemgroupinfo.staticinfobody",
+    "sha256": "719b9f91c0bffa1b676563739e0378a72b659a870e936093accc8a9cb046e45c",
+    "size": 374216
+  },
+  {
+    "directory": "gamedata/binarystaticinfo__/bin",
+    "group": "0008",
+    "name": "itemgroupinfo.staticinfoheader",
+    "sha256": "f1d8ccfed1cb20f7079a3f752206f8585d9e787fad7a53a5f5fbdd482505f4d5",
+    "size": 9614
+  }
+]

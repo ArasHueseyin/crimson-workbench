@@ -1,0 +1,20 @@
+[package]
+name = "cd-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "Read-only command line tools for Crimson Workbench"
+
+[[bin]]
+name = "cd-cli"
+path = "src/main.rs"
+
+[dependencies]
+cd-core = { path = "../cd-core" }
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

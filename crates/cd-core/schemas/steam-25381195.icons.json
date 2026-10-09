@@ -1,0 +1,4 @@
+[
+  {"group":"0008","directory":"gamedata/binarystaticinfo__/bin","name":"stringinfo.staticinfobody","size":1893299,"sha256":"8f5da98d317963226d56f9b07622517d823482c2bf9da71b1e3c2204ad7420e4"},
+  {"group":"0008","directory":"gamedata/binarystaticinfo__/bin","name":"stringinfo.staticinfoheader","size":254498,"sha256":"f5e9f43057c6b6f22fa7cf7975b522e15a06d3c103faa33d3b0998c5c13fdabc"}
+]

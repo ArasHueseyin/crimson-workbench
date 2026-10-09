@@ -1,0 +1,339 @@
+// Adapted from crimson-rs b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0.
+// Copyright (c) 2026 Tommy Tran. MIT; see LICENSE and docs/FORMAT_PORT.md.
+use std::io::{self, Write};
+
+use super::{
+    BinaryRead, BinaryReadTracked, BinaryWrite, FieldRange, check_remaining, pop_path, push_index,
+    push_path,
+};
+
+// ── CString ─────────────────────────────────────────────────────────────────
+
+#[derive(Debug, PartialEq)]
+pub struct CString<'a> {
+    pub length: u32,
+    pub data: std::borrow::Cow<'a, str>,
+    raw: Option<&'a [u8]>,
+}
+
+impl<'a> CString<'a> {
+    /// Return the original bytes (preserves non-UTF-8 data for roundtrip).
+    pub fn as_bytes(&self) -> &[u8] {
+        self.raw.unwrap_or(self.data.as_bytes())
+    }
+}
+
+impl<'a> BinaryRead<'a> for CString<'a> {
+    fn read_from(data: &'a [u8], offset: &mut usize) -> io::Result<Self> {
+        let length = u32::read_from(data, offset)?;
+        let len = length as usize;
+        check_remaining(data, *offset, len)?;
+        let bytes = &data[*offset..*offset + len];
+        *offset += len;
+        match std::str::from_utf8(bytes) {
+            Ok(s) => Ok(CString {
+                length,
+                data: std::borrow::Cow::Borrowed(s),
+                raw: None,
+            }),
+            Err(_) => Ok(CString {
+                length,
+                data: String::from_utf8_lossy(bytes),
+                raw: Some(bytes),
+            }),
+        }
+    }
+}
+
+impl BinaryWrite for CString<'_> {
+    fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
+        self.length.write_to(w)?;
+        w.write_all(self.as_bytes())
+    }
+}
+
+impl<'a> BinaryReadTracked<'a> for CString<'a> {
+    fn read_tracked(
+        data: &'a [u8],
+        offset: &mut usize,
+        path: &mut String,
+        ranges: &mut Vec<FieldRange>,
+    ) -> io::Result<Self> {
+        // length prefix (u32) — recorded under `<path>.__len__`
+        let len_start = *offset;
+        let length = u32::read_from(data, offset)?;
+        let saved = push_path(path, "__len__");
+        ranges.push(FieldRange {
+            path: path.clone(),
+            start: len_start,
+            end: *offset,
+            ty: "CString.len",
+        });
+        pop_path(path, saved);
+
+        // payload bytes — recorded under the field path itself
+        let payload_start = *offset;
+        let len = length as usize;
+        check_remaining(data, *offset, len)?;
+        let bytes = &data[*offset..*offset + len];
+        *offset += len;
+        ranges.push(FieldRange {
+            path: path.clone(),
+            start: payload_start,
+            end: *offset,
+            ty: "CString",
+        });
+        match std::str::from_utf8(bytes) {
+            Ok(s) => Ok(CString {
+                length,
+                data: std::borrow::Cow::Borrowed(s),
+                raw: None,
+            }),
+            Err(_) => Ok(CString {
+                length,
+                data: String::from_utf8_lossy(bytes),
+                raw: Some(bytes),
+            }),
+        }
+    }
+}
+
+// ── CArray ──────────────────────────────────────────────────────────────────
+
+#[derive(Debug, PartialEq)]
+pub struct CArray<T> {
+    pub items: Vec<T>,
+}
+
+impl<'a, T: BinaryRead<'a>> BinaryRead<'a> for CArray<T> {
+    fn read_from(data: &'a [u8], offset: &mut usize) -> io::Result<Self> {
+        let count = u32::read_from(data, offset)? as usize;
+        // Sanity clamp: even the smallest element is >= 1 byte, so a
+        // count exceeding the remaining byte budget can only be a
+        // corrupted stream (e.g. a mod that byte-patched a count
+        // prefix). Without this check, `Vec::with_capacity(huge)` can
+        // attempt a multi-GB allocation before the actual read fails.
+        let remaining = data.len().saturating_sub(*offset);
+        if count > remaining
+            || count > 1_000_000
+            || count
+                .checked_mul(std::mem::size_of::<T>())
+                .is_none_or(|n| n > 16 * 1024 * 1024)
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "CArray count {} exceeds remaining bytes {} at offset {}",
+                    count, remaining, *offset,
+                ),
+            ));
+        }
+        let mut items = Vec::new();
+        items
+            .try_reserve(count)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+        for _ in 0..count {
+            items.push(T::read_from(data, offset)?);
+        }
+        Ok(CArray { items })
+    }
+}
+
+impl<T: BinaryWrite> BinaryWrite for CArray<T> {
+    fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
+        (self.items.len() as u32).write_to(w)?;
+        for item in &self.items {
+            item.write_to(w)?;
+        }
+        Ok(())
+    }
+}
+
+impl<'a, T: BinaryReadTracked<'a>> BinaryReadTracked<'a> for CArray<T> {
+    fn read_tracked(
+        data: &'a [u8],
+        offset: &mut usize,
+        path: &mut String,
+        ranges: &mut Vec<FieldRange>,
+    ) -> io::Result<Self> {
+        // count prefix (u32) — recorded under `<path>.__count__`
+        let count_start = *offset;
+        let count = u32::read_from(data, offset)? as usize;
+        let saved = push_path(path, "__count__");
+        ranges.push(FieldRange {
+            path: path.clone(),
+            start: count_start,
+            end: *offset,
+            ty: "CArray.count",
+        });
+        pop_path(path, saved);
+
+        // Same sanity clamp as `BinaryRead` impl — see notes there.
+        let remaining = data.len().saturating_sub(*offset);
+        if count > remaining
+            || count > 1_000_000
+            || count
+                .checked_mul(std::mem::size_of::<T>())
+                .is_none_or(|n| n > 16 * 1024 * 1024)
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "CArray count {} exceeds remaining bytes {} at offset {}",
+                    count, remaining, *offset,
+                ),
+            ));
+        }
+
+        let mut items = Vec::new();
+        items
+            .try_reserve(count)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+        for i in 0..count {
+            let saved = push_index(path, i);
+            items.push(T::read_tracked(data, offset, path, ranges)?);
+            pop_path(path, saved);
+        }
+        Ok(CArray { items })
+    }
+}
+
+// ── COptional ───────────────────────────────────────────────────────────────
+
+#[derive(Debug, PartialEq)]
+pub struct COptional<T> {
+    pub tag: u8,
+    pub value: Option<T>,
+}
+
+impl<'a, T: BinaryRead<'a>> BinaryRead<'a> for COptional<T> {
+    fn read_from(data: &'a [u8], offset: &mut usize) -> io::Result<Self> {
+        let flag = u8::read_from(data, offset)?;
+        let value = if flag != 0 {
+            Some(T::read_from(data, offset)?)
+        } else {
+            None
+        };
+        Ok(COptional { value, tag: flag })
+    }
+}
+
+impl<T: BinaryWrite> BinaryWrite for COptional<T> {
+    fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
+        match &self.value {
+            Some(v) => {
+                self.tag.write_to(w)?;
+                v.write_to(w)
+            }
+            None => 0u8.write_to(w),
+        }
+    }
+}
+
+impl<'a, T: BinaryReadTracked<'a>> BinaryReadTracked<'a> for COptional<T> {
+    fn read_tracked(
+        data: &'a [u8],
+        offset: &mut usize,
+        path: &mut String,
+        ranges: &mut Vec<FieldRange>,
+    ) -> io::Result<Self> {
+        // presence tag (u8) — recorded under `<path>.__tag__`
+        let tag_start = *offset;
+        let flag = u8::read_from(data, offset)?;
+        let saved = push_path(path, "__tag__");
+        ranges.push(FieldRange {
+            path: path.clone(),
+            start: tag_start,
+            end: *offset,
+            ty: "COptional.tag",
+        });
+        pop_path(path, saved);
+
+        let value = if flag != 0 {
+            Some(T::read_tracked(data, offset, path, ranges)?)
+        } else {
+            None
+        };
+        Ok(COptional { value, tag: flag })
+    }
+}
+
+// ── LocalizableString ───────────────────────────────────────────────────────
+
+#[derive(Debug, PartialEq)]
+pub struct LocalizableString<'a> {
+    pub category: u8,
+    pub index: u64,
+    pub default: CString<'a>,
+}
+
+impl<'a> BinaryRead<'a> for LocalizableString<'a> {
+    fn read_from(data: &'a [u8], offset: &mut usize) -> io::Result<Self> {
+        let category = u8::read_from(data, offset)?;
+        let index = u64::read_from(data, offset)?;
+        let default = CString::read_from(data, offset)?;
+        Ok(LocalizableString {
+            category,
+            index,
+            default,
+        })
+    }
+}
+
+impl BinaryWrite for LocalizableString<'_> {
+    fn write_to(&self, w: &mut dyn Write) -> io::Result<()> {
+        self.category.write_to(w)?;
+        self.index.write_to(w)?;
+        self.default.write_to(w)
+    }
+}
+
+impl<'a> BinaryReadTracked<'a> for LocalizableString<'a> {
+    fn read_tracked(
+        data: &'a [u8],
+        offset: &mut usize,
+        path: &mut String,
+        ranges: &mut Vec<FieldRange>,
+    ) -> io::Result<Self> {
+        let saved = push_path(path, "category");
+        let category = u8::read_tracked(data, offset, path, ranges)?;
+        pop_path(path, saved);
+
+        let saved = push_path(path, "index");
+        let index = u64::read_tracked(data, offset, path, ranges)?;
+        pop_path(path, saved);
+
+        let saved = push_path(path, "default");
+        let default = CString::read_tracked(data, offset, path, ranges)?;
+        pop_path(path, saved);
+
+        Ok(LocalizableString {
+            category,
+            index,
+            default,
+        })
+    }
+}
+
+#[cfg(test)]
+mod port_tests {
+    use super::*;
+    #[test]
+    fn optional_tag_and_non_utf8_bytes_survive_typed_writer() {
+        let source = [7u8, 42];
+        let parsed = COptional::<u8>::read_from(&source, &mut 0).unwrap();
+        let mut out = vec![];
+        parsed.write_to(&mut out).unwrap();
+        assert_eq!(out, source);
+        let source = [1, 0, 0, 0, 255];
+        let parsed = CString::read_from(&source, &mut 0).unwrap();
+        let mut out = vec![];
+        parsed.write_to(&mut out).unwrap();
+        assert_eq!(out, source);
+    }
+    #[test]
+    fn huge_array_count_and_overflow_offset_are_errors() {
+        assert!(CArray::<u64>::read_from(&u32::MAX.to_le_bytes(), &mut 0).is_err());
+        assert!(super::super::check_remaining(&[], usize::MAX, 1).is_err());
+    }
+}
