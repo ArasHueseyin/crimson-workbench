@@ -1,7 +1,8 @@
 # Crimson Workbench weitergeben
 
-Seit Version **0.6.1 Preview** gibt es einen Windows-x64-Installer, ein portables
-ZIP und ein getrenntes Paket für die optionalen Live-Mods. Die Releases enthalten
+Seit Version **0.6.2 Preview** gibt es einen Windows-x64-Installer, ein portables
+ZIP und zusätzlich ein separates Paket für portable Nutzer. Der Installer enthält
+bereits die Live-Mods. Die Releases enthalten
 MIT-Lizenz und Fremdlizenztexte, keine Spielarchive, Saves, persönlichen Backups,
 `.env` oder Einstellungen des Entwicklers.
 
@@ -18,8 +19,13 @@ Die Workbench verwendet `%LOCALAPPDATA%\CrimsonWorkbench` für ihre Daten und
 speichert Spiel-/Savepfade und Sprache. Ein `--project`-Ordner kann diesen
 Standard überschreiben. Der Projektcheckout ist für normale Nutzer nicht nötig.
 
-Die beiden optionalen Laufzeitmods werden nur mit ihrem gesonderten Skript
-installiert. Dieses prüft die eigene EXE, die Paket-Hashes und vorhandene Dateien.
+Die beiden optionalen Laufzeitmods werden direkt im selben Setup eingerichtet.
+Eine Setup-Seite erkennt den Steam-Spielordner oder erlaubt dessen Auswahl; die
+Module sind vorausgewählt und können abgewählt werden. Das Setup prüft die eigene
+EXE, die Paket-Hashes und vorhandene Dateien. Nötige Administratorrechte fordert
+Windows an. Nutzer müssen keine Befehle ausführen oder weitere ZIPs entpacken.
+Unbeaufsichtigtes `/S` installiert weiterhin nur die App; `/INSTALLMODS` zusammen
+mit `/GAMEDIR="..."` aktiviert die Module explizit für automatisierte Verteilung.
 Persönliche Sockelkonfigurationen anderer Personen sind keine gültige Vorlage.
 Ein neuer Nutzer beginnt mit einer leeren Version-2-Konfiguration.
 
@@ -35,7 +41,7 @@ C++-Werkzeugen/Windows SDK und CMake. Im Repository:
 Das Skript lädt SHA-256-gepinnte native Abhängigkeiten, baut zuerst LiveItems und
 anschließend das dazu passende Zusatzsockel-Modul. Dessen Hash wird beim
 anschließenden Rust-Build eingebettet. Es führt Codeprüfungen aus und erstellt
-unter `.local/release/0.6.1/assets` Setup, portables ZIP, optionales Mod-ZIP und
+unter `.local/release/0.6.2/assets` Setup, portables ZIP, optionales Mod-ZIP und
 `SHA256SUMS.txt`. Für einen weiteren Durchlauf einen frischen
 `-OutputDirectory` angeben; vorhandene Release-Artefakte werden nicht überschrieben.
 

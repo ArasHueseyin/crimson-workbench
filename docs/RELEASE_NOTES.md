@@ -1,19 +1,20 @@
-Crimson Workbench 0.6.1 Preview stellt erstmals ein Windows-x64-Installationspaket
-und ein portables ZIP bereit. Die Anwendung speichert die eigenen Spiel-/Savepfade
-und verwendet einen beschreibbaren Datenordner im Benutzerprofil.
+Crimson Workbench 0.6.2 Preview bündelt die Workbench, Live-Items, Zusatzsockel und
+den ASI-Loader in **einer Setup-EXE**. Für die normale Einrichtung sind kein
+separates Mod-ZIP, kein manuelles Entpacken und keine PowerShell-Befehle nötig.
 
-- **Für die normale Installation:** `Crimson-Workbench_0.6.1_x64-setup.exe`.
-  WebView2 wird bei Bedarf nachgeladen. Keine Entwicklungswerkzeuge nötig.
-- **Ohne Installer:** `Crimson-Workbench_0.6.1_windows-x64-portable.zip` entpacken.
-- **Optional:** `Crimson-Workbench_0.6.1_optional-runtime-mods.zip` für Live-Items
-  und Zusatzsockel. Enthält eine eigene Anleitung und geprüfte Installations- und
-  Rückbauskripte. Diese Mods werden durch das Workbench-Setup nicht installiert.
-- **Prüfsummen:** `SHA256SUMS.txt`.
+- **Für Freunde:** `Crimson-Workbench_0.6.2_x64-setup.exe` starten, während Spiel
+  und Workbench geschlossen sind. Der Spielordner wird erkannt oder direkt im
+  Setup ausgewählt. Live-Items und Zusatzsockel sind vorausgewählt; wer nur die
+  Workbench möchte, kann sie abwählen. Windows kann Administratorrechte anfordern.
+- Vorhandene fremde oder veränderte Mods werden nicht überschrieben. Identische
+  installierte Module werden erkannt; persönliche Sockelkonfigurationen bleiben erhalten.
+- Das portable ZIP und das separate Mod-Paket bleiben als Alternativen verfügbar.
+- WebView2 wird bei Bedarf nachgeladen. Prüfsummen stehen in `SHA256SUMS.txt`.
 
-Benötigt werden Windows x64 und eine eigene kompatible Crimson-Desert-Installation.
-Die nativen Mods unterstützen nur den exakt geprüften EXE-Build 1.0.0.2976.
-Ihre echte Spielabnahme steht noch aus. Dieses Paket ist deshalb als Preview
-gekennzeichnet. Der Installer ist derzeit nicht code-signiert.
+Windows x64 und eine eigene kompatible Spielinstallation sind erforderlich.
+Die Live-Module unterstützen ausschließlich die geprüfte EXE 1.0.0.2976.
+Die vollständige Spielabnahme auf weiteren Rechnern bleibt offen; dieses Release
+ist eine Preview. Der Installer ist noch nicht code-signiert.
 
-[Installation und Voraussetzungen](https://github.com/ArasHueseyin/crimson-workbench/blob/v0.6.1/docs/INSTALLATION.md)
-· [MIT-Lizenz](https://github.com/ArasHueseyin/crimson-workbench/blob/v0.6.1/LICENSE)
+[Installation](https://github.com/ArasHueseyin/crimson-workbench/blob/v0.6.2/docs/INSTALLATION.md)
+· [MIT-Lizenz](https://github.com/ArasHueseyin/crimson-workbench/blob/v0.6.2/LICENSE)

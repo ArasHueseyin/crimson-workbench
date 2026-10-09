@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$OutputDirectory,
-    [string]$Version = '0.6.1'
+    [string]$Version = '0.6.2'
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -76,7 +76,7 @@ Copy-Item -LiteralPath $liveAsi, $socketsAsi -Destination $OutputDirectory
 [IO.File]::WriteAllBytes((Join-Path $OutputDirectory 'CrimsonExtraSockets.dat'), $empty)
 New-Item -ItemType Directory -Path (Join-Path $OutputDirectory 'loader') | Out-Null
 Copy-Item -LiteralPath $loader -Destination (Join-Path $OutputDirectory 'loader/winmm.dll')
-foreach ($script in @('Install-RuntimeMods.ps1', 'Uninstall-RuntimeMods.ps1', 'RuntimeMods.Common.ps1')) {
+foreach ($script in @('Install-RuntimeMods.ps1', 'Uninstall-RuntimeMods.ps1', 'RuntimeMods.Common.ps1', 'Setup-RuntimeMods.ps1')) {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot $script) -Destination $OutputDirectory
 }
 Copy-Item -LiteralPath (Join-Path $repo 'runtime/README-install.md') -Destination (Join-Path $OutputDirectory 'README.md')

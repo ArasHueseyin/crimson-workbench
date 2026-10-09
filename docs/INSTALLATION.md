@@ -5,7 +5,13 @@
 1. Auf [GitHub Releases](https://github.com/ArasHueseyin/crimson-workbench/releases)
    das gewünschte Release öffnen und `Crimson-Workbench_<Version>_x64-setup.exe`
    herunterladen. Die automatisch angebotenen Source-code-ZIPs sind für Entwickler.
-2. Die Setup-Datei starten. Sie installiert nur für dein Windows-Benutzerkonto
+2. Spiel und Workbench schließen und die Setup-Datei starten. **Live-Items und
+   Zusatzsockel sind bereits enthalten und zur Installation ausgewählt.** Das
+   Setup erkennt Steam-Spielordner automatisch; bei mehreren oder nicht erkannten
+   Installationen den Ordner mit `bin64` direkt im Setup auswählen. Für die
+   Spielmodule kann Windows Administratorrechte anfordern. Wer nur die Workbench
+   möchte, kann die Spielmodule abwählen. Kein separates ZIP und keine Befehle nötig.
+   Die Workbench selbst installiert nur für dein Windows-Benutzerkonto
    und bietet Deutsch/Englisch an. Falls WebView2 fehlt, lädt das Setup die
    Microsoft-Laufzeit nach; dafür ist eine Internetverbindung nötig.
 3. Crimson Workbench über das Startmenü öffnen. Unter **Datenquellen** die eigene
@@ -49,9 +55,18 @@ Erkennung von Epic/Game Pass bedeutet keine vollständige Abnahme dieser Version
 
 ## Optionale Live-Items und Zusatzsockel
 
-Das separate `Crimson-Workbench_<Version>_optional-runtime-mods.zip` enthält die
+Ab Version 0.6.2 erledigt die einzelne Setup-EXE die Einrichtung dieser Module.
+Ein erneuter Durchlauf erkennt identische installierte Module und erhält deren
+Konfiguration. Andere oder veränderte Mods werden weiterhin nicht überschrieben;
+bei einem Konflikt zeigt das Setup die Ursache und bricht die Moduleinrichtung ab.
+Die Workbench-App bleibt dabei installiert. Die App-Deinstallation entfernt keine
+Dateien aus dem Spiel; für den gezielten Rückbau liegt im App-Ordner unter
+`runtime-mods` das ursprüngliche `Uninstall-RuntimeMods.ps1` bei.
+
+Für portable Nutzer und den gezielten Rückbau enthält das weiterhin verfügbare
+`Crimson-Workbench_<Version>_optional-runtime-mods.zip` die
 beiden Laufzeitmods, deren Installations-/Rückbauskripte, Lizenztexte und eine
-neutrale Sockelkonfiguration. Die Desktop-Installation verändert das Spiel nicht.
+neutrale Sockelkonfiguration.
 Entpacke das Paket und folge seiner `README.md`. Die Skripte verlangen die eigene
 Spielinstallation und prüfen die freigegebene EXE, alle Paketdateien sowie
 vorhandene Mods, bevor sie etwas schreiben. Einen vorhandenen Loader nicht ersetzen.
@@ -74,10 +89,10 @@ gelesen. Es ist kein Kauf einer zusätzlichen Workbench-Lizenz nötig.
 
 ## Download über GitHub CLI (optional)
 
-Mit installierter GitHub CLI beispielsweise für die Preview-Version 0.6.1:
+Mit installierter GitHub CLI beispielsweise für die Preview-Version 0.6.2:
 
 ```powershell
-gh release download v0.6.1 --repo ArasHueseyin/crimson-workbench --pattern '*-setup.exe'
+gh release download v0.6.2 --repo ArasHueseyin/crimson-workbench --pattern '*-setup.exe'
 ```
 
 Danach die heruntergeladene Setup-Datei ausführen. Das Downloadkommando selbst

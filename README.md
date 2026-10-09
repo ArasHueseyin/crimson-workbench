@@ -1,18 +1,19 @@
 # Crimson Workbench
 
-**Version 0.6.1 Preview:** Windows-x64-Setup und portables Paket für die eigene
+**Version 0.6.2 Preview:** Windows-x64-Setup und portables Paket für die eigene
 Crimson-Desert-Installation. [Downloads auf GitHub](https://github.com/ArasHueseyin/crimson-workbench/releases)
 und [Installationsanleitung](docs/INSTALLATION.md). Das Setup berücksichtigt
 WebView2; für die fertige App sind keine Entwicklungswerkzeuge erforderlich.
-Einstellungen und Arbeitsdaten liegen im Benutzerprofil. Live-Items und
-Zusatzsockel werden als getrenntes optionales Mod-Paket bereitgestellt.
+Einstellungen und Arbeitsdaten liegen im Benutzerprofil. Das Setup bringt
+Live-Items und Zusatzsockel mit und richtet sie im erkannten oder ausgewählten
+Spielordner ein. Dafür sind kein separates ZIP und keine PowerShell-Befehle nötig.
 
 Der eigene Code steht unter der [MIT-Lizenz](LICENSE). Die Lizenztexte der
 Abhängigkeiten werden mitgeliefert: [Fremdkomponenten](THIRD_PARTY_NOTICES.md).
 Spielarchive, Saves und persönliche Konfigurationen werden nicht verteilt.
 
 Die folgenden Entwicklungsberichte beschreiben auch frühere Versionen; für die
-Installation und Kompatibilität von 0.6.1 gilt die obige Installationsanleitung.
+Installation und Kompatibilität von 0.6.2 gilt die obige Installationsanleitung.
 
 [Phasenübersicht: implementiert, offen und nächste Schritte](PHASENSTATUS.md).
 [Konkrete Testcheckliste](TESTCHECKLISTE.md).

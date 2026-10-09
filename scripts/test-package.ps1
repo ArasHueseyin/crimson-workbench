@@ -94,11 +94,30 @@ function Test-App([string]$AppDirectory, [string]$Kind) {
 $report = [ordered]@{ testRoot = $testRoot; output = $output; installer = $null; portable = $null }
 if ($InstallerPath) {
     $installer = (Resolve-Path -LiteralPath $InstallerPath).Path
+    & (Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe') -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'test-installer-page.ps1') -InstallerPath $installer
+    if ($LASTEXITCODE -ne 0) { throw 'Native installer page test failed.' }
     $destination = Join-Path $testRoot 'installed-app'
     # NSIS requires /D to be last and unquoted. Our generated directory has no shell expansion.
     $install = Start-Process -FilePath $installer -ArgumentList "/S /D=$destination" -WindowStyle Hidden -PassThru
     Wait-Exit $install 240 'Silent installation'
     $installed = Test-App $destination 'installed'
+    $bundledRuntime = Join-Path (Split-Path $installed.exe -Parent) 'runtime-mods'
+    foreach ($name in @('Setup-RuntimeMods.ps1', 'Install-RuntimeMods.ps1', 'Uninstall-RuntimeMods.ps1', 'RuntimeMods.Common.ps1', 'runtime-manifest.json', 'CrimsonLiveItems.asi', 'CrimsonExtraSockets.asi', 'loader/winmm.dll')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $bundledRuntime $name) -PathType Leaf)) { throw "Setup is missing bundled runtime file: $name" }
+    }
+    # Exercise the actual installed resources through private synthetic fixtures.
+    & (Join-Path $PSScriptRoot 'test-runtime-package.ps1') -PackageDirectory $bundledRuntime
+    # Drive the real install hook with explicit opt-in, but an unsupported fake
+    # game. Its nonzero exit proves the bundled helper ran and refused writes.
+    $fakeGame = Join-Path $testRoot "unsupported friend's game"
+    New-Item -ItemType Directory -Path (Join-Path $fakeGame 'bin64') | Out-Null
+    [IO.File]::WriteAllText((Join-Path $fakeGame 'bin64/CrimsonDesert.exe'), 'synthetic unsupported game')
+    $refused = Start-Process -FilePath $installer -ArgumentList "/S /INSTALLMODS /GAMEDIR=`"$fakeGame`" /D=$destination" -WindowStyle Hidden -PassThru
+    $null = $refused.Handle
+    if (-not $refused.WaitForExit(120000)) { Stop-Process -Id $refused.Id -Force; throw 'Runtime setup refusal timed out.' }
+    $refused.Refresh()
+    if ($refused.ExitCode -ne 1) { throw "Expected runtime setup refusal (1), got $($refused.ExitCode)." }
+    if (@(Get-ChildItem -LiteralPath (Join-Path $fakeGame 'bin64') -Force).Count -ne 1) { throw 'Refused setup modified the fake game.' }
     $uninstallers = @(Get-ChildItem -LiteralPath $destination -Recurse -File -Filter '*uninstall*.exe')
     if ($uninstallers.Count -ne 1) { throw 'Expected exactly one NSIS uninstaller.' }
     # _?= avoids a detached temp uninstaller, so waiting observes actual completion.

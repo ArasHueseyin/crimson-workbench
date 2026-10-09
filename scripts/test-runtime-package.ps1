@@ -47,6 +47,31 @@ $manifestPath = Join-Path $fixturePackage 'runtime-manifest.json'
 $install = Join-Path $fixturePackage 'Install-RuntimeMods.ps1'
 $uninstall = Join-Path $fixturePackage 'Uninstall-RuntimeMods.ps1'
 
+# Exercise exactly the Windows PowerShell entry point used by the NSIS setup.
+# Spaces, apostrophes and shell metacharacters remain literal path characters.
+$setup = Join-Path $fixturePackage 'Setup-RuntimeMods.ps1'
+$setupGame = New-Fixture "setup friend's game & data"
+$windowsPowerShell = Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe'
+& $windowsPowerShell -NoProfile -ExecutionPolicy Bypass -File $setup -GameDirectory $setupGame
+Assert-True ($LASTEXITCODE -eq 0) 'Bundled setup entry point failed.'
+$setupData = Join-Path $setupGame 'bin64/CrimsonExtraSockets.dat'
+[IO.File]::AppendAllText($setupData, 'personal setup sentinel')
+$setupDataHash = Hash $setupData
+$setupReceipt = Join-Path $setupGame 'bin64/CrimsonWorkbench.runtime-install.json'
+$setupReceiptHash = Hash $setupReceipt
+& $windowsPowerShell -NoProfile -ExecutionPolicy Bypass -File $setup -GameDirectory $setupGame
+Assert-True ($LASTEXITCODE -eq 0) 'Repeated setup should accept identical installed modules.'
+Assert-True ((Hash $setupData) -eq $setupDataHash -and (Hash $setupReceipt) -eq $setupReceiptHash) 'Repeated setup changed existing data or ownership.'
+[IO.File]::AppendAllText((Join-Path $setupGame 'bin64/CrimsonLiveItems.asi'), 'changed')
+& $windowsPowerShell -NoProfile -ExecutionPolicy Bypass -File $setup -GameDirectory $setupGame 2>&1 | Out-Null
+Assert-True ($LASTEXITCODE -ne 0) 'Repeated setup accepted a modified ASI.'
+
+$badSetup = New-Fixture 'setup unsupported'
+[IO.File]::WriteAllText((Join-Path $badSetup 'bin64/CrimsonDesert.exe'), 'not the admitted fixture')
+& $windowsPowerShell -NoProfile -ExecutionPolicy Bypass -File $setup -GameDirectory $badSetup 2>&1 | Out-Null
+Assert-True ($LASTEXITCODE -ne 0) 'Bundled setup accepted an unsupported EXE.'
+Assert-OnlyFakeExe $badSetup
+
 $fresh = New-Fixture 'fresh'
 & $install -GameDirectory $fresh -InstallLoader
 $bin = Join-Path $fresh 'bin64'

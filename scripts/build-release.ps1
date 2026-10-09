@@ -46,8 +46,19 @@ try {
         Invoke-Checked { cargo clippy --workspace --all-targets --locked -- -D warnings }
     }
     $buildStarted = [DateTime]::UtcNow
+    # Bundle the very same tested native package inside the one-click setup.
+    # Absolute source paths let every release use its own immutable output tree.
+    $resources = [ordered]@{}
+    foreach ($resource in $config.bundle.resources.PSObject.Properties) {
+        $source = [IO.Path]::GetFullPath((Join-Path (Join-Path $projectRoot 'app/src-tauri') $resource.Name))
+        if (Test-Path -LiteralPath $source -PathType Container) { $source += [IO.Path]::DirectorySeparatorChar }
+        $resources[$source] = $resource.Value
+    }
+    $resources[(Join-Path $output 'runtime') + [IO.Path]::DirectorySeparatorChar] = 'runtime-mods/'
+    $bundleConfig = Join-Path $output 'tauri-release.json'
+    @{ bundle = @{ resources = $resources } } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $bundleConfig -Encoding utf8NoBOM
     Push-Location (Join-Path $projectRoot 'app')
-    try { Invoke-Checked { npm run desktop:installer } } finally { Pop-Location }
+    try { Invoke-Checked { npx --no-install tauri build --bundles nsis --config $bundleConfig -- --locked } } finally { Pop-Location }
     $desktopExe = Join-Path $projectRoot 'target/release/crimson-workbench.exe'
     if (-not [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($desktopExe)).Contains($env:CRIMSON_EXTRA_SOCKETS_SHA256)) {
         throw 'The desktop binary does not embed this runtime package hash.'
