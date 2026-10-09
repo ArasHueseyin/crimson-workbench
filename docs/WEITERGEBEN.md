@@ -1,6 +1,6 @@
 # Crimson Workbench weitergeben
 
-Seit Version **0.6.0 Preview** gibt es einen Windows-x64-Installer, ein portables
+Seit Version **0.6.1 Preview** gibt es einen Windows-x64-Installer, ein portables
 ZIP und ein getrenntes Paket für die optionalen Live-Mods. Die Releases enthalten
 MIT-Lizenz und Fremdlizenztexte, keine Spielarchive, Saves, persönlichen Backups,
 `.env` oder Einstellungen des Entwicklers.
@@ -35,7 +35,7 @@ C++-Werkzeugen/Windows SDK und CMake. Im Repository:
 Das Skript lädt SHA-256-gepinnte native Abhängigkeiten, baut zuerst LiveItems und
 anschließend das dazu passende Zusatzsockel-Modul. Dessen Hash wird beim
 anschließenden Rust-Build eingebettet. Es führt Codeprüfungen aus und erstellt
-unter `.local/release/0.6.0/assets` Setup, portables ZIP, optionales Mod-ZIP und
+unter `.local/release/0.6.1/assets` Setup, portables ZIP, optionales Mod-ZIP und
 `SHA256SUMS.txt`. Für einen weiteren Durchlauf einen frischen
 `-OutputDirectory` angeben; vorhandene Release-Artefakte werden nicht überschrieben.
 

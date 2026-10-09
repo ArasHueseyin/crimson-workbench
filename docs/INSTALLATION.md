@@ -74,10 +74,10 @@ gelesen. Es ist kein Kauf einer zusätzlichen Workbench-Lizenz nötig.
 
 ## Download über GitHub CLI (optional)
 
-Mit installierter GitHub CLI beispielsweise für die Preview-Version 0.6.0:
+Mit installierter GitHub CLI beispielsweise für die Preview-Version 0.6.1:
 
 ```powershell
-gh release download v0.6.0 --repo ArasHueseyin/crimson-workbench --pattern '*-setup.exe'
+gh release download v0.6.1 --repo ArasHueseyin/crimson-workbench --pattern '*-setup.exe'
 ```
 
 Danach die heruntergeladene Setup-Datei ausführen. Das Downloadkommando selbst

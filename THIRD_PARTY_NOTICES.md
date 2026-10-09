@@ -1,4 +1,4 @@
-# Third-party notices — Crimson Workbench 0.6.0
+# Third-party notices — Crimson Workbench 0.6.1
 
 Crimson Workbench's original code is licensed under the MIT License in `LICENSE`.
 Third-party components retain their own copyright notices and licenses. This

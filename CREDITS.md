@@ -1,6 +1,6 @@
 # Quellen und Lizenzen
 
-**Weitergabepaket 0.6.0 (10.10.2026):** Der eigene Projektcode steht unter
+**Weitergabepaket 0.6.1 (10.10.2026):** Der eigene Projektcode steht unter
 [MIT](LICENSE). Die vollständigen Lizenzbeigaben der Desktop-Abhängigkeiten und
 der optionalen nativen Module einschließlich MinHook und Ultimate ASI Loader
 stehen in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) und `licenses/`.
@@ -234,7 +234,7 @@ Codeübernahme. Native Proben rufen echte Windows-SRW-Funktionen auf eigenen
 Lock-Objekten auf. Ein TLS-Zugriff der privaten Try-Kopie wird umgeleitet.
 Keine Originalbytes ausgeliefert; keine neue Fremdcode-Abhängigkeit.
 
-Referenzverwaltung 0.6.0: eigene PaPtr-Eigentümer und Integration in den Leser.
+Referenzverwaltung 0.6.1: eigene PaPtr-Eigentümer und Integration in den Leser.
 Native Erwerbs-/Freigabewege samt konkretem Actor-Override und Methodentabellen
 unabhängig an derselben gepinnten EXE geprüft. Threadmap, eingebettete Sperren,
 Bereinigung und Zerstörung sind eigene Testabhängigkeiten. Drei TLS-Lesezugriffe

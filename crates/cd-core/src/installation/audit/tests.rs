@@ -132,7 +132,21 @@ fn update_and_already_hashed_source_change_invalidate_whole_run() {
                         let s = fs::read_to_string(&f.app).unwrap().replace("123", "124");
                         fs::write(&f.app, s).unwrap();
                     } else {
-                        fs::write(f.root.join("0000/0.paz"), b"changed after hashing").unwrap();
+                        let path = f.root.join("0000/0.paz");
+                        let modified = fs::metadata(&path).unwrap().modified().unwrap();
+                        fs::write(&path, b"changed after hashing").unwrap();
+                        // The replacement has the same size. Give the metadata
+                        // comparison a deterministic timestamp change, even on
+                        // a fast runner where both writes share one clock tick.
+                        File::options()
+                            .write(true)
+                            .open(path)
+                            .unwrap()
+                            .set_times(
+                                fs::FileTimes::new()
+                                    .set_modified(modified + Duration::from_secs(2)),
+                            )
+                            .unwrap();
                     }
                 }
             },
