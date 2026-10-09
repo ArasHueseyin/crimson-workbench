@@ -40,6 +40,8 @@ pub struct Bootstrap {
     pub project: PathBuf,
     pub discovery: DiscoveryReport,
     pub languages: Vec<Language>,
+    pub settings: cd_core::config::Preferences,
+    pub settings_warning: Option<String>,
 }
 #[derive(Serialize)]
 pub struct Catalog {
@@ -57,6 +59,7 @@ pub struct AppService {
     project: PathBuf,
     generation: AtomicU64,
     session: Mutex<Option<Session>>,
+    settings_lock: Mutex<()>,
 }
 impl AppService {
     pub fn new(project: PathBuf) -> Self {
@@ -66,16 +69,70 @@ impl AppService {
             project,
             generation: AtomicU64::new(0),
             session: Mutex::new(None),
+            settings_lock: Mutex::new(()),
         }
     }
     pub fn bootstrap(&self) -> Result<Bootstrap> {
+        crate::settings::ensure_workspace(&self.project)?;
+        let loaded = cd_core::config::Preferences::load(&self.project);
+        let mut settings_warning = loaded.as_ref().err().map(|e| format!("Gespeicherte Einstellungen konnten nicht geladen werden: {e}. Bitte die Pfade erneut auswählen und Einstellungen speichern."));
+        let mut settings = loaded.unwrap_or_default();
+        let config =
+            cd_core::config::LocalConfig::load(&self.project).map_err(cd_core::Error::from)?;
+        settings.game_dir = config.game_dir;
+        settings.save_dir = config.save_dir;
+        let discovery = match cd_core::discover_project(&self.project, None) {
+            Ok(report) => report,
+            Err(e) => {
+                settings_warning = Some(format!(
+                    "Die gespeicherte Installation ist nicht erreichbar. Bitte den Installationsordner korrigieren. {e}"
+                ));
+                DiscoveryReport {
+                    installations: Vec::new(),
+                    save_directories: Vec::new(),
+                    configured_game: settings.game_dir.clone(),
+                }
+            }
+        };
         Ok(Bootstrap {
             project: self.project.clone(),
-            discovery: cd_core::discover_project(&self.project, None)?,
+            discovery,
             languages: cd_core::supported_languages(),
+            settings,
+            settings_warning,
         })
     }
+    pub fn save_settings(&self, preferences: cd_core::config::Preferences) -> Result<Bootstrap> {
+        let _settings = self
+            .settings_lock
+            .lock()
+            .map_err(|_| error("internal", "Einstellungssperre beschädigt"))?;
+        crate::settings::ensure_workspace(&self.project)?;
+        let preferences = crate::settings::validate(&self.project, preferences)?;
+        let mut session = self
+            .session
+            .lock()
+            .map_err(|_| error("internal", "Sitzungssperre beschädigt"))?;
+        preferences.store(&self.project).map_err(|e| {
+            error(
+                "settings_error",
+                format!("Einstellungen konnten nicht gespeichert werden: {e}"),
+            )
+        })?;
+        self.generation.fetch_add(1, Ordering::SeqCst);
+        self.audits.cancel_current();
+        self.live.cancel_current();
+        *session = None;
+        drop(session);
+        self.bootstrap()
+    }
     pub fn open(&self, game: Option<String>, language: String) -> Result<Catalog> {
+        // Keep each catalog's paths consistent with one atomically saved preference set.
+        let _settings = self
+            .settings_lock
+            .lock()
+            .map_err(|_| error("internal", "Einstellungssperre beschädigt"))?;
+        crate::settings::ensure_workspace(&self.project)?;
         // Reserve generation and clear the old snapshot under the SAME lock.
         // An older suspended request must never clear a newer completed session.
         let id = {
@@ -153,7 +210,7 @@ impl AppService {
     }
     pub fn mount_catalog(&self, id: u64, save: Option<&str>) -> Result<cd_core::mounts::Snapshot> {
         self.with_session(id, |s| {
-            cd_core::mounts::snapshot(s.mounts()?, &cd_core::mounts::save_root()?, save)
+            cd_core::mounts::snapshot(s.mounts()?, s.save_root()?, save)
         })
     }
     pub fn mount_register(
@@ -166,7 +223,7 @@ impl AppService {
                 s.game_root(),
                 &self.project,
                 &s.mounts()?,
-                &cd_core::mounts::save_root()?,
+                s.save_root()?,
                 request,
             )
         })
@@ -463,33 +520,74 @@ pub fn project_root() -> PathBuf {
     {
         return PathBuf::from(path);
     }
-    if let Some(path) = std::env::var_os("CD_WORKBENCH_PROJECT") {
+    if let Some(path) = std::env::var_os("CD_WORKBENCH_PROJECT").filter(|p| !p.is_empty()) {
         return path.into();
     }
-    for base in [
-        std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(Path::to_path_buf)),
-        std::env::current_dir().ok(),
-    ]
-    .into_iter()
-    .flatten()
+    let executable = std::env::current_exe().ok();
+    let current = std::env::current_dir().ok();
+    let source = source_project(
+        executable.as_deref().and_then(Path::parent),
+        if cfg!(debug_assertions) {
+            current.as_deref()
+        } else {
+            None
+        },
+    );
+    if let Some(path) = source {
+        return path;
+    }
+    user_workspace()
+}
+fn source_project(
+    executable_directory: Option<&Path>,
+    development_directory: Option<&Path>,
+) -> Option<PathBuf> {
+    for base in [executable_directory, development_directory]
+        .into_iter()
+        .flatten()
     {
         for path in base.ancestors() {
             if path.join("SPEC.md").is_file() && path.join("Cargo.toml").is_file() {
-                return path.to_path_buf();
+                return Some(path.to_path_buf());
             }
         }
     }
-    // Moving the executable outside the project requires --project. No guessing
-    // a writable game folder or changing working directories globally.
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+    None
+}
+fn user_workspace() -> PathBuf {
+    #[cfg(windows)]
+    let local = std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("USERPROFILE").map(|p| PathBuf::from(p).join("AppData/Local"))
+        });
+    #[cfg(not(windows))]
+    let local = std::env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|p| PathBuf::from(p).join(".local/share")));
+    local
+        .unwrap_or_else(std::env::temp_dir)
+        .join("CrimsonWorkbench")
 }
 pub type SharedService = Arc<AppService>;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn only_a_source_checkout_selects_the_project_directory() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("checkout");
+        let binary = source.join("target/release");
+        std::fs::create_dir_all(&binary).unwrap();
+        std::fs::write(source.join("SPEC.md"), b"test").unwrap();
+        std::fs::write(source.join("Cargo.toml"), b"test").unwrap();
+        assert_eq!(source_project(Some(&binary), None), Some(source));
+        assert_eq!(
+            source_project(Some(&temp.path().join("installed")), None),
+            None
+        );
+    }
     #[test]
     fn unopened_sessions_never_read_or_export() {
         let temp = tempfile::tempdir().unwrap();

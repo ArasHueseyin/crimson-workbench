@@ -1,5 +1,13 @@
 # Quellen und Lizenzen
 
+**Weitergabepaket 0.6.0 (10.10.2026):** Der eigene Projektcode steht unter
+[MIT](LICENSE). Die vollständigen Lizenzbeigaben der Desktop-Abhängigkeiten und
+der optionalen nativen Module einschließlich MinHook und Ultimate ASI Loader
+stehen in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) und `licenses/`.
+Die nachfolgenden Einträge dokumentieren die historische Entwicklung; die
+früheren Aussagen ohne Loader-Abhängigkeit gelten nicht für das neue optionale
+Laufzeitpaket. Spielinhalte werden weiterhin nicht mitgeliefert.
+
 Stand: 19.09.2026, Phase 2. Die gezielte native MIT-Portierung aus crimson-rs liegt
 unter [`vendor/crimson-format`](vendor/crimson-format/), mit vollständiger
 [MIT-Lizenz](vendor/crimson-format/LICENSE), gepinntem Ursprungscommit und

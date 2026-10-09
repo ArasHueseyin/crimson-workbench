@@ -7,7 +7,7 @@ import type { MountRequest, MountSnapshot, MountReceipt } from './mount-types';
 import type { KnowledgeSnapshot } from './knowledge-types';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import type {LiveUpdate,LiveStatus,LiveSetup,LiveRequest,LiveReview,LiveOperation,LiveJob} from './live-types';
-import type { AppError, Bootstrap, Catalog, Detail, ItemIcon, Page, Query } from './types';
+import type { AppError, Bootstrap, Catalog, Detail, ItemIcon, Page, Query, UserSettings } from './types';
 import type { CraftInfo, CraftPlan, CraftRequest, Recipe } from './craft-types';
 import type { RecoveryListing, RecoveryReview, RecoveryReceipt } from './recovery-types';
 import type { BaselineCatalog, BaselinePreview, BaselineSaved } from './baseline-types';
@@ -62,6 +62,7 @@ export const api = {
   craftPlan: (session: number, request: CraftRequest) => call<CraftPlan>('craft_plan', { session, request }),
   craftItem: (session: number, key: number) => call<{ recipes: Recipe[]; used_in: Recipe[] }>('craft_item', { session, key }),
   bootstrap: () => call<Bootstrap>('bootstrap'),
+  saveSettings: (settings: UserSettings) => call<Bootstrap>('save_settings', { settings }),
   open: (game: string | null, language: string) => call<Catalog>('open_catalog', { game, language }),
   search: (session: number, query: Query) => call<Page>('search_items', { session, query }),
   detail: (session: number, key: number) => call<Detail>('item_detail', { session, key }),

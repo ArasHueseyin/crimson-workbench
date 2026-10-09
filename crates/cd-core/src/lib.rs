@@ -28,8 +28,8 @@ pub use data::{
     TableStatus, supported_languages,
 };
 pub use workspace::{
-    DiscoveryReport, IndexBuildInfo, Workspace, discover_project, output_policy, select_game,
-    write_generated,
+    DiscoveryReport, IndexBuildInfo, Workspace, discover_project, output_policy, project_save_root,
+    select_game, write_generated,
 };
 
 pub use index::{IndexError, IndexIdentity, IndexedItem, SearchPage, SearchQuery};

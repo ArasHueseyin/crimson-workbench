@@ -2,10 +2,7 @@
 use crate::{
     Error, GameData, Result,
     fingerprint::hash_bytes,
-    mounts::{
-        files::{SaveChoice, choices, read_pair},
-        save_root,
-    },
+    mounts::files::{SaveChoice, choices, read_pair},
 };
 use crimson_format::save::{Body, FieldValue, ObjectBlock, Save, ScalarValue};
 use serde::{Deserialize, Serialize};
@@ -185,8 +182,12 @@ pub(crate) fn parse(data: &GameData, raw: &[u8]) -> Result<Vec<Candidate>> {
     items.sort_by(|a, b| a.name.cmp(&b.name).then(a.uid.cmp(&b.uid)));
     Ok(items)
 }
-pub fn candidates(data: &GameData, selected: Option<&str>) -> Result<Candidates> {
-    let saves = choices(&save_root()?)?;
+pub fn candidates(
+    data: &GameData,
+    root: &std::path::Path,
+    selected: Option<&str>,
+) -> Result<Candidates> {
+    let saves = choices(root)?;
     let chosen = match selected {
         Some(id) => Some(
             saves
@@ -205,7 +206,7 @@ pub fn candidates(data: &GameData, selected: Option<&str>) -> Result<Candidates>
         });
     };
     let id = chosen.id.clone();
-    let (raw, _) = read_pair(&save_root()?, &id)?;
+    let (raw, _) = read_pair(root, &id)?;
     let revision = hash_bytes(&raw);
     let mut items = parse(data, &raw)?;
     let existing = super::extra_sockets::snapshot(data)?;

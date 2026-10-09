@@ -1,6 +1,7 @@
 mod audit_service;
 mod live_service;
 mod service;
+mod settings;
 mod spawn_service;
 use cd_core::browser::{BrowserPage, BrowserQuery};
 use service::{AppError, AppService, Bootstrap, Catalog, Result, SharedService};
@@ -19,6 +20,14 @@ async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T> + Send + 'sta
 async fn bootstrap(state: State<'_, SharedService>) -> Result<Bootstrap> {
     let state = Arc::clone(&state);
     blocking(move || state.bootstrap()).await
+}
+#[tauri::command]
+async fn save_settings(
+    state: State<'_, SharedService>,
+    settings: cd_core::config::Preferences,
+) -> Result<Bootstrap> {
+    let state = Arc::clone(&state);
+    blocking(move || state.save_settings(settings)).await
 }
 #[tauri::command]
 async fn open_catalog(
@@ -255,6 +264,7 @@ pub fn run() {
         .manage(Arc::new(AppService::new(service::project_root())))
         .invoke_handler(tauri::generate_handler![
             bootstrap,
+            save_settings,
             extra_sockets_snapshot,
             extra_socket_set,
             extra_socket_candidates,

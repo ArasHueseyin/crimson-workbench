@@ -1,5 +1,19 @@
 # Crimson Workbench
 
+**Version 0.6.0 Preview:** Windows-x64-Setup und portables Paket für die eigene
+Crimson-Desert-Installation. [Downloads auf GitHub](https://github.com/ArasHueseyin/crimson-workbench/releases)
+und [Installationsanleitung](docs/INSTALLATION.md). Das Setup berücksichtigt
+WebView2; für die fertige App sind keine Entwicklungswerkzeuge erforderlich.
+Einstellungen und Arbeitsdaten liegen im Benutzerprofil. Live-Items und
+Zusatzsockel werden als getrenntes optionales Mod-Paket bereitgestellt.
+
+Der eigene Code steht unter der [MIT-Lizenz](LICENSE). Die Lizenztexte der
+Abhängigkeiten werden mitgeliefert: [Fremdkomponenten](THIRD_PARTY_NOTICES.md).
+Spielarchive, Saves und persönliche Konfigurationen werden nicht verteilt.
+
+Die folgenden Entwicklungsberichte beschreiben auch frühere Versionen; für die
+Installation und Kompatibilität von 0.6.0 gilt die obige Installationsanleitung.
+
 [Phasenübersicht: implementiert, offen und nächste Schritte](PHASENSTATUS.md).
 [Konkrete Testcheckliste](TESTCHECKLISTE.md).
 [Weitergabe, Voraussetzungen und GitHub-Installation](docs/WEITERGEBEN.md).
@@ -79,18 +93,18 @@ bleibt separat nutzbar.
 
 ## Desktop starten
 
-Die aktuelle Windows-App liegt unter `target/release/crimson-workbench-0.5.9.exe`.
-Die Desktop-Verknüpfung und das Startskript verwenden diese Version. Eine bereits
-geöffnete ältere Workbench läuft weiter; v0.5.9 erscheint beim nächsten Öffnen.
-Alternativ im Projektordner:
+Für Freunde sind die fertigen [Release-Downloads](https://github.com/ArasHueseyin/crimson-workbench/releases)
+vorgesehen. Beim Selbstbau liegt die Windows-App unter
+`target/release/crimson-workbench.exe`. Im Projektordner starten:
 
 ```powershell
 .\Start-Workbench.ps1
 ```
 
-Die App benötigt keinen laufenden Entwicklungsserver. Sie erkennt den Projektordner
-an ihrem Speicherort; nach Verschieben der EXE `--project "C:\Pfad\zum\Projekt"`
-angeben. Windows verwendet die installierte WebView2-Laufzeit.
+Die App benötigt keinen laufenden Entwicklungsserver. Installierte und portable
+Starts verwenden einen eigenen Benutzer-Datenordner; mit `--project "C:\Pfad\zu\Daten"`
+lässt er sich überschreiben. Ein Entwicklungscheckout wird weiterhin erkannt.
+Windows verwendet die installierte WebView2-Laufzeit.
 [Bedienung, Grenzen und Architektur](docs/DESKTOP.md).
 
 Selbst bauen: Node 22.22+, Rust 1.95+, Windows SDK und C++-Buildwerkzeuge:

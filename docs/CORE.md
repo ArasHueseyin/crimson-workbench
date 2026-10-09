@@ -30,8 +30,9 @@ CD_GAME_DIR=C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert
 CD_SAVE_DIR=C:/Users/<Benutzer>/AppData/Local/Pearl Abyss/CD/save
 ```
 
-Priorität bei der Spielauswahl: `--game`, Prozessumgebung, `.env`, automatische
-Erkennung. `--project` wählt den Projektordner mit `.env`; Ausgaben und Caches sind
+Priorität bei der Spielauswahl: `--game`, gespeicherte Workbench-Einstellungen,
+Prozessumgebung, `.env`, automatische Erkennung. `--project` wählt den Projektordner
+mit `.env` und `settings.json`; Ausgaben und Caches sind
 auf dessen Unterordner `.local/` und `exports/` begrenzt. Standard ist das aktuelle
 Verzeichnis. Relative konfigurierte Pfade
 beziehen sich auf diesen Projektordner. Bei mehreren automatisch gefundenen

@@ -407,7 +407,7 @@ fn now() -> u64 {
 #[cfg(test)]
 mod tests;
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 pub(crate) fn synthetic_managed_audit(
     policy: &crate::paths::PathPolicy,
     root: &Path,

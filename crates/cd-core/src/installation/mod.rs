@@ -580,7 +580,7 @@ fn bad(message: impl Into<String>) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message.into())
 }
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 pub(crate) fn synthetic_depot(root: &Path, paths: &[crate::fingerprint::FileHash]) {
     use sha1::Digest;
     let apps = root.parent().unwrap().parent().unwrap();

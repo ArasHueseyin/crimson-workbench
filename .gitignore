@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+/settings.json
+/.settings-*.tmp
 .local/
 .research/
 reference/mods/*

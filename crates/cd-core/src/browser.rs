@@ -2,7 +2,10 @@
 use crate::{IndexBuildInfo, Result, Workspace};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct BrowserItem {
@@ -69,6 +72,7 @@ pub struct BrowserInfo {
 }
 pub struct BrowserSession {
     workspace: Workspace,
+    save_root: Option<PathBuf>,
     items: Vec<BrowserItem>,
     index_info: IndexBuildInfo,
     icons: crate::icons::IconCatalog,
@@ -96,17 +100,22 @@ impl BrowserSession {
         &self,
         save: Option<&str>,
     ) -> Result<crate::extra_sockets_candidates::Candidates> {
-        crate::extra_sockets_candidates::candidates(self.workspace.data(), save)
+        crate::extra_sockets_candidates::candidates(self.workspace.data(), self.save_root()?, save)
     }
     pub fn add_extra_sockets(
         &self,
         project: &Path,
         request: &crate::extra_sockets_candidates::AddRequest,
     ) -> Result<crate::extra_sockets::Receipt> {
-        crate::extra_sockets::add(self.workspace.data(), project, request)
+        crate::extra_sockets::add(self.workspace.data(), project, self.save_root()?, request)
     }
     pub fn game_root(&self) -> &Path {
         self.workspace.data().game_root()
+    }
+    pub fn save_root(&self) -> Result<&Path> {
+        self.save_root.as_deref().ok_or_else(|| crate::Error::Invalid(
+            "Bitte unter Datenquellen einen Spielstandordner auswählen und die Installation neu einlesen. Kein eindeutiger Saveordner erkannt.".into()
+        ))
     }
     pub fn mounts(&self) -> Result<Vec<crate::mounts::Mount>> {
         let mut catalog = self
@@ -136,11 +145,7 @@ impl BrowserSession {
         Ok(self.icons.mount_icon(&mount.internal))
     }
     pub fn knowledge(&self, save: Option<&str>) -> Result<crate::knowledge::Snapshot> {
-        crate::knowledge::snapshot(
-            self.workspace.data().items(),
-            &crate::mounts::save_root()?,
-            save,
-        )
+        crate::knowledge::snapshot(self.workspace.data().items(), self.save_root()?, save)
     }
     pub fn open(project: &Path, game: Option<&Path>, language: &str) -> Result<Self> {
         let workspace = Workspace::open(project, game, language)?;
@@ -186,6 +191,7 @@ impl BrowserSession {
         };
         Ok(Self {
             workspace,
+            save_root: crate::project_save_root(project)?,
             items,
             index_info,
             icons,

@@ -1,0 +1,38 @@
+{
+  "native": [
+    {
+      "file": "ultimate-asi-loader-utility-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/ThirteenAG/injector/3a384e8d1b575c09383b0fab8bd92e34cb654949/utility/LICENSE.txt",
+      "sha256": "7124c298a1fe76b169db561ee640101f88f573f21d1f269b34817b9538321f5f"
+    },
+    {
+      "file": "minhook-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/TsudaKageyu/minhook/v1.3.4/LICENSE.txt",
+      "sha256": "d5c2224982b0b95a16b098a561335fa93f3eaf4d0aa964b7843edb986df78dc8"
+    },
+    {
+      "file": "ultimate-asi-loader-miniz-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/ThirteenAG/Ultimate-ASI-Loader/6b440669144c4a0bef5718ab155df160d231cd42/external/miniz/LICENSE",
+      "sha256": "6f20fa7672b00e2e975c291df737cf227addf3ad32e36fef3fe0f416e4664d3d"
+    },
+    {
+      "file": "ultimate-asi-loader-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/ThirteenAG/Ultimate-ASI-Loader/6b440669144c4a0bef5718ab155df160d231cd42/license",
+      "sha256": "ceca73c504e39084b0b80d2a437aea9988313d1915418d3c629c3e4a8313f5a1"
+    },
+    {
+      "file": "ultimate-asi-loader-minhook-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/TsudaKageyu/minhook/d94c64d32ea37bc4f5ee47d580709f70c6fb6080/LICENSE.txt",
+      "sha256": "d5c2224982b0b95a16b098a561335fa93f3eaf4d0aa964b7843edb986df78dc8"
+    },
+    {
+      "file": "ultimate-asi-loader-injector-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/ThirteenAG/injector/3a384e8d1b575c09383b0fab8bd92e34cb654949/LICENSE",
+      "sha256": "4c71e58a290b09e756291ed676b5931d42d8e30b49de6ec33244797297e67ae5"
+    }
+  ],
+  "cargoLockSha256": "016a58620e22cc50f1f56d456af85a5e113dd7572e681a2d994a17d540ca2f2f",
+  "npmLockSha256": "e02b0a31f7ff6feabee38bd1a2a595a43169f5fc9e63e0366391d5a506ec0512",
+  "cargoPackageCount": 283,
+  "npmPackageCount": 10
+}

@@ -68,7 +68,7 @@ DWORD WINAPI initialize(void*){
     // LiveItems attests this converter before arming its task hook. Let its
     // validation finish before replacing the converter, retaining both guards.
     const auto peerPath=configPath.substr(0,configPath.find_last_of(L"\\/"))+L"\\CrimsonLiveItems.asi";
-    if(!hashMatches(peerPath.c_str(),"576dad0e64dfd352b89bca2dd2b031ff8256c824cdd279732cd1dd186ea74d05")){log("DISABLED: expected LiveItems peer is missing or changed; no hooks installed.");return 0;}
+    if(!hashMatches(peerPath.c_str(),CRIMSON_LIVE_ITEMS_SHA256)){log("DISABLED: expected LiveItems peer is missing or changed; no hooks installed.");return 0;}
     const auto deadline=GetTickCount64()+30000;
     while(!GetModuleHandleW(L"CrimsonLiveItems.asi")||*reinterpret_cast<volatile unsigned char*>(base+0x2774b20)!=0xe9){
         if(GetTickCount64()>=deadline){log("DISABLED: LiveItems startup validation did not finish; no hooks installed.");return 0;}Sleep(50);

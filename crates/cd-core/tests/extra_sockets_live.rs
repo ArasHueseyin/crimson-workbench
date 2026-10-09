@@ -50,7 +50,10 @@ fn own_equipment_candidates() {
     let fixture = PathBuf::from(std::env::var_os("CD_EXTRA_SOCKETS_FIXTURE").unwrap());
     let before = fs::read(&fixture).unwrap();
     let data = GameData::open(&game, "ger").unwrap();
-    let c = cd_core::extra_sockets_candidates::candidates(&data, None).unwrap();
+    let save_root = PathBuf::from(
+        std::env::var_os("CD_SAVE_ROOT").expect("explicit save directory for this ignored test"),
+    );
+    let c = cd_core::extra_sockets_candidates::candidates(&data, &save_root, None).unwrap();
     assert!(!c.items.is_empty());
     assert!(c.save_revision.is_some());
     for (uid, base) in [("1001416", 0), ("1003059", 1), ("1003664", 5)] {

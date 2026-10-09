@@ -1,0 +1,2 @@
+# Preserve whitespace in upstream license texts without diff-check warnings.
+licenses/*.txt -whitespace

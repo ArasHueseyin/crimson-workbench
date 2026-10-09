@@ -12,6 +12,9 @@ use std::{
 const LENGTH: usize = 48 + 256 * 76;
 const EXE: &str = "57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7";
 const ASI: &str = "a624d59ac51dc4cf9cd85d7da7a02e78a54e60e9f91a480290d841418e96ec42";
+// Compiled into each release after building its paired native modules. Never
+// trust a digest read from an installed/modifiable manifest for admission.
+const RELEASE_ASI: Option<&str> = option_env!("CRIMSON_EXTRA_SOCKETS_SHA256");
 const TARGETS: [(u64, u32, u8); 3] = [
     (1001416, 111005, 0),
     (1003059, 1000380, 1),
@@ -213,11 +216,11 @@ fn config_path(game: &Path) -> Result<PathBuf> {
     Ok(dir.join("CrimsonExtraSockets.dat"))
 }
 fn installed(game: &Path) -> Result<()> {
-    if hash_bytes(&read(
+    let digest = hash_bytes(&read(
         &game.join("bin64/CrimsonExtraSockets.asi"),
         1_048_576,
-    )?) != ASI
-    {
+    )?);
+    if digest != ASI && RELEASE_ASI != Some(digest.as_str()) {
         return Err(bad(
             "Die passende Zusatzsockel-Mod ist noch nicht installiert.",
         ));
@@ -334,6 +337,7 @@ pub fn set(data: &GameData, project: &Path, request: &Request) -> Result<Receipt
 pub fn add(
     data: &GameData,
     project: &Path,
+    save_root: &Path,
     request: &crate::extra_sockets_candidates::AddRequest,
 ) -> Result<Receipt> {
     stopped()?;
@@ -348,8 +352,8 @@ pub fn add(
     if settings.len() >= 256 {
         return Err(bad("Höchstens 256 Gegenstandsinstanzen pro Konfiguration."));
     }
-    let root = crate::mounts::save_root()?;
-    let (raw, _) = crate::mounts::files::read_pair(&root, &request.save)?;
+    let root = save_root;
+    let (raw, _) = crate::mounts::files::read_pair(root, &request.save)?;
     if hash_bytes(&raw) != request.save_revision {
         return Err(bad(
             "Der Spielstand wurde geändert. Bitte die Ausrüstung neu einlesen.",
@@ -385,7 +389,7 @@ pub fn add(
     after[16..48].copy_from_slice(&digest);
     decode(&after)?;
     commit(data, project, before, after, || {
-        let (now, _) = crate::mounts::files::read_pair(&root, &request.save)?;
+        let (now, _) = crate::mounts::files::read_pair(root, &request.save)?;
         if now != raw {
             return Err(bad(
                 "Spielstand während der Auswahl geändert; keine Sockelerweiterung.",

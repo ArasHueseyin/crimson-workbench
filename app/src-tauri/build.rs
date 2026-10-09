@@ -1,6 +1,7 @@
 fn main() {
     let manifest = tauri_build::AppManifest::new().commands(&[
         "bootstrap",
+        "save_settings",
         "extra_sockets_snapshot",
         "extra_socket_set",
         "extra_socket_candidates",

@@ -26,6 +26,43 @@ pub fn discover_project(project: &Path, game_override: Option<&Path>) -> Result<
         configured_game: options.explicit_game_dir,
     })
 }
+/// Select an explicit root, or the sole detected root. Multiple accounts inside
+/// one root are fine; multiple platform roots require an explicit user choice.
+pub fn project_save_root(project: &Path) -> Result<Option<PathBuf>> {
+    let options = options(project, None)?;
+    Ok(select_save_root(
+        options.explicit_save_dir.clone(),
+        discovery::locate_saves_with(&options),
+    ))
+}
+fn select_save_root(explicit: Option<PathBuf>, discovered: Vec<PathBuf>) -> Option<PathBuf> {
+    explicit.or_else(|| match discovered.as_slice() {
+        [one] => Some(one.clone()),
+        _ => None,
+    })
+}
+#[cfg(test)]
+mod setup_tests {
+    use super::*;
+    #[test]
+    fn save_selection_never_silently_picks_another_platform() {
+        let steam = PathBuf::from("steam");
+        let epic = PathBuf::from("epic");
+        assert_eq!(select_save_root(None, vec![]), None);
+        assert_eq!(
+            select_save_root(None, vec![steam.clone()]),
+            Some(steam.clone())
+        );
+        assert_eq!(
+            select_save_root(None, vec![steam.clone(), epic.clone()]),
+            None
+        );
+        assert_eq!(
+            select_save_root(Some(epic.clone()), vec![steam]),
+            Some(epic)
+        );
+    }
+}
 fn options(project: &Path, game_override: Option<&Path>) -> Result<DiscoveryOptions> {
     let project = project.canonicalize()?;
     let config = LocalConfig::load(&project)?;

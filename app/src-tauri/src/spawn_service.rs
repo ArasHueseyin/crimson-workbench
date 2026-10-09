@@ -7,6 +7,7 @@ const WIRE_VERSION: u16 = 2;
 #[derive(Clone, Deserialize)]
 pub struct GrantRequest {
     pub id: String,
+    #[cfg_attr(not(any(windows, test)), allow(dead_code))]
     pub pid: u32,
     pub epoch: u64,
     pub key: u32,
@@ -56,6 +57,7 @@ fn encode(operation: u16, request: Option<&GrantRequest>) -> Result<[u8; 40]> {
     }
     Ok(out)
 }
+#[cfg(any(windows, test))]
 fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -> Result<Snapshot> {
     let u16_at = |n| u16::from_le_bytes(bytes[n..n + 2].try_into().unwrap());
     let u32_at = |n| u32::from_le_bytes(bytes[n..n + 4].try_into().unwrap());

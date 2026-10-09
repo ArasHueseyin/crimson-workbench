@@ -1,6 +1,7 @@
 export interface AppError { code: string; message: string }
 export interface Installation { path: string; platform: string; build_id: string | null }
-export interface Bootstrap { project: string; discovery: { installations: Installation[]; configured_game: string | null; save_directories: string[] }; languages: { language: string }[] }
+export interface UserSettings { version: number; game_dir: string | null; save_dir: string | null; language: string }
+export interface Bootstrap { project: string; discovery: { installations: Installation[]; configured_game: string | null; save_directories: string[] }; languages: { language: string }[]; settings?: UserSettings; settings_warning?: string | null }
 export interface Facet { value: number; count: number }
 export interface ItemGroup { key: number; internal_key: string; name: string; order: number; items: number[] }
 export interface Catalog { session: number; game_path: string; info: {
