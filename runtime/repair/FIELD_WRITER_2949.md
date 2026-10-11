@@ -1,118 +1,68 @@
-# Reparatur 0.14.0 – vollständiger Schreibschritt für Haltbarkeitsfelder
+# Repair 0.14.0 – complete writing step for durability fields
 
-Stand 22.09.2026, Steam 25455892 / EXE 1.0.0.2949. EXE-Hash:
-`a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`.
-**Entwicklungsmodul, noch keine installierbare Reparaturaktion.** App v0.5.9
-bleibt unverändert und die Reparaturoption gesperrt.
+Status: 22.09.2026, Steam 25455892 / EXE 1.0.0.2949. EXE hash: `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`. **Development module, not yet an installable repair action.** App v0.5.9 remains unchanged and the repair option locked.
 
-## Implementierter Schreibschritt
+## Implemented writing step
 
-`crimson_repair_writer.lib` enthält `writer::Batch` und den lokalen
-Speicherzugriff `writer::LocalAccess`. Ein Batch nimmt einen unveränderlichen
-Reparaturplan und eine noch gehaltene `reader::HeldCapture` entgegen. Er kann
-mitgeführte und ausgerüstete Items einzeln, getrennt oder gemeinsam bearbeiten,
-jeweils Hauptitem und Sockel in beiden Zustandskopien.
+`crimson_repair_writer.lib` contains `writer::Batch` and the local memory access `writer::LocalAccess`. A batch takes an immutable repair plan and a still held `reader::HeldCapture`. It can process items carried and equipped individually, separately or together, each main item and socket in both Zustandcopies.
 
-Adressen werden ausschließlich aus einer frischen Erfassung derselben gehaltenen
-Besitzer abgeleitet. Ein abgelöstes `Capture` oder ein rein lesender `Memory`-Adapter
-erteilt keine Schreibberechtigung. Der Schreibadapter muss dasselbe Objekt sein,
-das die Quellen für die gehaltene Erfassung liest.
+Addresses are derived exclusively from a fresh recording of the same held owners. A detached `Capture` or a purely reading `Memory` adapter does not grant write permission. The write adapter must be the same object that reads the sources for the held capture.
 
-Die Vorprüfung erfasst **den gesamten Batch vor dem ersten Schreiben**:
+The preliminary check captures **the entire batch before the first write**:
 
-1. Aktuellen Frame, Auswahl, vollständige Kennungen und Besitzer erneut prüfen.
-2. Sämtliche Vorherabbilder, Definitionen, Identitäten und Positionen mit dem Plan
-   vergleichen; Nachherabbild zunächst ausschließlich privat berechnen.
-3. Tatsächliche Speicherbereiche, Ausrichtung, Sockelanzahl, logische Grenze und
-   Allokationskapazität prüfen. Zusatzvektoren und optionale Daten bleiben geschützt.
-4. Überlappungen mit anderen Items, Sockeln, leeren/gefilterten Slots, gelesenen
-   Strukturen, Besitzer-/Sperrdaten und zusätzlichen Itemdaten abweisen.
-5. Schreibbarkeit aller geänderten Wörter prüfen und anschließend den gesamten
-   Lesebestand samt Adressen und Quellbytes erneut vergleichen.
+1. Re-check current frame, selection, full identifiers and owners.
+2. All pre-images, definitions, identities and positions with the plan
+compare; Subsequent image initially calculated exclusively privately.
+3. Actual memory areas, alignment, number of bases, logical limit and
+Check allocation capacity. Additional vectors and optional data remain protected.
+4. Overlaps with other items, sockets, empty/filtered slots, read
+Reject structures, owner/block data and additional item data.
+5. Check the spelling of all changed words and then the entire
+Compare the reading stock together with addresses and source bytes again.
 
-Erst danach schreibt der Adapter ausschließlich tatsächlich geänderte 16-Bit-Werte:
-Hauptitem `+0x40`, Sockeldatensatz `+2`. Unveränderte und ungenutzte Werte werden
-nicht geschrieben. Die eigentliche Schleife legt keine neuen C++-Puffer an.
-Jeder Store vergleicht außerdem seinen bisherigen Wert. Ein vollständiges
-Kontrolllesen prüft anschließend das erwartete Nachherabbild und den gesamten
-ursprünglichen Lesebestand mit genau diesen erlaubten Änderungen, einschließlich
-leerer Slots und struktureller Metadaten.
+Only then does the adapter write only actually changed 16 bit values: main item `+0x40`, base dataset `+2`. Unchanged and unused values are not written. The actual loop does not create new C++ buffers. Each store also compares its previous value. A complete check-read then checks the expected postage image and the entire original reading stock with exactly these allowed changes, including empty slots and structural metadata.
 
-`LocalAccess` arbeitet nur im aufrufenden Prozess. Es gibt keine PID-Suche,
-Remote-Zugriffe oder Änderung von Seitenschutzrechten. Schreibgeschützte,
-ausführbare, Guard- und unzugängliche Seiten werden abgewiesen. OS-Speicherfehler
-werden nur im begrenzten eigenen Lese-/Schreibrahmen behandelt.
+`LocalAccess` works only in the calling process. There is no PID search, remote access or modification of site rights. Write-protected, executable, guard and inaccessible pages are rejected. OS memory errors are handled only in the limited own read/write frame.
 
-## Ergebnis- und Lebensdauervertrag
+## Income and Life Contract
 
-- `rejected` aus der Vorprüfung bedeutet: Dieser Aufruf hat nichts geschrieben.
-- `fields_written` bestätigt ausschließlich die geprüften Feldwerte. Die
-  Besitzersperren und Referenzen bleiben für die folgenden Phasen gehalten.
-- Sobald ein Store versucht wurde, ergibt dessen Fehler `outcome_unknown`, auch
-  beim ersten Wort. Es gibt keine blinde Rücknahme oder automatische Wiederholung.
-  Ein alter Vorherstand wird danach nicht mehr über `view()` als gültig ausgegeben.
-- Jede gehaltene Erfassung erlaubt nur einen Schreibversuch. Späteres Kontrolllesen
-  setzt diese Grenze nicht zurück. Falscher Thread und freigegebene Besitzer erlauben
-  keine Speicheroperation. `already_attempted` ist kein Nachweis, dass ein früherer
-  Aufruf nichts verändert hat.
+- `rejected` from the preliminary check means: This call did not write anything.
+- `fields_written` only confirms the checked field values. The
+Owner locks and references are maintained for the following phases.
+- Once a store has been attempted, its error will be `outcome_unknown`, too
+at the first word. There is no blind withdrawal or automatic repetition. An old precedent is then no longer output as valid over `view()`.
+- Each capture held allows only one write attempt. Subsequent control reading
+does not reset this limit. Incorrect thread and shared owners do not allow storage operation. `already_attempted` is not proof that a previous call did not change anything.
 
-Diese Ergebnisse dürfen nicht pauschal auf `action::Commit::applied` abgebildet
-werden. Der vollständige Engine-Adapter muss native Nachherkopien und Ereigniswege
-vor der Änderung vorbereiten, anschließend Slot-Markierungen sowie sämtliche
-Inventar-/Ausrüstungsereignisse ausführen und eindeutige Rückmeldungen prüfen.
-Ein Fehler nach Feldänderungen muss zum unklaren Gesamtauftrag führen.
+These results may not be displayed lump-sum on `action::Commit::applied`. The full engine adapter must prepare native post-copies and event paths before the change, then execute slot markings and all inventory/equipment events, and check unequivocal feedback. An error after field changes must lead to the unclear overall order.
 
-## Ausgeführte Tests
+## Tests carried out
 
-**Acht CTest-Suiten**, MSVC Release `/W4 /WX`, bestanden. Die neue Schreibsuite
-enthält **34 Szenarien und 197 Bedingungen**:
+**Eight CTest Suites**, MSVC Release `/W4 /WX`, passed. The new writing suite contains **34 Scenarios and 197 Conditions**:
 
-- Alle Bereiche/Einzelitem, aktive No-Wear-Regel, Sentinel, reine Sockeländerung,
-  unveränderte Felder und leere Aufträge.
-- Ungültige Sockel-/Zusatzkapazität, gemeinsame Item-/Sockelpuffer, Sockel innerhalb
-  eines Items oder Actor-Headers und Überschneidung mit Zusatzdaten.
-- Ein später veraltetes Item, unbeschreibbares letztes Feld, geänderte Sitzung,
-  andere Spielerauswahl, ungültiger Plan und ein rein lesender Adapter.
-- Werteänderung, Umzug einer bytegleichen Itemliste und Änderung eines leeren Slots
-  während der Schreibbarkeitsprüfung; alles vor dem ersten Store abgewiesen.
-- Fehler vor/nach einem tatsächlichen Store, Teilabbruch, vorgetäuschte erfolgreiche
-  Stores, unerwartete Änderung eines leeren Slots und Auswahlwechsel beim Schreiben.
-- Fremder Thread, Wiederholung und geschlossene Besitzphase; reale eigene Windows-
-  Seiten mit Read-only-/Executable-Schutz, ungerade Adressen und Grenzüberlauf.
-- Maximaler Implementierungsumfang: 2.048 vorhandene Items und 4.096 geänderte
-  Wörter in beiden Zustandskopien. Dies ist keine zugesagte Inventar-/Enginegrenze.
+- All ranges/individuals, active no wear rule, sentinel, pure base change,
+unchanged fields and empty orders.
+- Invalid base/additional capacity, common item/base buffers, base within
+an item or actor header and overlap with additional data.
+- A later obsolete item, indescribable last field, modified session,
+other player selection, invalid plan and a read-only adapter.
+- Change in value, move a byte-like item list and change an empty slot
+during the writeability test; Everything was rejected before the first store.
+- Error before/after an actual store, partial cancellation, faked successful
+Stores, unexpected change of an empty slot and change of choice when writing.
+- foreign thread, repetition and closed ownership phase; Really own Windows-
+Pages with read-only/executable protection, odd addresses and border overflow.
+- Maximum implementation scope: 2,048 existing items and 4,096 changed
+Words in both Zustandcopies. This is not a promised inventory/engine limit.
 
-**Acht zusätzliche native Integrationsfälle** verbinden den Produktionsschreiber
-mit den originalen Referenz-/Sperrfunktionen des aktuellen Builds und tatsächlichen
-privaten Speicheradressen. Normaler und registrierter Referenzmodus, beide
-Zustandskopien, alle Bereiche und ein unabhängig erstellter Bytevergleich bestehen.
-Die nativen Besitzersperren bleiben ohne Unterbrechung bis nach dem Kontrolllesen
-gehalten. Native und synthetische Leseproben verwenden dieselben Quellnachweise.
+**Eight additional native integration cases** connect the production recorder to the original reference/lock functions of the current build and actual private memory addresses. Normal and registered reference mode, both Zustandcopies, all ranges and an independently created byte comparison exist. The native owner locks remain uninterrupted until after the control reading. Native and synthetic reading samples use the same source evidence.
 
-Aktueller Gesamtstand: **141 native Szenarien, 1.408 gezählte Aufrufe und 120.069
-Bedingungen**. Weiterhin 51 gepinnte Codebereiche, 57 pdata-Fragmente und 26 private
-TLS-Lesestellen. Die große Bedingungszahl stammt überwiegend aus wiederholter
-Prüfung der Slot-Tabelle aus 0.13.0, nicht aus ebenso vielen unabhängigen Fällen.
+Current overall status: **141 native scenarios, 1,408 counted calls and 120,069 conditions**. Furthermore, 51 pinned code ranges, 57 pdata fragments and 26 private TLS readers. The large condition number comes mainly from repeated checking of the slot table from 0.13.0, not from as many independent cases.
 
-## Verbleibende Integration
+## Remaining integration
 
-Der neue Feldschreiber ist noch nicht mit der vollständigen Ereignisfolge zu einer
-Engine-Transaktion verbunden. Die bisherigen 15 Ausrüstungsereignisfälle behalten
-ihren getrennten privaten Feldaufbau. Nachherkopien müssen vor dem ersten
-Quellschreiben vollständig vorbereitet werden. Für mitgeführte Items fehlen noch
-die Ereigniswege, für Slot-Markierungen deren Verbraucher und native Bereinigung.
-Echte Effekt-/Transport-/UI-Verarbeitung und Auftragszuordnung bleiben offen.
+The new field recorder is not yet connected to the full sequence of events for an engine transaction. The previous 15 equipment event cases retain their separate private field setup. Post-copies must be fully prepared before the first source writing. For items carried on board, the event paths are still missing, for slot markings their consumers and native cleaning. True effect/transport/UI processing and order assignment remain open.
 
-Ebenso fehlen bestätigter Spieler-/Manager-/Engine-Thread-/Weltzugriff, Eingabe,
-Loader und B0-Installation. Der Host muss weiterhin Kontext-/Kataloglebensdauer,
-Weltübergänge und TLS sichern; der Schreibadapter erzeugt diese Voraussetzungen
-nicht selbst. Keine Schreibausführung im Spielprozess, keine Savezugriffe oder
-Änderungen an der Spielinstallation. App-/Rust-/UI-Code ist unverändert und wurde
-für diese C++-Änderung nicht erneut getestet.
+Also missing is confirmed player/manager/engine thread/world access, input, loader and B0 installation. The host must continue to secure context/catalog lifetime, world transitions and TLS; the write adapter does not itself generate these prerequisites. No write execution in the game process, no save accesses or changes to the game installation. App/Rust/UI code is unchanged and has not been retested for this C++ change.
 
-Nachweise: `.local/repair-runtime-v14-{build-test.log,native-result.json,validation.json}`.
-[Quellcode](src/writer.cpp), [Windows-Zugriff](src/writer_win.cpp),
-[Testfälle](tests/writer_tests.cpp), [native Integration](tests/writer_native.inl).
-Vorgänger: [Slot-Markierung 0.13.0](DIRTY_SLOTS_2949.md).
-Manuelle Spielabnahme bleibt wie vereinbart auf später verschoben:
-[TESTCHECKLISTE](../../TESTCHECKLISTE.md), insbesondere R01–R12.
+Evidence: `.local/repair-runtime-v14-{build-test.log,native-result.json,validation.json}`. [Source code](src/writer.cpp), [Windows access](src/writer_win.cpp), [Test cases](tests/writer_tests.cpp), [native Integration](tests/writer_native.inl). Predecessor: [Slot marking 0.13.0](DIRTY_SLOTS_2949.md). Manual in-game validation remains postponed to later as agreed: [TESTCHECKLISTE](../../TESTCHECKLISTE.md), in particular R01–R12.

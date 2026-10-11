@@ -18,11 +18,8 @@ fn problem(message: impl Into<String>) -> AppError {
 }
 
 pub fn ensure_workspace(project: &Path) -> Result<()> {
-    let config = LocalConfig::load(project).map_err(|e| {
-        problem(format!(
-            "Lokale Konfiguration konnte nicht gelesen werden: {e}"
-        ))
-    })?;
+    let config = LocalConfig::load(project)
+        .map_err(|e| problem(format!("Could not read local configuration: {e}")))?;
     let mut options = DiscoveryOptions::from_environment();
     // A stale explicit game path must not prevent the first-run UI from opening.
     options.explicit_game_dir = None;
@@ -36,12 +33,12 @@ pub fn ensure_workspace(project: &Path) -> Result<()> {
     roots.extend(config.save_dir);
     PathPolicy::from_roots(roots, project.to_path_buf()).map_err(|e| {
         problem(format!(
-            "Der Arbeitsordner muss außerhalb der Spiel- und Saveordner liegen: {e}"
+            "Workspace must be outside the game and save folders: {e}"
         ))
     })?;
     fs::create_dir_all(project).map_err(|e| {
         problem(format!(
-            "Arbeitsordner {} konnte nicht angelegt werden: {e}",
+            "Could not create workspace folder {}: {e}",
             project.display()
         ))
     })?;
@@ -52,14 +49,14 @@ fn directory(path: Option<PathBuf>, label: &str) -> Result<Option<PathBuf>> {
     path.map(|path| {
         if !path.is_absolute() {
             return Err(problem(format!(
-                "{label}: Bitte einen vollständigen absoluten Ordnerpfad eingeben."
+                "{label}: Enter a complete absolute folder path."
             )));
         }
         let resolved = path
             .canonicalize()
-            .map_err(|e| problem(format!("{label} ist nicht erreichbar: {e}")))?;
+            .map_err(|e| problem(format!("{label} is unreachable: {e}")))?;
         if !resolved.is_dir() {
-            return Err(problem(format!("{label} muss ein Ordner sein.")));
+            return Err(problem(format!("{label} must be a folder.")));
         }
         Ok(resolved)
     })
@@ -68,17 +65,18 @@ fn directory(path: Option<PathBuf>, label: &str) -> Result<Option<PathBuf>> {
 
 pub fn validate(project: &Path, mut preferences: Preferences) -> Result<Preferences> {
     if preferences.version != 1
-        || !cd_core::supported_languages()
-            .iter()
-            .any(|l| l.language == preferences.language)
+        || (preferences.language != "auto"
+            && !cd_core::supported_languages()
+                .iter()
+                .any(|l| l.language == preferences.language))
     {
-        return Err(problem("Unbekannte Einstellungsversion oder Itemsprache."));
+        return Err(problem("Unknown settings version or item language."));
     }
-    preferences.game_dir = directory(preferences.game_dir, "Installationsordner")?;
-    preferences.save_dir = directory(preferences.save_dir, "Spielstandordner")?;
+    preferences.game_dir = directory(preferences.game_dir, "Installation folder")?;
+    preferences.save_dir = directory(preferences.save_dir, "Save folder")?;
     if let Some(game) = &preferences.game_dir {
         let found = cd_core::discovery::discover_with(&DiscoveryOptions { explicit_game_dir: Some(game.clone()), ..Default::default() })
-            .map_err(|_| problem("Kein Crimson-Desert-Installationsordner: bin64/CrimsonDesert.exe und meta/0.papgt fehlen. Bei Game Pass ist auch der übergeordnete Installationsordner zulässig."))?;
+            .map_err(|_| problem("Not a Crimson Desert installation folder: bin64/CrimsonDesert.exe and meta/0.papgt are missing. For Game Pass, the parent installation folder is also accepted."))?;
         preferences.game_dir = found.first().map(|i| i.path.clone());
     }
     let roots = preferences
@@ -89,7 +87,7 @@ pub fn validate(project: &Path, mut preferences: Preferences) -> Result<Preferen
         .collect();
     PathPolicy::from_roots(roots, project.to_path_buf()).map_err(|e| {
         problem(format!(
-            "Spiel- und Saveordner müssen vom Workbench-Arbeitsordner getrennt sein: {e}"
+            "Game and save folders must be separate from the Workbench workspace: {e}"
         ))
     })?;
     Ok(preferences)

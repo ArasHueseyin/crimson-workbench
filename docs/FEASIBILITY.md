@@ -1,105 +1,73 @@
-# Phase 0 – Machbarkeit
+# Phase 0 – Feasibility
 
-**Ergänzung Phase 2:** Desktopoberfläche, Suche/Filter, Rohfelder, direkte Itemlinks
-und echte Icons stehen. A1 ist wegen der weiterhin ungeklärten Händler-, Drop-
-und Rezeptquellen noch nicht vollständig. [Aktueller Stand](PROGRESS.md),
-[Bedienung und Grenzen](DESKTOP.md). Die folgenden Abschnitte sind historische
-Recherchebefunde aus Phase 0 bzw. der unten bezeichneten Phase-1-Ergänzung.
+**Supplement phase 2:** Desktop interface, search/filters, raw fields, direct item links and real icons are available. A1 is not yet complete due to the still unexplained merchant, drop and recipe sources. [Current status](PROGRESS.md), [Operation and limits](DESKTOP.md). The following sections are historical research findings from phase 0 or the phase 1 supplement indicated below.
 
-**Ergänzung Phase 1:** Der lesende Rust-Core mit CLI, Item-Lokalisierung und
-SQLite-FTS5 steht; Tests und Grenzen siehe [PROGRESS.md](PROGRESS.md).
-Der folgende Bericht dokumentiert die Phase-0-Untersuchung. Seine offenen
-Gameplay-, Editor-, Save- und Kartenfragen bleiben bestehen; die GUI folgt erst
-in Phase 2.
+**Supplement phase 1:** The reading Rust core with CLI, item localization and SQLite-FTS5 is available; Tests and limits see [PROGRESS.md](PROGRESS.md). The following report documents the phase 0 investigation. Its open gameplay, editor, save and card questions remain; The GUI only follows in phase 2.
 
-Stand: 19.09.2026, aktualisierte Spec mit eigener Apply-Engine B0. Die Untersuchung
-hat die sechs Referenzprojekte und die lokale Steam-Installation einbezogen.
-Es wurde kein App-Code geschrieben und keine Spiel-/Save-Datei verändert.
+Status: 19.09.2026, updated Spec with its own apply engine B0. The study included the six reference projects and the local Steam installation. No app code was written and no game/save file was changed.
 
-**Ergebnis:** Der lesende Core und die Itemdatenbank haben eine nachgewiesene
-technische Basis. Eine eigene Overlay-Engine ist durch Referenzcode gut begründet,
-aber hier noch nicht im Spiel getestet. Die vollständige Wunschliste ist nicht
-allein durch bekannte Scalar-Patches abgedeckt: Rezepte, Kartenkalibrierung,
-Engine-Maxima, vollständige Kosten-/Verschleißfreiheit und einige Trust-/Dragon-
-Eigenschaften benötigen weitere Verifikation oder Reverse Engineering.
+**Result:** The reading core and the item database have a proven technical basis. An own overlay engine is well-founded by reference code, but not yet tested in the game here. The complete wish list is not covered by known scalar patches alone: recipes, card calibration, engine maxima, complete cost/wear-free, and some Trust/Dragon properties require further verification or reverse engineering.
 
-## Ampel und Evidenz
+## Traffic lights and evidence
 
-- **🟢 Grün:** Datenstruktur/Feld oder technischer Weg konkret belegt. Das ist keine
-  Releasefreigabe für eine noch nicht gebaute Funktion.
-- **🟡 Gelb:** Teile bekannt; mindestens eine benötigte Beziehung, Semantik oder
-  aktuelle Buildprüfung fehlt.
-- **🔴 Rot:** für den genannten Teil kein belastbarer Implementierungsnachweis.
+- **🟢 Green:** Data structure/field or technical path concretely occupied. This is not
+Release release for an unbuilt function.
+- **🟡 Yellow:** parts known; at least one required relationship, semantics, or
+Current build check is missing.
+- **🔴 Red:** for the mentioned part no reliable proof of implementation.
 
-Quellcodebefunde und lokale Prüfungen sind getrennt. Ein Feldname oder historischer
-Offset allein ist kein Nachweis seiner Wirkung. Der Build ist **beobachtet**, noch
-nicht als Vanilla oder vollständig unterstützter Workbench-Build zertifiziert.
-Details und Quellen: [FORMATS](FORMATS.md), [Tabellenrecherche](research/TABLES.md),
-[Apply-Recherche](research/APPLY.md), [Archivrecherche](research/ARCHIVES.md).
+Source code findings and local examinations are separate. A field name or historical offset alone is not proof of its effect. The build is **observed**, not yet certified as a vanilla or fully supported Workbench build. Details and sources: [FORMATS](FORMATS.md), [Table searches](research/TABLES.md), [Apply-Recherche](research/APPLY.md), [Archivrecherche](research/ARCHIVES.md).
 
-## Technische Basis
+## Technical basis
 
-| Teil | Ampel | Nachweis / Entscheidung |
+|Particle|Ampel|Proof/Decision|
 |---|---|---|
-| PAZ/PAMT lesen | 🟢 | Referenzbibliothek gebaut; echte Tabellen aus Gruppe 0008 entschlüsselt/dekomprimiert. PAMT und PAPGT im Speicher bytegleich serialisiert. |
-| Iteminfo-Grundstruktur | 🟢 | 6.816 lokale Items, 6.465.724 Bytes: parse → serialize byteidentisch. Das beweist die Strukturerhaltung dieses konkreten Files, nicht die Semantik jedes unbekannten Felds. |
-| Deutsche Lokalisierung | 🟢 | Gruppe 0027, `gamedata/stringtable/binary__/ger`, 39 Namespaces gefunden. `item.paloc` tatsächlich LZ4-verpackt; 13.575 Einträge. Payload-Roundtrip nach Dekompression bestanden. |
-| Direkte Rust-Git-Abhängigkeit crimson-rs | 🟡 | MIT und lokal buildbar; derzeit nur cdylib/staticlib und private Rust-Module. Ein unverändertes `git`-Dependency liefert nicht die erforderliche Rust-Core-API. Empfehlung: kleiner dokumentierter Fork mit rlib/public API oder begrenzte MIT-Portierung, jeweils gepinnt; keine ungeprüfte Komplettintegration. |
-| Alle Tabellen lossless bearbeiten | 🟡 | Iteminfo nachgewiesen; etliche andere Loader sind bewusst lossy. Jeder zusätzliche Editor bleibt bis zu seinem eigenen aktuellen Roundtrip gesperrt. |
-| Vanilla-Nachweis / Buildfreigabe | 🟡 | EXE-Version, Steam-Build-ID, Metadaten und 28 Tabellen-Dateihashes erfasst. Herkunft eines unveränderten Baselinesatzes und versionierte Schemas müssen vor Schreibfreigabe feststehen. |
-| SQLite FTS5, Tauri/React, Profile | 🟢 | Kein Format-Reverse-Engineering erforderlich. Noch nicht implementiert; Windows-/Linux-Build und reale Such-/UI-Tests folgen in den vorgesehenen Phasen. |
+|PAZ/PAMT lesen|🟢|reference library built; real tables from group 0008 decrypted/decompressed. PAMT and PAPGT are serialized in memory byte-identical.|
+|Iteminfo basic structure|🟢|6,816 local items, 6,465,724 bytes: parse → serialize byte-identical. This proves the structure preservation of this concrete file, not the semantics of every unknown field.|
+|German localisation|🟢|Group 0027, `gamedata/stringtable/binary__/ger`, 39 Namespaces found. `item.paloc` actually packed LZ4; 13,575 Entries. Passed payload round trip after decompression.|
+|Direct Rust-Git-Dependency crimson-rs|🟡|MIT and locally buildable; Currently only cdylib/staticlib and private Rust modules. An unchanged `git`-Dependency does not provide the required Rust-Core API. Recommendation: small documented fork with rlib/public API or limited MIT port, each pinned; No untested full integration.|
+|Edit all tables lossless|🟡|Iteminfo demonstrated; Several other loaders are deliberately lossy. Each additional editor remains locked until its own current roundtrip.|
+|Vanilla Proof / Build Release|🟡|EXE version, Steam build ID, metadata and 28 table file hashes. The origin of an unchanged baseline set and versioned schema must be determined before write authorization.|
+|SQLite FTS5, Tauri/React, Profile|🟢|No format reverse engineering required. Not yet implemented; Windows/Linux build and real search/UI tests follow in the planned phases.|
 
-## Funktionen
+## Functions
 
-Die Dateinamen in der Tabelle meinen jeweils `.staticinfobody` plus den
-tabellenspezifischen `.staticinfoheader` unter `gamedata/binarystaticinfo__/bin`.
-Feldnamen sind Quellenbezeichnungen, keine bereits freigegebene Workbench-API.
+The file names in the table mean `.staticinfobody` plus the table-specific `.staticinfoheader` under `gamedata/binarystaticinfo__/bin`. Field names are source names, not an already released Workbench API.
 
-| Funktion | Ampel | Konkrete Datenbasis und verbleibende Arbeit |
+|Function|Ampel|Concrete database and remaining work|
 |---|---|---|
-| **A1 Itemdatenbank** | 🟡 | `iteminfo`: Schlüssel, `string_key`, Kategorie/Typ, Iconreferenz, `max_stack_count`, Stats/Buffs. Item-Roundtrip und deutsches PALOC lokal bestanden. FTS5/Filter/virtuelle Tabelle sind Implementierungsarbeit. Item→Lokalisierung, Icons, Store→Region und Drop→Quelle sowie Rezeptlinks noch vollständig prüfen. Unbekannte Bytes als Offset/Typ/Wert zeigen. |
-| **A2 Crafting** | 🟡 | `crafttoolinfo`, `crafttoolgroupinfo`, `multichangeinfo`, `itemgroupinfo`: `_ingredientsItemGroupInfo`, `_recipeItemGroupInfoList`, `_fixedMaterialDataList`, `_resultDropInfoList`, `_craftToolInfo`. Erste drei Tabellen lokal vorhanden/gehasht. 🔴 Vollständiger Zutaten-/Ausgabegraph inklusive Mengen, Alternativen und Erfolgsregeln noch unbewiesen. Erst bekannte Rezepte gegen Spielanzeige abgleichen; danach Rekursion, Zyklen und gemeinsam verbrauchbaren Eigenbestand berechnen. |
-| **A3 Karte** | 🟡 | Assetpfad `ui/texture/image/worldmap/`; `UIMapTextureInfo`, `BitmapPositionInfo`, `FactionNodeInfo`, `GamePlayTriggerInfo`, `GimmickGateInfo`, `KnowledgeInfo` enthalten Positions-/Textur-/Grenzkandidaten. 🔴 Vollständiger Atlas, Koordinatentransform und vollständige Collectible-Instanzen fehlen. UIMapTexture kann Icons statt Hintergrund bezeichnen. Keine Karten-UI vor diesem Nachweis. |
-| **A4 100%-Tracker** | 🟡 | `questinfo`, `stageinfo`, Mission-/Gimmick-Tabellen plus `QuestSaveData`/`FieldGimmickSaveData`. Lokaler Save-Pfad gefunden; Saveinhalt nicht analysiert. Zustandsmapping und belastbarer Nenner über optionale/verzweigte Inhalte fehlen. Collectibles nicht pauschal als aus Save ableitbar darstellen. Shared read, stabile Wiederholungslesung und Dateiwatcher später implementieren. |
-| **B0 Apply-Engine** | 🟡 | PAZ/PAMT und PAPGT-Registry strukturell bekannt; aktuelle Registry lokal geprüft. CDUMM erzeugt eigene Gruppen, berechnet Jenkins-Checksummen und registriert vorne. Kein CDUMM-Aufruf/-Dependency nötig. 🔴 Lokaler Engine-Vorrang, Apply/Restore-Zyklen, Vanilla-Herkunft, Crash-Recovery und Spielstart-Rennen noch ungetestet. [Entwurf](APPLY_DESIGN.md). |
-| **B1 Shops** | 🟡 | `storeinfo`, Itemreferenz, Stock-/Preis-/Refreshfelder. Body/Header lokal gehasht. Aktuelle Quelle beschreibt +8 rohe Bytes je Stockstruktur und ein zusätzliches Store-Byte. Historische Parser nennen 105→113, daraus folgt keine allgemeine feste Recordgröße bei optionalen Blöcken/Listen. 999 Bestand und täglicher Refresh erst nach eigenem Roundtrip, aktuellen Feldtests und Prüfung großer Händlerlisten; pauschal alle Items kann Sonder-/Questitems einschließen. |
-| **B2 Drops** | 🟡 | `dropsetinfo`: Itemreferenzen, Gruppen-/Einzelchance und Mengen. Aktuelle Referenzen unterscheiden Set- und Item-Chance; Semantik nicht auf einen einzigen Prozentwert reduzieren. 🔴 Automatische Bossklassifikation fehlt; zunächst manuelle Auswahl. Global-/Override-Priorität und Chance-/Mengenbegrenzungen buildbezogen definieren. |
-| **B3 Trust** | 🟡 | GildyBoyes `DropSet_Friendly_*`-Heuristik markiert vier Bytepositionen bei Offsets 59/63/67/71 relativ nach Name+NUL. Daraus lässt sich noch kein Feldtyp ableiten. Das ist ein lokalisierbarer historischer Hinweis, **kein bestätigtes aktuelles Trust-Feld**. 🔴 Typ, Einheit, Ereigniszuordnung und Multiplikatorwirkung benötigen kontrollierte Prüfung. |
-| **B4 World** | 🟡 | `characterinfo`: `_terrainRegionSpawnPerCount`, `_callMercenaryCoolTime`, `_callMercenarySpawnDuration`; `regioninfo`: `_limitVehicleRun`, `_isTown`, `_vehicleMercenaryAllowType`; `fieldinfo`: `_canCallVehicle`; Faction-/Collection-/Gimmickdaten für weitere Spawns/Timer. Einige Felder sind Heuristik/dev-only. Respawnquellen und Spawn-Instanzen nicht gleichsetzen. |
-| **B5 Dragon** | 🟡 | Mountfelder aus `characterinfo`, `vehicleinfo` und Region-/Field-Flags. Historische Dragon-ID ist nur Kandidat. 🔴 Blackstar-Zuordnung, verlässlicher Grenzübertritt ohne Dismount und Bedeutung von Duration/Cooldown 0 nicht bestätigt. |
-| **B6 Inventory/Lager** | 🟡 | `inventory`: `default_slot_count`, `max_slot_count` (u16) im Referenzparser; Tabelle lokal gehasht. Referenz sucht plausible Wertpaare heuristisch. 🔴 Lager-Eintrag und hartes Engine-Maximum unbekannt. u16-Maximum 65.535 ist kein zulässiger Produktgrenzwert ohne Nachweis; Referenzmods fehlen noch. |
-| **B7 Stacks** | 🟡 | Aktuelles typisiertes `iteminfo.max_stack_count` und `_applyMaxStackCap`; alte Quellen widersprechen sich bei Feldbreiten. Preset 999999 ist kein Maximalwertbeleg. 🔴 Engine-Maximum und verlustfreie Stacks mit Instanzzustand unbekannt. Equipment/Enchant/Sockets/Durability ausschließlich experimentell nach Tests. |
-| **B8 Durability** | 🟡 | `iteminfo._maxEndurance`, Repair-/Equip-Daten und `_decreaseEndurancePercent` als Kandidaten. 🔴 Maximalhaltbarkeit 65535 bedeutet nicht „kein Verschleiß“; Reparaturkosten-Nullfeld und echte Verlustabschaltung sind nicht bestätigt. |
-| **B9 Stamina & Spirit** | 🟡 | `skill._useResourceStatList/_useDriverResourceStatList` und entsprechende Stat-Hashes. 🔴 Alle Aktionskategorien, Einheiten und universell kostenloser Verbrauch fehlen. Ausrüstungsreduktion/Regeneration ersetzt keinen bestätigten globalen Multiplikator. |
-| **B10 Skills** | 🟡 | `skill`, `skilltreeinfo`, `cooltime`, Ressourcen-/Bufflisten. Tabelle lokal gehasht; zusätzliche Roundtrip- und Wirkungstests nötig. Ein Referenzbutton „Zero Cooldowns“ setzt 100; Nullsemantik deshalb nicht aus UI-Text ableiten. |
-| **B11 God-item** | 🟡 | `iteminfo` Stat-/Buff-/Passive-/Enchantlisten und `drop_default_data`; Struktur roundtrip-fähig. Namensräume und Statwirkungen separat prüfen. Längenänderung braucht neuen Headerindex; RegisterConditionSkillBuffData auf ungeeigneten Items ist ein dokumentierter Ladefehlerkandidat. Templates erst für bestätigte Kombinationen. |
-| **C Profile / Farm** | 🟡 | Profil-JSON und deterministische Einstellungen benötigen keine Spieldaten. Farm = Drops ×10, Spawns ×3; Wirkung hängt von B0/B2/B4 ab. Wechsel bei laufendem Spiel plant höchstens Änderungen und fordert späteres Schließen; er führt kein Apply/Restore aus. |
-| **D Runtime-ASI** | 🔴 | Keine Hooks untersucht, keine Umsetzung begonnen. Eigene spätere Phase ausschließlich nach explizitem Go. |
+|**A1 Item database**|🟡|`iteminfo`: Key, `string_key`, category/type, icon reference, `max_stack_count`, stats/buffs. Item-Roundtrip and German PALOC passed locally. FTS5/Filter/Virtual Table are implementation work. Item→Localization, Icons, Store→Region and Drop→Source and Recipe Links are still fully checked. Unknown bytes as offset/type/value.|
+|**A2 Crafting**|🟡|`crafttoolinfo`, `crafttoolgroupinfo`, `multichangeinfo`, `itemgroupinfo`: `_ingredientsItemGroupInfo`, `_recipeItemGroupInfoList`, `_fixedMaterialDataList`, `_resultDropInfoList`, `_craftToolInfo`. First three tables available/hated locally. 🔴 Full ingredient/output graph including quantities, alternatives and rules of success still unproven. Compare only known recipes against game advertisement; then calculate recursion, cycles and jointly consumable own stock.|
+|**A3 card**|🟡|asset path `ui/texture/image/worldmap/`; `UIMapTextureInfo`, `BitmapPositionInfo`, `FactionNodeInfo`, `GamePlayTriggerInfo`, `GimmickGateInfo`, `KnowledgeInfo` contain position/texture/boundary candidates. 🔴 Full atlas, coordinate transform and complete collectible instances are missing. UIMapTexture can designate icons instead of background. No card UI before this proof.|
+|**A4 100%-Tracker**|🟡|`questinfo`, `stageinfo`, Mission/Gimmick tables plus `QuestSaveData`/`FieldGimmickSaveData`. Local save path found; Save Content not analyzed. Zustandsmapping and robust denominator about optional/branched content is missing. Collectibles are not presented as derivable from Save. Shared read, stable re-read and implement filewatcher later.|
+|**B0 Apply-Engine**|🟡|PAZ/PAMT and PAPGT registry are structurally known; Current registry checked locally. CDUMM creates own groups, calculates Jenkins checksums and registers in front. No CDUMM call/dependency required. 🔴 Local Engine Lead, Apply/Restore Cycles, Vanilla Origin, Crash Recovery and Game Start Race still untested. [Draft draft](APPLY_DESIGN.md).|
+|**B1 Shops**|🟡|`storeinfo`, item reference, stock/price/refresh fields. Body/Header hashed locally. Current source describes +8 raw bytes per stock structure and an additional store byte. Historical parsers are called 105→113, which does not result in a general fixed record size for optional blocks/lists. 999 inventory and daily refresh only after own round trip, current field tests and examination of large dealer lists; All items can include special/questitems.|
+|**B2 Drops**|🟡|`dropsetinfo`: Item references, group/individual chances and quantities. Current references distinguish set and item opportunity; Do not reduce semantics to a single percentage. 🔴 Automatic boss classification is missing; First, manual selection. Define global/override priority and opportunity/quantity limits build-related.|
+|**B3 Trust**|🟡|GildyBoyes `DropSet_Friendly_*`-Heuristics marks four byte positions for offsets 59/63/67/71 relative to Name+NUL. No field type can be derived from this yet. This is a locatable historical clue, **not a confirmed current Trust field**. 🔴 Type, unit, event assignment and multiplier effect require controlled testing.|
+|**B4 World**|🟡|`characterinfo`: `_terrainRegionSpawnPerCount`, `_callMercenaryCoolTime`, `_callMercenarySpawnDuration`; `regioninfo`: `_limitVehicleRun`, `_isTown`, `_vehicleMercenaryAllowType`; `fieldinfo`: `_canCallVehicle`; Faction/Collection/Gimmick data for more spawns/timers. Some fields are heuristics/dev-only. Do not equate respawn sources and spawn instances.|
+|**B5 Dragon**|🟡|Mount fields from `characterinfo`, `vehicleinfo` and region/field flags. Historic Dragon ID is only candidate. 🔴 Blackstar assignment, reliable border crossing without dismount and meaning of duration/cooldown 0 not confirmed.|
+|**B6 Inventory/Lager**|🟡|`inventory`: `default_slot_count`, `max_slot_count` (u16) in the reference parser; Table hashed locally. Reference seeks plausible value pairs heuristically. 🔴 Warehouse entry and hard engine maximum unknown. u16 maximum 65,535 is not a permissible product limit value without proof; Reference mods are still missing.|
+|**B7 Stacks**|🟡|Current typed `iteminfo.max_stack_count` and `_applyMaxStackCap`; Old sources contradict each other with field widths. Preset 999999 is not a maximum value document. 🔴 Engine maximum and lossless stacks with instance state unknown. Equipment/Enchant/Sockets/Durability exclusively experimental after tests.|
+|**B8 Durability**|🟡|`iteminfo._maxEndurance`, repair/equip data and `_decreaseEndurancePercent` as candidates. 🔴 Maximum durability 65535 does not mean "no wear"; Repair cost zero and real loss shutdown are not confirmed.|
+|**B9 Stamina & Spirit**|🟡|`skill._useResourceStatList/_useDriverResourceStatList` and corresponding Stat hashes. 🔴 All promotion categories, units and universal free consumption are missing. Equipment reduction/regeneration does not replace a confirmed global multiplier.|
+|**B10 Skills**|🟡|`skill`, `skilltreeinfo`, `cooltime`, resource/buff lists. table hashed locally; Additional round trip and effect tests are required. A reference button "Zero Cooldowns" sets 100; Zero semantics therefore do not derive from UI text.|
+|**B11 God-item**|🟡|`iteminfo` stat/buff/passive/enchant lists and `drop_default_data`; Structure roundtrip-capable. Check namespaces and state effects separately. Length change requires new header index; RegisterConditionSkillBuffData on inappropriate items is a documented loading error candidate. Templates only for confirmed combinations.|
+|**C Profile / Farm**|🟡|Profile JSON and deterministic settings do not require game data. Farm = Drops ×10, Spawns ×3; Effect depends on B0/B2/B4. Change in the current game plans at most changes and requests later closure; It does not run an Apply/Restore.|
+|**D Runtime-ASI**|🔴|No hooks investigated, no implementation started. Own later phase exclusively after explicit Go.|
 
-## Karte: vorgeschalteter Machbarkeitsbericht
+## Map: upstream feasibility report
 
-Vorhanden sind Assetpfad- und Positionskandidaten sowie ein Reader für mehrere
-PAZ-Kompressionsvarianten. Nicht nachgewiesen sind ein verwendbarer kompletter
-Weltkartenhintergrund, dessen Tileanordnung/Projektion, eindeutige Instanzpositionen
-aller Sammelobjekte oder eine vollständige Save-Zuordnung. Teilkomprimierte
-Texturen benötigen einen Variantencheck; Kommentare in älteren Readern beschreiben
-teils noch nicht unterstützte Fälle.
+There are asset path and position candidates as well as a reader for several PAZ compression variants. A usable complete world map background, its tile arrangement/projection, unambiguous instance positions of all collectible objects or a complete save allocation are not proven. Partially compressed textures require a variant check; Comments in older readers describe partly still unsupported cases.
 
-Nächste Schritte in Phase 8: konkrete Assets inventarisieren und dekodieren,
-mehrere bekannte Welt-/Bildpunktpaare sammeln, Achsen und Maßstab bestimmen,
-Transformation an unabhängigen Punkten überprüfen, dann Layerdaten mit stabilen
-IDs verbinden. Bis dahin ist Leaflet `CRS.Simple` eine geplante Darstellung und
-keine validierte Koordinatenlösung.
+Next steps in Phase 8: Invent and decode specific assets, collect several known world/pixel pairs, determine axes and scales, check transformation at independent points, then connect layer data with stable IDs. Until then, Leaflet `CRS.Simple` is a planned representation and not a validated coordinate solution.
 
-## Prioritäten für Phase 1 nach Durchsicht
+## Priorities for phase 1 after review
 
-1. Read-only-Erkennung, Buildbeobachtung und klare Trennung von bekannten Schemas
-   und unbekannten Builds; keine Schreibbefugnis für das Core-Lesemodul.
-2. Gepinnte Rust-Integration entscheiden, Archiv-/Item-/PALOC-Nachweise in echte
-   Workbench-Tests mit `.env`-Pfaden überführen; unbekannte Felder bewahren.
-3. CLI und SQLite-Index implementieren; weitere Tabellen erst mit passendem
-   Roundtrip aufnehmen. GUI/Editoren und insbesondere Apply bleiben spätere Phasen.
+1. Read-only detection, build observation and clear separation of known schemes
+and unknown builds; no writing authority for the core read module.
+2. Pinned Rust integration, archive/item/PALOC proof into real
+Transfer Workbench tests with `.env` paths; preserve unknown fields.
+3. Implement CLI and SQLite Index; other tables only with suitable
+Take a round trip. GUI/editors and especially Apply remain later phases.
 
-Es bestehen keine Fragen, die die Lieferung dieses Rechercheberichts verhindern.
-Die fehlenden Referenzmods und Wirkungsnachweise sind dokumentierte Abhängigkeiten
-späterer Funktionen. Phase 1 startet nicht automatisch.
+There are no questions that prevent the delivery of this research report. The missing reference mods and proofs of efficacy are documented dependencies of later functions. Phase 1 does not start automatically.

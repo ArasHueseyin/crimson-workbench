@@ -23,7 +23,7 @@ export function LiveApply({session,settings}:{session:number;settings:ModRequest
    try {
     const next=await api.liveJobStatus(session);
     if(closed||gen!==generation.current)return;
-    if(!next){setError('Live-Auftrag nicht mehr verfügbar. Status erneut laden.');return;}
+    if(!next){setError('Live job no longer available. Reload status.');return;}
     if(next.phase==='running'){setJob(next);timer=setTimeout(()=>void poll(),700)}
     else {
      try{const fresh=await api.liveStatus(session);if(!closed&&gen===generation.current)setStatus(fresh)}catch(e){if(!closed&&gen===generation.current)setError(asError(e).message)}
@@ -58,54 +58,54 @@ export function LiveApply({session,settings}:{session:number;settings:ModRequest
   const value=await api.liveStart(session,operation);if(gen===generation.current)setJob(value);
  }
  const blocked=busy||running||status?.game_running!==false;
- return <section className="recovery-center live-panel" aria-label="Live-Anwendung und Restore">
-  <div className="recovery-heading"><ShieldCheck size={21}/><div><small>B0 · INSTALLATION</small><h2>Live-Anwendung & Restore</h2></div></div>
-  <p>Übernimmt den berechneten Mod in eine eigene Archivgruppe. Jede Anwendung entsteht aus den Originaltabellen. Vor jedem Schreibvorgang werden die Originaldateien vollständig geprüft und gegen Änderungen geschützt; das Spiel muss beendet sein.</p>
-  <p>Die manuelle Prüfung im Spiel bleibt bis zum Abschluss aller Entwicklungsphasen offen.</p>
-  <button className="secondary" disabled={busy||running} onClick={()=>void work(load)}>Live-Status laden</button>
+ return <section className="recovery-center live-panel" aria-label="Live apply and restore">
+  <div className="recovery-heading"><ShieldCheck size={21}/><div><small>B0 · INSTALLATION</small><h2>Live apply & restore</h2></div></div>
+  <p>Applies the calculated mod in a dedicated archive group. Every application starts from the original tables. Before each write, original files are fully checked and protected against changes; the game must be closed.</p>
+  <p>Manual in-game validation remains pending.</p>
+  <button className="secondary" disabled={busy||running} onClick={()=>void work(load)}>Load live status</button>
   {status&&<>
-   <p role="status">{status.game_running===true?'Spiel läuft · Live-Schreibzugriffe gesperrt':status.game_running===false?'Spiel beendet':'Spielstatus unbekannt · Live-Schreibzugriffe gesperrt'} · {status.pending_basis?'Basiswechsel unterbrochen':status.initialized?status.active_overlay?'Eigener Mod aktiv':'Registry im Originalzustand':status.configured?'Einrichtung unvollständig':'Live-Einrichtung fehlt'}</p>
+   <p role="status">{status.game_running===true?'Game running · Live writes blocked':status.game_running===false?'Game closed':'Game status unknown · Live writes blocked'} · {status.pending_basis?'Baseline change interrupted':status.initialized?status.active_overlay?'Workbench mod active':'Registry in original state':status.configured?'Setup incomplete':'Live setup missing'}</p>
    {status.issues.length>0&&<ul role="alert">{status.issues.map(s=><li key={s}>{s}</li>)}</ul>}
    {(!status.initialized&&!status.pending_basis)&&<div className="recovery-review">
-    <label>Gespeicherte Basis für Live-B0<select aria-label="Live-Ausgangsstand" disabled={busy||running} value={id} onChange={e=>{setId(e.target.value);setSetup(null);setVerified(false)}}><option value="">Bitte auswählen</option>{ids.map(v=><option key={v} value={v}>{v}</option>)}</select></label>
-    <button className="secondary" disabled={busy||running||!id} onClick={()=>void work(prepareSetup)}>Live-Einrichtung prüfen</button>
-    {setup&&<><p>{count(setup.files)} Dateien · Inhaltsbericht vom {new Date(setup.audited_at*1000).toLocaleString('de-DE')}. Bei Einrichtung werden alle Inhalte erneut gehasht und die Registry gesichert.</p><code>{setup.game_path}</code>
-     {(setup.preserved_foreign_files??0)>0&&<p>{count(setup.preserved_foreign_files!)} bestätigte Zusatzdateien werden ebenfalls geprüft und unverändert erhalten.</p>}
-     <label className="mod-switch"><input aria-label="Steam-Dateiprüfung bestätigt" type="checkbox" disabled={blocked} checked={verified} onChange={e=>setVerified(e.target.checked)}/>Ich habe Steams „Dateien auf Fehler überprüfen“ vor diesem Inhaltsbericht vollständig abgeschlossen.</label>
-     <p>Falls das noch nicht geschehen ist: später Steam prüfen lassen und anschließend einen neuen Inhaltsbericht mit Ausgangsstand erstellen. Der vorhandene Bericht allein bestätigt diesen Schritt nicht.</p>
-     <button className="secondary" disabled={blocked||!verified} onClick={()=>void work(()=>start({kind:'setup',baseline_id:setup.baseline_id,review_id:setup.review_id,steam_verified_before_audit:verified}))}>Live-Basis prüfen und einrichten</button>
+    <label>Saved baseline for Live B0<select aria-label="Live baseline" disabled={busy||running} value={id} onChange={e=>{setId(e.target.value);setSetup(null);setVerified(false)}}><option value="">Please select</option>{ids.map(v=><option key={v} value={v}>{v}</option>)}</select></label>
+    <button className="secondary" disabled={busy||running||!id} onClick={()=>void work(prepareSetup)}>Check live setup</button>
+    {setup&&<><p>{count(setup.files)} files · Content report from {new Date(setup.audited_at*1000).toLocaleString('en-US')}. Setup hashes all contents again and backs up the registry.</p><code>{setup.game_path}</code>
+     {(setup.preserved_foreign_files??0)>0&&<p>{count(setup.preserved_foreign_files!)} approved additional files are also checked and preserved unchanged.</p>}
+     <label className="mod-switch"><input aria-label="Steam file verification confirmed" type="checkbox" disabled={blocked} checked={verified} onChange={e=>setVerified(e.target.checked)}/>I fully completed Steam “Verify integrity of game files” before creating this content report.</label>
+     <p>If not: let Steam verify the files, then create a new content report and baseline. The existing report alone does not confirm this step.</p>
+     <button className="secondary" disabled={blocked||!verified} onClick={()=>void work(()=>start({kind:'setup',baseline_id:setup.baseline_id,review_id:setup.review_id,steam_verified_before_audit:verified}))}>Verify and set up live baseline</button>
     </>}
    </div>}
    {status.configured&&<details className="recovery-review" open={status.pending_basis?true:undefined}>
-    <summary>Basis nach Spielupdate wechseln</summary>
-    <p>Nach einer abgeschlossenen Steam-Dateiprüfung einen neuen Inhaltsbericht und Ausgangsstand speichern. Der Wechsel archiviert die bisherige Workbench-Historie und eigene Moddateien. Die bereits vorhandene Original-Registry der neuen Basis bleibt erhalten.</p>
-    {status.pending_basis&&<p>Unterbrochener Wechsel: mit der vorgesehenen Basis fortsetzen.</p>}
-    <label>Neue gespeicherte Basis<select aria-label="Neue Live-Basis" disabled={busy||running||!!status.pending_basis} value={id} onChange={e=>{setId(e.target.value);setUpdate(null);setSetup(null);setVerified(false)}}><option value="">Bitte auswählen</option>{ids.map(v=><option key={v} value={v}>{v}</option>)}</select></label>
-    <button className="secondary" disabled={busy||running||!id||id===status.baseline_id} onClick={()=>void work(prepareUpdate)}>Basiswechsel prüfen</button>
-    {update&&<><p>{update.resume?'Offenen Basiswechsel fortsetzen':'Geprüfter Basiswechsel'}: {update.previous_baseline} → {update.next_baseline}</p><p>{count(update.files.length)} Dateien archivieren · {count(update.source_files)} Originaldateien frisch prüfen.</p><code>{update.archive_path}</code>
-     <details><summary>Zu archivierende Dateien</summary><ul>{update.files.map(f=><li key={f.path}><code>{f.path}</code></li>)}</ul></details>
-     <label className="mod-switch"><input aria-label="Steam-Prüfung für neue Basis bestätigt" type="checkbox" disabled={blocked} checked={verified} onChange={e=>setVerified(e.target.checked)}/>Ich habe Steams Dateiprüfung vor dem Inhaltsbericht dieser neuen Basis vollständig abgeschlossen.</label>
-     <button className="primary" disabled={blocked||!verified} onClick={()=>void work(()=>start({kind:'update',baseline_id:update.next_baseline,review_id:update.review_id,steam_verified_before_audit:verified}))}>{update.resume?'Geprüften Basiswechsel fortsetzen':'Geprüften Basiswechsel ausführen'}</button>
+    <summary>Change baseline after game update</summary>
+    <p>After Steam verification completes, save a new content report and baseline. The change archives previous Workbench history and mod files. The existing original registry of the new baseline is preserved.</p>
+    {status.pending_basis&&<p>Interrupted change: continue with the intended baseline.</p>}
+    <label>New saved baseline<select aria-label="New live baseline" disabled={busy||running||!!status.pending_basis} value={id} onChange={e=>{setId(e.target.value);setUpdate(null);setSetup(null);setVerified(false)}}><option value="">Please select</option>{ids.map(v=><option key={v} value={v}>{v}</option>)}</select></label>
+    <button className="secondary" disabled={busy||running||!id||id===status.baseline_id} onClick={()=>void work(prepareUpdate)}>Check baseline change</button>
+    {update&&<><p>{update.resume?'Continue pending baseline change':'Reviewed baseline change'}: {update.previous_baseline} → {update.next_baseline}</p><p>{count(update.files.length)} files to archive · {count(update.source_files)} original files to verify again.</p><code>{update.archive_path}</code>
+     <details><summary>Files to archive</summary><ul>{update.files.map(f=><li key={f.path}><code>{f.path}</code></li>)}</ul></details>
+     <label className="mod-switch"><input aria-label="Steam verification for new baseline confirmed" type="checkbox" disabled={blocked} checked={verified} onChange={e=>setVerified(e.target.checked)}/>I fully completed Steam file verification before creating the content report for this new baseline.</label>
+     <button className="primary" disabled={blocked||!verified} onClick={()=>void work(()=>start({kind:'update',baseline_id:update.next_baseline,review_id:update.review_id,steam_verified_before_audit:verified}))}>{update.resume?'Continue reviewed baseline change':'Execute reviewed baseline change'}</button>
     </>}
    </details>}
    {status.initialized&&!status.pending_basis&&<div className="mod-actions">
-    <button className="secondary" disabled={busy||running||!settings||status.recovery_required} onClick={()=>void work(()=>prepare('apply'))}>Live-Dateivorschau berechnen</button>
-    <button className="secondary" disabled={busy||running} onClick={()=>void work(()=>prepare('restore'))}>Live-Restore prüfen</button>
-    {!settings&&<span>Zuerst unten einen Änderungsplan berechnen.</span>}
-    {status.recovery_required&&<span>Unterbrochene Transaktion: zuerst Live-Restore prüfen.</span>}
+    <button className="secondary" disabled={busy||running||!settings||status.recovery_required} onClick={()=>void work(()=>prepare('apply'))}>Calculate live file preview</button>
+    <button className="secondary" disabled={busy||running} onClick={()=>void work(()=>prepare('restore'))}>Check live restore</button>
+    {!settings&&<span>Calculate a change plan below first.</span>}
+    {status.recovery_required&&<span>Interrupted transaction: check live restore first.</span>}
    </div>}
   </>}
-  {busy&&<p role="status">Live-Anfrage wird vorbereitet …</p>}
+  {busy&&<p role="status">Preparing live request …</p>}
   {error&&<div role="alert" className="craft-error">{error}</div>}
   {review&&request&&<div className="recovery-review">
-   <strong>{review.action==='apply'?'Dateiänderungen für Live-Apply':'Dateiänderungen für Live-Restore'}</strong><code>{review.game_path}</code>
-   <p>{count(review.protected_source_files)} Originaldateien werden vor dem Schreiben erneut geprüft. Große Installationen benötigen dafür einige Minuten.</p>
-   {(review.preserved_foreign_files??0)>0&&<p>{count(review.preserved_foreign_files!)} bestätigte fremde Zusatzdateien bleiben erhalten; auch deren Hashes und Bestätigung müssen weiterhin passen.</p>}
-   <div className="mod-files">{review.files.map((f,i)=><div key={`${f.path}-${i}`}><strong>{f.path}</strong><span>{f.action==='create'?'Neu':f.action==='remove'?'Entfernen':'Ersetzen'}</span><code>Vorher: {f.before_sha256??'nicht vorhanden'}<br/>Nachher: {f.after_sha256??'nicht vorhanden'}</code></div>)}</div>
-   {review.files.length===0&&!review.recovery_required?<p>Keine Dateiänderungen erforderlich.</p>:<button className="primary" disabled={blocked} onClick={()=>void work(()=>start({kind:'execute',request,review_id:review.review_id}))}>{review.action==='apply'?'Geprüften Mod auf Spiel anwenden':'Geprüften Live-Restore ausführen'}</button>}
+   <strong>{review.action==='apply'?'File changes for live apply':'File changes for live restore'}</strong><code>{review.game_path}</code>
+   <p>{count(review.protected_source_files)} Original files are checked again before writing. This takes a few minutes for large installations.</p>
+   {(review.preserved_foreign_files??0)>0&&<p>{count(review.preserved_foreign_files!)} approved third-party additional files are preserved; their hashes and approval must still match.</p>}
+   <div className="mod-files">{review.files.map((f,i)=><div key={`${f.path}-${i}`}><strong>{f.path}</strong><span>{f.action==='create'?'New':f.action==='remove'?'Remove':'Replace'}</span><code>Before: {f.before_sha256??'absent'}<br/>After: {f.after_sha256??'absent'}</code></div>)}</div>
+   {review.files.length===0&&!review.recovery_required?<p>No file changes required.</p>:<button className="primary" disabled={blocked} onClick={()=>void work(()=>start({kind:'execute',request,review_id:review.review_id}))}>{review.action==='apply'?'Apply reviewed mod to game':'Execute reviewed live restore'}</button>}
   </div>}
   {job&&<div className="recovery-review" role="status">
-   {running?<><strong>Live-Vorgang läuft · Quellen prüfen und Transaktion abschließen</strong><p>Währenddessen kann das Spiel nicht gestartet werden. Ein Abbruch kann eine wiederherstellbare Transaktion hinterlassen.</p><button className="secondary" disabled={busy} onClick={()=>void work(()=>api.liveCancel(session,job.id))}>Live-Vorgang abbrechen</button></>:job.phase==='complete'?<><strong>Live-Vorgang abgeschlossen.</strong>{job.result&&'registry_sha256' in job.result&&<><p>{job.result.action==='restore'?'Original-Registry wiederhergestellt.':job.result.action==='basis_update'?'Neue Basis aktiv; bisherige Workbench-Dateien archiviert.':'Mod registriert; Originalarchive erhalten.'}</p><code>Registry SHA-256: {job.result.registry_sha256}</code></>}</>:<><strong>{job.phase==='cancelled'?'Live-Vorgang abgebrochen':'Live-Vorgang fehlgeschlagen'}</strong><p>{job.error}</p><p>Status erneut laden und gegebenenfalls Basiswechsel fortsetzen oder Live-Restore prüfen. Kein automatischer erneuter Schreibversuch.</p></>}
+   {running?<><strong>Live operation running · Checking sources and completing transaction</strong><p>The game cannot start during this operation. Cancellation may leave a recoverable transaction.</p><button className="secondary" disabled={busy} onClick={()=>void work(()=>api.liveCancel(session,job.id))}>Cancel live operation</button></>:job.phase==='complete'?<><strong>Live operation completed.</strong>{job.result&&'registry_sha256' in job.result&&<><p>{job.result.action==='restore'?'Original registry restored.':job.result.action==='basis_update'?'New baseline active; previous Workbench files archived.':'Mod registered; original archives preserved.'}</p><code>Registry SHA-256: {job.result.registry_sha256}</code></>}</>:<><strong>{job.phase==='cancelled'?'Live operation cancelled':'Live operation failed'}</strong><p>{job.error}</p><p>Reload status and, if needed, continue the baseline change or check live restore. Writes are not retried automatically.</p></>}
   </div>}
  </section>;
 }

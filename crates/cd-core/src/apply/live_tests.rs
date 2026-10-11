@@ -174,7 +174,7 @@ fn stale_reviews_foreign_files_and_changed_sources_refuse_without_writes() {
         f.run(&req, &stale.review_id)
             .unwrap_err()
             .to_string()
-            .contains("veraltet")
+            .contains("stale")
     );
     let fresh = f.review(&req);
     fs::write(f.dir.path().join("foreign.dll"), b"foreign").unwrap();

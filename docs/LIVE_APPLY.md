@@ -1,142 +1,66 @@
-# Live-B0 – Einrichtung, Apply und Restore (v0.4.8)
+# Live B0 – Setup, Apply and Restore (v0.4.8)
 
-Der Desktop und die CLI besitzen jetzt einen Live-Schreibpfad. Er ist bei der
-Installation des Nutzers **nicht eingerichtet und wurde dort nicht ausgeführt**.
-Die Entwicklung und Abnahme dieser Version verändern oder sperren das laufende
-Spiel nicht. Manuelle Spieltests bleiben auf Nutzerwunsch bis zum Abschluss aller
-Entwicklungsphasen zurückgestellt.
+The desktop and the CLI now have a live writing path. It is not set up during the installation of the user ** and was not executed there**. The development and adoption of this version does not alter or block the current game. Manuals in-game tests remain on user request until the completion of all development phases.
 
-## Vertrauensmodell
+## Model of trust
 
-Ein gespeicherter Cachebericht wird nicht automatisch als Vanilla zugelassen.
-Für die Einrichtung muss der Nutzer ausdrücklich bestätigen, dass Steams
-Dateiprüfung **vor dem ausgewählten Inhaltsbericht** vollständig beendet wurde.
-Fehlt diese tatsächliche Voraussetzung, später Steam prüfen lassen und danach
-einen neuen vollständigen Bericht sowie Ausgangsstand erstellen. Die Workbench
-führt Steam Verify nicht selbst aus und bestätigt diesen Schritt niemals selbst.
+A saved cache report is not automatically allowed as a vanilla. For the setup, the user must explicitly confirm that Steams file check ** was completely terminated before the selected content report**. If this actual requirement is missing, have Steam checked later and then create a new complete report as well as baseline. The Workbench does not run Steam Verify itself and never confirms this step itself.
 
-Das ist eine Nutzerbestätigung der Herkunft, keine unabhängige kryptografische
-Zertifizierung der Steam-Depotlisten. Die vorhandenen Berichtsfelder
-`certified_vanilla` und `can_apply` bleiben unverändert `false`. Live-B0 prüft
-zusätzlich Bericht, Registry-Kopie, bekannten Lesebuild, Installationspfad und
-Dateibestand. Unmittelbar vor Einrichtung, Apply oder Restore werden **alle
-erfassten Originaldateien außer der separat behandelten Registry** vollständig
-SHA-256-geprüft, während ihre Dateihandles gegen Schreiben und Ersetzen schützen.
-Die Registry wird gegen die geprüfte Sicherung und eigene Historie geprüft.
+This is a user confirmation of the origin, not an independent cryptographic certification of the Steam deposit lists. The existing reporting fields `certified_vanilla` and `can_apply` remain unchanged `false`. Live-B0 additionally checks report, registry copy, known read build, installation path and file inventory. Immediately before setup, Apply or Restore, ** all captured original files except the separately handled registry** are fully SHA-256-checked, while their file handles protect against writing and replacing. The registry is checked against the tested backup and own history.
 
-Frühere Dokumente verlangten einen noch nicht verfügbaren unabhängigen
-Vanilla-Nachweis. Der implementierte Zulassungsweg ist konkret die oben erklärte
-Steam-Nutzerbestätigung plus vollständige erneute Inhaltsprüfung. Ein bloßer
-Checkbox-Klick ohne tatsächlich vorausgegangene Steam-Prüfung erfüllt die
-Voraussetzung nicht.
+Previous documents required an as yet unavailable independent vanilla proof. The implemented admission path is specifically the Steam user confirmation explained above plus complete re-checking of content. A mere checkbox click without actually previous Steam check does not meet the requirement.
 
-## Desktop-Ablauf für den späteren Test
+## Desktop workflow for the later test
 
-1. Spiel beenden. **Modwerkstatt → Live-Anwendung & Restore → Live-Status laden**.
-2. Einen passenden gespeicherten Ausgangsstand auswählen und **Live-Einrichtung
-   prüfen**. Pfad, Berichtdatum und Dateianzahl prüfen. Steam-Prüfung nur bestätigen,
-   wenn sie vor genau diesem Bericht abgeschlossen wurde.
-3. **Live-Basis prüfen und einrichten** erstellt nach der Inhaltsprüfung die
-   Registry-Sicherung im Transaktionsordner. Es wird noch kein Mod angewendet.
-4. B1–B3 einstellen und **Vorschau berechnen**. Anschließend oben **Live-Dateivorschau
-   berechnen**. Die Vorschau zeigt tatsächliche Gruppen-IDs, Registry-Ersetzung und
-   gegebenenfalls Entfernung bisheriger eigener Gruppen mit Vorher-/Nachherhashes.
-5. **Geprüften Mod auf Spiel anwenden** prüft Quellen, Prozessstatus, Historie und
-   Vorschau erneut. Erst danach werden die vorbereiteten Änderungen geschrieben.
-6. **Live-Restore prüfen → Geprüften Live-Restore ausführen** nimmt eigene Änderungen
-   zurück. Es ist kein Modplan erforderlich. Bei einer unterbrochenen Transaktion
-   wird zuerst deren tatsächlicher Commitzustand aufgelöst und dann zurückgesetzt.
+1. Close the game. **Mod Workshop → Live application & restore → Load live status**.
+2. Select a suitable stored baseline and **Live setup
+Check **. Check path, report date and file number. Confirm Steam exam only if it was completed before this exact report.
+3. **Check and set up the live base** creates the
+Registry-backup in the transaction folder. No mod is used yet.
+4. Set B1–B3 and calculate **Preview**. Next up **Live file preview
+Calculate **. The preview shows actual group IDs, registry replacement and, if necessary, removal of previous own groups with before/after hashes.
+5. **Apply tested mod to game** checks sources, process status, history and
+Preview again. Only then will the prepared changes be written.
+6. **Check Live-Restore → Run Tested Live-Restore** takes own changes
+back. No modplan is required. When a transaction is interrupted, its actual commit state is first resolved and then reset.
 
-Große Installationen brauchen mehrere Minuten für den Inhaltsvergleich. Die App
-bleibt bedienbar; der Live-Auftrag kann abgebrochen werden. Ein Abbruch während des
-Schreibens kann eine wiederherstellbare Transaktion hinterlassen. Deshalb danach
-Status und Restore prüfen; es gibt keinen automatischen erneuten Schreibversuch.
-Ein bereits erfolgreich abgeschlossener Vorgang wird durch eine verspätete
-Abbruchanfrage nicht nachträglich als erfolglos dargestellt. Nach Ansichtswechsel
-zeigt **Live-Status laden** den laufenden Auftrag derselben App-Sitzung wieder an.
+Large installations take several minutes to compare content. The app remains operable; The live job can be cancelled. A cancellation during writing can leave a recoverable transaction. Therefore, check status and restore afterwards; There is no automatic rewrite attempt. An already successfully completed process is not subsequently presented as unsuccessful by a delayed cancellation request. After a change of view, **Load Live status** shows the current job of the same app session again.
 
-## Schutz und Ablage
+## Protection and storage
 
-- `.local/live/<Installationspfad-Hash>/admission.json`: ausdrücklich bestätigte
-  Herkunft, Ausgangsstand-ID, Installationspfad sowie Bericht-/Registryhash.
-  Dieser Datensatz wird vor der ersten Live-Sicherung im Projekt veröffentlicht,
-  damit eine unterbrochene Einrichtung mit derselben Basis fortgesetzt werden kann.
-  Er bedeutet allein noch keinen erfolgreichen Inhaltsvergleich oder Backupabschluss.
-- `<Spiel>/.workbench/baseline.papgt`: geprüfte Original-Registry. Original-PAZ/PAMT
-  werden erhalten und nicht gepatcht. Staging und Journal liegen ebenfalls hier,
-  damit atomare Umbenennungen auf demselben Dateisystem bleiben.
-- `<Spiel>/.workbench/transactions/<id>/intent.json` und `complete.json`: unveränderliche
-  Vorher-/Nachherzustände mit Hashes und Commitentscheidung. Neue Intents enthalten
-  `started_at` als UTC-Epochsekunden; alte Journale ohne diesen Wert bleiben lesbar.
+- `.local/live/<Installationspfad-Hash>/admission.json`: expressly confirmed
+Origin, baseline-ID, installation path and report/registry hash. This dataset will be published before the first live backup in the project so that a discontinued setup can continue with the same base. It alone does not mean a successful content comparison or backup completion.
+- `<Spiel>/.workbench/baseline.papgt`: Verified original registry. Original PAZ/PAMT
+are received and not patched. Staging and journal are also here, so that atomic renamings remain on the same file system.
+- `<Spiel>/.workbench/transactions/<id>/intent.json` and `complete.json`: unchangeable
+Before/after states with hashes and commit decision. New intents contain `started_at` as UTC epoch seconds; Old journals without this value remain readable.
 
-Vor dem Lesen großer Archive werden alle bekannten EXE-Pfade geöffnet und gegen
-einen neuen Start gehalten. Bereits laufende Prozesse werden über Namen und
-tatsächlichen Pfad erkannt. Fehler bei der Prozessprüfung verweigern den Vorgang.
-Quell-, Elternverzeichnis- und Backupsperren bleiben über die gesamte Transaktion
-erhalten. Abbruch/Prozessstatus werden beim Hashen spätestens etwa alle 250 ms
-zwischen Leseoperationen geprüft. Es gibt keinen ungeschützten Nicht-Windows-Fallback.
-Die Aussage umfasst die erfassten EXEs innerhalb der Installation; beliebige externe,
-umbenannte Kopien oder unbekannte Startmechanismen werden nicht als getestet behauptet.
+Before reading large archives, all known EXE paths are opened and held against a new start. Already running processes are recognized by name and actual path. Process verification errors refuse the process. Source, parental directory and backup locks are maintained throughout the transaction. Abort/process status are checked during hashing at the latest about all 250 ms between read operations. There is no unprotected non-Windows fallback. The statement includes the recorded EXEs within the installation; Any external, renamed copies or unknown launch mechanisms are not claimed to be tested.
 
-Eine separate, rein lesende Ansicht akzeptiert eine eigene modifizierte Registry
-nur, wenn Originalbackup, vollständige Historie und tatsächliche Overlaydateien
-sie erklären. Datenbank, Herstellung und Modbuilder lesen dann die Originalgruppen;
-ein Reapply multipliziert keine bereits geänderten Werte erneut. Diese Ansicht
-nimmt keine Start-/Quellsperren und kann keine Transaktionen ausführen.
+A separate, read-only view only accepts its own modified registry if original backup, full history, and actual overlay files explain it. Database, manufacturing and modbuilder then read the original groups; A reapply does not multiply already changed values again. This view does not take start/source locks and cannot execute transactions.
 
-## Basiswechsel nach Steam-Update oder Dateiprüfung
+## Basic change after Steam update or file verification
 
-Seit v0.4.9 zeigt **Basis nach Spielupdate wechseln** einen separaten Vorgang:
+Since v0.4.9, **Change base after game update** shows a separate process:
 
-1. Nach dem Spielen Steam-Dateiprüfung abschließen. Die Registry muss bereits der
-   Original-Registry der neuen Basis entsprechen. Ein alter Restore ist kein
-   Reparaturweg für einen neuen Build.
-2. Dateiliste und vollständigen Inhaltsbericht erstellen, Bericht exportieren
-   und neuen Ausgangsstand speichern. Eigene Dateien werden anhand der intakten
-   Zulassung und Transaktionshistorie separat ausgewiesen; fremde Dateien bleiben
-   sichtbar. Eine aktive eigene Mod-Registry verhindert einen Vanilla-Bericht.
-3. Neue Basis auswählen und **Basiswechsel prüfen**. Die Vorschau nennt alte/neue
-   Basis, alle zu archivierenden Dateien und den Zielordner. Herkunftsbestätigung
-   erneut ausdrücklich setzen. Unbekannte Leseschemata werden verweigert.
-4. Bei beendetem Spiel ausführen. Alle neuen Originalquellen werden unter
-   Start-/Quellschutz frisch gehasht. Die neue Registry bleibt währenddessen
-   gegen Änderungen gehalten und wird vom Basiswechsel niemals geschrieben.
-5. Bisherige eigene Gruppen und der komplette private Transaktionsordner werden
-   unverändert nach `<Spiel>/.workbench-history/<Nummer>/` umbenannt. Die Vorschau
-   bindet Hashes sämtlicher archivierter Dateien. Keine alten Originalarchive
-   werden kopiert und keine Archivstände gelöscht. Danach entsteht eine neue
-   Registry-Sicherung mit leerer Transaktionshistorie; einen Mod anschließend
-   mit aktuellen Einstellungen neu berechnen und ausdrücklich anwenden.
+1. Complete Steam file verification after playing. The registry must already
+Original registry correspond to the new base. An old restore is not a repair path for a new build.
+2. Create File List and Full Content Report, Export Report
+and new baseline. own files are shown separately based on the intact authorization and transaction history; Foreign files remain visible. An active own mod registry prevents a vanilla report.
+3. Select new base and check **base change**. The preview calls old/new
+Base, all files to be archived and the destination folder. Once again expressly state the confirmation of origin. Unknown reading schemes are denied.
+4. When the game is over, execute. All new original sources are available under
+Start/source protection freshly hashed. The new registry, meanwhile, is held against changes and is never written by the base change.
+5. Previous own groups and the complete private transaction folder
+unchanged after `<Spiel>/.workbench-history/<Nummer>/` renamed. The preview binds hashes of all archived files. No old original archives are copied and no archive statuses are deleted. After that, a new registry backup is created with an empty transaction history; then recalculate a mod with current settings and apply it explicitly.
 
-Das unveränderliche Projektprotokoll liegt unter
-`.local/live/<Installationskennung>/updates/<Nummer>/{intent.json,complete.json}`.
-Der erste Zulassungsdatensatz wird nicht überschrieben. Ein offener Vorgang
-blockiert Apply/Restore und Inhaltsbericht und bietet das Fortsetzen mit exakt
-seiner vorgesehenen Basis an. Deterministische `.part`-Dateien ermöglichen auch
-Fortsetzung einer unterbrochenen Protokollveröffentlichung. Eine teilweise neu
-angelegte Registry-Sicherung wird nur bei passendem Inhalt vervollständigt.
+The immutable project protocol is below `.local/live/<Installationskennung>/updates/<Nummer>/{intent.json,complete.json}`. The first registration record shall not be overwritten. An open process blocks Apply/Restore and Content Report and offers to resume with exactly its intended base. Deterministic `.part` files also allow continuation of an interrupted protocol release. A partially newly created registry-backup is only completed with suitable content.
 
-Archivgruppen werden vor ihrer Historie verschoben. Windows erlaubt hier keine
-Umbenennung mit offenen Kinddateien: Jeder Baum wird vorher und nachher gegen
-seine Hashliste geprüft; anschließend bleiben alle Archivdateien bis zum
-Abschluss gegen Schreiben/Löschen gehalten. Gleichzeitige Änderungen anderer
-Programme sind kein unterstützter Arbeitsablauf und führen bei Abweichungen
-zum Abbruch. Vollständige Originalquellen und neue Registry bleiben durchgehend
-geschützt. Kollidierende Gruppen, Fremdinhalte, Links, beschädigte Sicherungen
-und geänderte eigene Moddateien werden verweigert.
+Archive groups are moved before their history. Windows does not allow renaming with open child files: each tree is checked against its hashlist before and after; Afterwards, all archive files remain held against writing/deletion until completion. Simultaneous changes to other programs are not a supported workflow and lead to discontinuation in the event of deviations. Full original sources and new registries remain protected throughout. Colliding groups, third-party content, links, damaged backups and modified own mod files are denied.
 
-Die allgemeine Inventur liest weiterhin keine PAZ-Inhalte. Die Zuordnung
-**Eigene Workbench-Dateien** ist ein Metadatenbefund aus eigener Historie und
-keine erneute Inhaltsprüfung. Originale Depotdateien können niemals durch diese
-Zuordnung aus dem Originalvergleich verschwinden. Bekannte Archive werden in
-späteren Inventuren über Namen, Größen und Struktur geprüft.
+The general inventory still does not read PAZ content. The assignment **Own Workbench files** is a metadata finding from your own history and not a re-checking of content. Original repositories can never disappear from the original comparison by this assignment. Well-known archives are checked in later inventories about names, sizes and structure.
 
-Seit v0.4.10 können genau geprüfte zusätzliche Dateien ausdrücklich zum
-unveränderten Beibehalten bestätigt werden. Sie bleiben fremde Dateien und
-werden vor Live-Schreibvorgängen frisch geprüft und geschützt. Modifizierte
-Originaldateien und fremde Registry-Registrierungen bleiben gesperrt.
-[Unterstützter Umgang, Widerruf und Grenzen](FOREIGN_FILES.md). Echte Stromausfälle und Spielwirkung bleiben
-ungeprüft; manuelle Spieltests sind bis nach allen Entwicklungsphasen verschoben.
+Since v0.4.10, carefully checked additional files can be explicitly confirmed for unchanged retention. They remain foreign files and are freshly checked and protected from live writing. Modified original files and foreign registry registrations remain blocked. [Assisted handling, revocation and limits](FOREIGN_FILES.md). Real power outages and game effect remain unchecked; Manual in-game tests are postponed until after all development phases.
 
 ## CLI
 
@@ -150,8 +74,4 @@ cargo run --release -p cd-cli --locked -- live-preview .local/live-request.json
 cargo run --release -p cd-cli --locked -- live-execute .local/live-request.json --review-id <Vorschau-ID>
 ```
 
-Request-JSON: `{"action":"restore"}` oder
-`{"action":"apply","settings":{"trust_multiplier":2}}`. Nicht angegebene
-Modparameter verwenden dieselben unveränderten Standardwerte wie die Modvorschau.
-CLI-Schreibbefehle haben dieselben Herkunfts-, Vorschau-, Quell- und Prozessprüfungen.
-Die Desktop-Version bietet zusätzlich den kooperativen Abbruchknopf.
+Request-JSON: `{"action":"restore"}` or `{"action":"apply","settings":{"trust_multiplier":2}}`. Unspecified mod parameters use the same unchanged default values as the mod preview. CLI write commands have the same origin, preview, source and process checks. The desktop version also offers the cooperative cancellation button.

@@ -166,14 +166,12 @@ fn initial(policy: &PathPolicy, game: &Path) -> Result<Admission> {
     let mut raw = Vec::new();
     fs::File::open(path)?.take(16385).read_to_end(&mut raw)?;
     if raw.len() > 16384 {
-        return Err(bad("Live-Einrichtung überschreitet das Größenlimit"));
+        return Err(bad("Live setup exceeds the size limit"));
     }
     let admission: Admission = serde_json::from_slice(&raw)?;
     let value = evidence_kind(policy, &root, &admission.baseline_id, false)?;
     if serde_json::to_vec(&admission)? != serde_json::to_vec(&value.admission)? {
-        return Err(bad(
-            "Live-Einrichtung passt nicht zur gesicherten Ausgangsbasis",
-        ));
+        return Err(bad("Live setup does not match the saved baseline"));
     }
     Ok(admission)
 }
@@ -186,9 +184,7 @@ fn load(policy: &PathPolicy, game: &Path) -> Result<Evidence> {
     }
     let mut value = evidence(policy, game, &state.active.baseline_id)?;
     if value.admission != state.active {
-        return Err(bad(
-            "Aktive Basis stimmt nicht mit dem Ausgangsstand überein",
-        ));
+        return Err(bad("Active baseline does not match the saved baseline"));
     }
     value.archived_files = state.archived_files();
     value.archived_dirs = state.archived_dirs();
@@ -223,12 +219,12 @@ fn layout(e: &Evidence, owned: &[String]) -> Result<()> {
             let item = item?;
             count += 1;
             if count > 16384 {
-                return Err(bad("Installationsbestand überschreitet das Limit"));
+                return Err(bad("Installation inventory exceeds the limit"));
             }
             let name = item
                 .file_name()
                 .into_string()
-                .map_err(|_| bad("Ungültiger Installationspfad"))?;
+                .map_err(|_| bad("Invalid installation path"))?;
             let path = if prefix.is_empty() {
                 name.clone()
             } else {
@@ -243,7 +239,7 @@ fn layout(e: &Evidence, owned: &[String]) -> Result<()> {
             #[cfg(not(windows))]
             let linked = meta.file_type().is_symlink();
             if linked {
-                return Err(bad(format!("Verknüpfter Installationspfad: {path}")));
+                return Err(bad(format!("Linked installation path: {path}")));
             }
             if prefix.is_empty() && path == ".workbench" {
                 transaction::plain(&item.path(), true)?;
@@ -253,14 +249,14 @@ fn layout(e: &Evidence, owned: &[String]) -> Result<()> {
                         file.file_name().to_str(),
                         Some("lock" | "baseline.papgt" | "baseline.part" | "transactions")
                     ) {
-                        return Err(bad("Fremde Dateien im Workbench-Transaktionsordner"));
+                        return Err(bad("Third-party files in the Workbench transaction folder"));
                     }
                 }
                 continue;
             }
             if prefix.is_empty() && owned.contains(&path) {
                 if !meta.is_dir() {
-                    return Err(bad("Eigene Overlaygruppe ist kein Ordner"));
+                    return Err(bad("Owned overlay group is not a folder"));
                 }
                 continue; // exact contents are verified by the transaction kernel
             }
@@ -268,31 +264,31 @@ fn layout(e: &Evidence, owned: &[String]) -> Result<()> {
                 queue.push((item.path(), path));
             } else if meta.is_file() && expected.contains_key(&path) {
                 if path != "meta/0.papgt" && expected[&path] != meta.len() {
-                    return Err(bad(format!("Dateigröße geändert: {path}")));
+                    return Err(bad(format!("File size changed: {path}")));
                 }
                 found.insert(path);
             } else {
                 return Err(bad(format!(
-                    "Fremder oder unerwarteter Installationspfad: {path}"
+                    "Foreign or unexpected installation path: {path}"
                 )));
             }
         }
     }
     if found.len() != expected.len() {
-        return Err(bad("Originaldateien fehlen; kein Apply oder Restore"));
+        return Err(bad("Original files missing; apply and restore blocked"));
     }
     Ok(())
 }
 fn stopped(cancel: &AtomicBool) -> Result<()> {
     if cancel.load(Ordering::SeqCst) {
         return Err(bad(
-            "Live-Vorgang abgebrochen. Zustand erneut prüfen; eine begonnene Transaktion bleibt wiederherstellbar.",
+            "Live operation cancelled. Check status again; any started transaction remains recoverable.",
         ));
     }
     match super::guard::game_running()? {
         false => Ok(()),
         true => Err(bad(
-            "Crimson Desert läuft. Live-Einrichtung, Apply und Restore erst nach dem Spielen starten.",
+            "Crimson Desert is running. Close the game before live setup, apply or restore.",
         )),
     }
 }
@@ -302,14 +298,14 @@ pub fn setup_preview(policy: &PathPolicy, game: &Path, id: &str) -> Result<Setup
     if path.try_exists()? {
         if load(policy, game)?.identity()? != e.identity()? {
             return Err(bad(
-                "Andere Live-Basis bereits eingerichtet; keine automatische Überschreibung",
+                "Another live baseline is already configured; no automatic overwrite",
             ));
         }
     } else {
         let current = crate::installation::baseline::inspect(policy, game, id)?;
         if current.current_state != "metadata_match" {
             return Err(bad(
-                "Installation weicht vom Ausgangsstand ab. Vor Einrichtung Steam-Dateiprüfung und neuen Inhaltsbericht erstellen.",
+                "Installation differs from the baseline. Complete Steam file verification and create a new content report before setup.",
             ));
         }
         if e.admission.game.join(".workbench").try_exists()? {
@@ -322,7 +318,7 @@ pub fn setup_preview(policy: &PathPolicy, game: &Path, id: &str) -> Result<Setup
     if crate::fingerprint::hash_file(&e.admission.game.join("meta/0.papgt"))?.1
         != e.admission.registry_sha256
     {
-        return Err(bad("Einrichtung benötigt die originale Registry"));
+        return Err(bad("Setup requires the original registry"));
     }
     Ok(SetupPreview {
         review_id: e.identity()?,
@@ -332,7 +328,7 @@ pub fn setup_preview(policy: &PathPolicy, game: &Path, id: &str) -> Result<Setup
         total_bytes: e.sources.iter().map(|f| f.bytes).sum::<u64>().to_string(),
         audited_at: e.audited_at,
         preserved_foreign_files: e.foreign_files.len(),
-        provenance: "Nutzerbestätigung der Steam-Dateiprüfung vor diesem Inhaltsbericht; anschließend frischer SHA-256-Vergleich unter Start- und Quellschutz. Keine unabhängige Herkunftszertifizierung.",
+        provenance: "User confirmed Steam file verification before this content report; followed by a fresh SHA-256 comparison with launch and source protection. No independent certification of origin.",
     })
 }
 pub fn setup(
@@ -345,17 +341,17 @@ pub fn setup(
 ) -> Result<Status> {
     if !steam_verified_before_audit {
         return Err(bad(
-            "Bestätigung fehlt: Steam-Dateiprüfung wurde vor dem gewählten Inhaltsbericht abgeschlossen.",
+            "Confirmation missing: Steam file verification was completed before the selected content report.",
         ));
     }
     stopped(cancel)?;
     let preview = setup_preview(policy, game, id)?;
     if !digest(review_id) || preview.review_id != review_id {
-        return Err(bad("Live-Einrichtungsvorschau veraltet; erneut prüfen"));
+        return Err(bad("Live setup preview is stale; check again"));
     }
     let e = evidence(policy, game, id)?;
     if e.identity()? != review_id {
-        return Err(bad("Einrichtungsvorschau inzwischen geändert"));
+        return Err(bad("Setup preview changed in the meantime"));
     }
     let path = policy.check_cache(&admission_path(&e.admission.game))?;
     if !path.try_exists()? {
@@ -369,7 +365,7 @@ pub fn setup(
         layout(&e, &[])
     })?;
     if !session.restore_review()?.files.is_empty() {
-        return Err(bad("Einrichtung erwartet unveränderte Registry"));
+        return Err(bad("Setup requires an unchanged registry"));
     }
     drop(session);
     status(policy, game)
@@ -482,7 +478,7 @@ pub fn execute(
 ) -> Result<Receipt> {
     stopped(cancel)?;
     if !digest(expected) {
-        return Err(bad("Gültige Live-Vorschau erforderlich"));
+        return Err(bad("A valid live preview is required"));
     }
     let e = load(policy, game)?;
     // Table bytes are rebuilt before exclusive source handles are acquired.
@@ -531,7 +527,7 @@ fn execute_built(
     let reviewed = review(e, request, &state, changes)?;
     if reviewed.review_id != expected {
         return Err(bad(
-            "Live-Vorschau veraltet. Keine Änderung; erneut berechnen.",
+            "Live preview is stale. Nothing changed; calculate it again.",
         ));
     }
     if let Some(plan) = &plan {
@@ -554,7 +550,7 @@ fn execute_built(
                 || !after.files.is_empty()))
     {
         return Err(bad(
-            "Live-Vorgang nicht vollständig abgeschlossen; Zustand erneut prüfen",
+            "Live operation not fully completed; check status again",
         ));
     }
     Ok(Receipt {

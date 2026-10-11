@@ -8,13 +8,13 @@ fn field<'a>(o: &'a ObjectBlock, name: &str) -> Result<&'a DecodedField> {
     o.fields
         .iter()
         .find(|f| f.name == name)
-        .ok_or_else(|| bad(format!("Save-Feld fehlt: {name}")))
+        .ok_or_else(|| bad(format!("Save field missing: {name}")))
 }
 fn field_mut<'a>(o: &'a mut ObjectBlock, name: &str) -> Result<&'a mut DecodedField> {
     o.fields
         .iter_mut()
         .find(|f| f.name == name)
-        .ok_or_else(|| bad(format!("Save-Feld fehlt: {name}")))
+        .ok_or_else(|| bad(format!("Save field missing: {name}")))
 }
 fn number(o: &ObjectBlock, name: &str) -> Result<u64> {
     match &field(o, name)?.value {
@@ -24,13 +24,13 @@ fn number(o: &ObjectBlock, name: &str) -> Result<u64> {
         FieldValue::Scalar(ScalarValue::U64(n)) => Ok(*n),
         FieldValue::Scalar(ScalarValue::I32(n)) if *n >= 0 => Ok(*n as u64),
         FieldValue::Scalar(ScalarValue::I64(n)) if *n >= 0 => Ok(*n as u64),
-        _ => Err(bad(format!("Kein gültiger Zähler: {name}"))),
+        _ => Err(bad(format!("Invalid counter: {name}"))),
     }
 }
 fn set_number(o: &mut ObjectBlock, name: &str, n: u64) -> Result<()> {
     let f = field_mut(o, name)?;
     if !f.present {
-        return Err(bad(format!("Zähler nicht gesetzt: {name}")));
+        return Err(bad(format!("Counter not set: {name}")));
     }
     let value = match &f.value {
         FieldValue::Scalar(ScalarValue::U32(_)) if n <= u32::MAX as u64 => {
@@ -43,7 +43,7 @@ fn set_number(o: &mut ObjectBlock, name: &str, n: u64) -> Result<()> {
         FieldValue::Scalar(ScalarValue::I64(_)) if n <= i64::MAX as u64 => {
             ScalarValue::I64(n as i64)
         }
-        _ => return Err(bad(format!("Unbestätigte Zählerbreite: {name}"))),
+        _ => return Err(bad(format!("Unverified counter width: {name}"))),
     };
     f.value = FieldValue::Scalar(value);
     Ok(())
@@ -53,7 +53,7 @@ fn list<'a>(o: &'a ObjectBlock, name: &str) -> Result<&'a [ObjectBlock]> {
         FieldValue::ObjectList {
             count, elements, ..
         } if *count as usize == elements.len() => Ok(elements),
-        _ => Err(bad(format!("Ungültige Liste: {name}"))),
+        _ => Err(bad(format!("Invalid list: {name}"))),
     }
 }
 // Ported from crimson-rs's validated length-changing list editor. The codec
@@ -72,7 +72,7 @@ fn update_count(header: &mut [u8], variant: &str, count: u32) -> Result<()> {
         "zero4_count_u32" => (18, 4, 4),
         "ones_then_count" => (21, 4, 4),
         "one_count_u16be" => (19, 1, 2),
-        _ => return Err(bad("Unbestätigter Listenheader")),
+        _ => return Err(bad("Unverified list header")),
     };
     let off = header
         .len()
@@ -80,11 +80,11 @@ fn update_count(header: &mut [u8], variant: &str, count: u32) -> Result<()> {
         .ok_or_else(|| bad("Liste zu kurz"))?
         + offset;
     if width == 2 {
-        let n = u16::try_from(count).map_err(|_| bad("Liste zu groß"))?;
+        let n = u16::try_from(count).map_err(|_| bad("List too large"))?;
         header[off..off + 2].copy_from_slice(&n.to_be_bytes());
     } else {
         if width == 3 && count > 0xffffff {
-            return Err(bad("Liste zu groß"));
+            return Err(bad("List too large"));
         }
         header[off..off + width].copy_from_slice(&count.to_le_bytes()[..width]);
     }
@@ -128,12 +128,12 @@ fn decode(bytes: &[u8]) -> Result<(Save, Body, Vec<ObjectBlock>)> {
     let body = Body::parse(&save.body)?;
     let blocks = body.decode_blocks(&save.body);
     if blocks.len() != body.toc.entries.len() {
-        return Err(bad("Spielstand konnte nicht vollständig gelesen werden."));
+        return Err(bad("Save could not be read completely."));
     }
     for b in &blocks {
         visit(b, &mut |o| {
             if !o.undecoded_ranges.is_empty() {
-                Err(bad("Unbekannte Spielstandfelder: keine Änderung."))
+                Err(bad("Unknown save fields: nothing changed."))
             } else {
                 Ok(())
             }
@@ -141,7 +141,7 @@ fn decode(bytes: &[u8]) -> Result<(Save, Body, Vec<ObjectBlock>)> {
     }
     if body.write(&save.body, &blocks)? != save.body {
         return Err(bad(
-            "Spielstand-Roundtrip ist nicht bytegleich: keine Änderung.",
+            "Save roundtrip is not byte-identical: nothing changed.",
         ));
     }
     Ok((save, body, blocks))
@@ -154,7 +154,7 @@ fn clan(blocks: &[ObjectBlock]) -> Result<usize> {
         .map(|(i, _)| i)
         .collect();
     if indices.len() != 1 {
-        return Err(bad("Stallzuordnung ist nicht eindeutig."));
+        return Err(bad("Stable assignment is ambiguous."));
     }
     Ok(indices[0])
 }
@@ -203,7 +203,7 @@ fn supported_name(o: &ObjectBlock) -> bool {
 }
 fn omit_name(o: &mut ObjectBlock) -> Result<()> {
     if !supported_name(o) {
-        return Err(bad("Unbestätigtes Namensformat der Stallvorlage."));
+        return Err(bad("Unverified stable template name format."));
     }
     let Some(f) = o
         .fields
@@ -222,7 +222,7 @@ fn omit_name(o: &mut ObjectBlock) -> Result<()> {
 }
 fn normalize_clone(o: &mut ObjectBlock) -> Result<()> {
     if !clean(o) {
-        return Err(bad("Unbestätigte Stallvorlage: keine Registrierung."));
+        return Err(bad("Unverified stable template: no registration."));
     }
     omit_name(o)?;
     for f in o
@@ -320,13 +320,13 @@ pub(super) fn annotate(bytes: &[u8], mounts: &mut [Mount]) -> Result<()> {
         }
         .into();
         m.reason = if m.owned > 0 {
-            "Bereits im gewählten Spielstand registriert."
+            "Already registered in the selected save."
         } else if matching {
             "Passende Stallvorlage vorhanden."
         } else if blank {
-            "Basiseintrag ohne Tierart-Vorlage möglich. Keine fremde Ausrüstung oder Werte werden übernommen. Herbeirufen und Reiten dieser Variante sind im Spiel noch zu prüfen."
+            "Base entry available without a species template. No equipment or values from another animal are copied. Summoning and riding this variant still require in-game testing."
         } else {
-            "In diesem Spielstand fehlt eine bestätigte Stallvorlage dieser Tierart. Registriere zuerst ein gesundes Tier dieser Gruppe im Spiel und speichere."
+            "This save has no verified stable template for this species. Register a healthy animal of this group in game and save first."
         }
         .into();
     }
@@ -351,7 +351,7 @@ pub(super) fn build(
     if lb.len() != 1 || lb[0].class_name != "SlotSaveData" {
         // Some builds call the top level LobbySaveData.
         if lb.len() != 1 || !lb[0].fields.iter().any(|f| f.name == "_generateNo") {
-            return Err(bad("Lobby-Zähler nicht eindeutig."));
+            return Err(bad("Lobby counter is ambiguous."));
         }
     }
     let ci = clan(&blocks)?;
@@ -364,7 +364,7 @@ pub(super) fn build(
         .iter()
         .any(|o| number(o, "_characterKey").ok() == Some(mount.key as u64))
     {
-        return Err(bad("Dieses Reittier ist bereits registriert."));
+        return Err(bad("This mount is already registered."));
     }
     let available = donors(mercs, mounts);
     let (donor_key, mut added) = if let Some(donor) = available.get(&mount.vehicle) {
@@ -373,11 +373,11 @@ pub(super) fn build(
         (number(donor, "_characterKey")? as u32, clone)
     } else if base::target(mount) {
         let witness = base_witness(mercs, mounts)
-            .ok_or_else(|| bad("Spielstandlayout erlaubt keinen Reittier-Basiseintrag."))?;
+            .ok_or_else(|| bad("Save layout does not allow a mount base entry."))?;
         (0, base::build(witness, mount.key)?)
     } else {
         return Err(bad(
-            "Keine bestätigte Stallvorlage oder unterstützte Basiseintrag-Route.",
+            "No verified stable template or supported base entry route.",
         ));
     };
     let mut max_no = number(&lb[0], "_generateNo")?;
@@ -403,10 +403,10 @@ pub(super) fn build(
     }
     let first = max_no
         .checked_add(1)
-        .ok_or_else(|| bad("Nummernraum erschöpft."))?;
+        .ok_or_else(|| bad("Identifier space exhausted."))?;
     let mut next = first
         .checked_add(1)
-        .ok_or_else(|| bad("Nummernraum erschöpft."))?;
+        .ok_or_else(|| bad("Identifier space exhausted."))?;
     set_number(&mut added, "_characterKey", mount.key as u64)?;
     set_number(&mut added, "_mercenaryNo", first)?;
     // Every embedded item, including nested socket items, gets a fresh global
@@ -416,7 +416,7 @@ pub(super) fn build(
             set_number(o, "_itemNo", next)?;
             next = next
                 .checked_add(1)
-                .ok_or_else(|| bad("Nummernraum erschöpft."))?;
+                .ok_or_else(|| bad("Identifier space exhausted."))?;
         }
         Ok(())
     })?;
@@ -428,7 +428,7 @@ pub(super) fn build(
         header_variant,
     } = &mut f.value
     else {
-        return Err(bad("Stall-Liste fehlt."));
+        return Err(bad("Stable list missing."));
     };
     elements.push(added);
     *count += 1;
@@ -446,13 +446,13 @@ pub(super) fn build(
         header_variant,
     } = &mut field_mut(&mut check[ci], "_mercenaryDataList")?.value
     else {
-        return Err(bad("Neue Stall-Liste ungültig."));
+        return Err(bad("New stable list invalid."));
     };
     if elements.len() != before + 1
         || number(elements.last().unwrap(), "_characterKey")? != mount.key as u64
         || number(elements.last().unwrap(), "_mercenaryNo")? != first
     {
-        return Err(bad("Neue Registrierung stimmt nicht."));
+        return Err(bad("New registration does not match."));
     }
     if donor_key == 0 {
         base::verify(elements.last().unwrap())?;
@@ -464,7 +464,7 @@ pub(super) fn build(
         .any(|f| f.present && (f.name == "_mercenaryName" || ASSIGNMENT.contains(&f.name.as_str())))
     {
         return Err(bad(
-            "Name oder aktive Zuweisung der Vorlage wurde unerwartet kopiert.",
+            "Template name or active assignment was unexpectedly copied.",
         ));
     }
     let mut new_ids = BTreeSet::from([first]);
@@ -472,7 +472,7 @@ pub(super) fn build(
         if o.fields.iter().any(|f| f.name == "_itemNo" && f.present) {
             let n = number(o, "_itemNo")?;
             if n <= max_no || n >= next || !new_ids.insert(n) {
-                return Err(bad("Neue Itemnummern sind nicht eindeutig."));
+                return Err(bad("New item numbers are not unique."));
             }
         }
         Ok(())
@@ -481,9 +481,7 @@ pub(super) fn build(
     *count -= 1;
     update_count(header_bytes, header_variant, *count)?;
     if parsed.write(&candidate_body, &check)? != save.body {
-        return Err(bad(
-            "Bestehender Spielstand wurde verändert: keine Installation.",
-        ));
+        return Err(bad("Existing save was changed: nothing installed."));
     }
     save.body = candidate_body;
     set_number(&mut lb[0], "_generateNo", next)?;
@@ -498,7 +496,7 @@ pub(super) fn build(
     let (rl, _, rblocks) = decode(&lobby_out)?;
     if rs.body != save.body || rl.body != lobby.body || number(&rblocks[0], "_generateNo")? != next
     {
-        return Err(bad("Verschlüsselter Spielstand-Readback fehlgeschlagen."));
+        return Err(bad("Encrypted save readback failed."));
     }
     Ok(Candidate {
         save: save_out,

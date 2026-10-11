@@ -12,11 +12,11 @@ export function ItemTable({ items, total, session, loading, more, loadMore, rese
   const query = useCatalog(s => s.query), setQuery = useCatalog(s => s.setQuery);
   const parent = useRef<HTMLDivElement>(null);
   const columns = useMemo(() => [
-    helper.accessor('name', { header: 'Gegenstand', cell: ({ row }) => <div className="item-cell"><ItemImage session={session} itemKey={row.original.key} /><div><strong>{plainText(row.original.name)}</strong><span>{row.original.internal_key}</span></div></div> }),
+    helper.accessor('name', { header: 'Item', cell: ({ row }) => <div className="item-cell"><ItemImage session={session} itemKey={row.original.key} /><div><strong>{plainText(row.original.name)}</strong><span>{row.original.internal_key}</span></div></div> }),
     helper.accessor('key', { header: 'ID', cell: ctx => <span className="mono muted">{ctx.getValue()}</span> }),
-    helper.accessor('item_type', { header: 'Typ', cell: ctx => <span className="quiet-badge">{ctx.getValue()}</span> }),
+    helper.accessor('item_type', { header: 'Type', cell: ctx => <span className="quiet-badge">{ctx.getValue()}</span> }),
     helper.accessor('tier', { header: 'Tier', cell: ctx => <span className="tier"><i />{ctx.getValue()}</span> }),
-    helper.accessor('max_stack', { header: 'Stapel', cell: ctx => <span className="mono stack-count">{integer(ctx.getValue())}</span> }),
+    helper.accessor('max_stack', { header: 'Stack', cell: ctx => <span className="mono stack-count">{integer(ctx.getValue())}</span> }),
     helper.display({ id: 'open', header: '', cell: () => <ChevronRight size={15} className="row-arrow" /> }),
   ], [session]);
   const table = useReactTable({ data: items, columns, getCoreRowModel: getCoreRowModel(), getRowId: row => String(row.key) });
@@ -27,17 +27,17 @@ export function ItemTable({ items, total, session, loading, more, loadMore, rese
     setQuery({ sort: name, descending: query.sort === name ? !query.descending : false });
     parent.current?.scrollTo({ top: 0 });
   }
-  return <section className="results" aria-label="Suchergebnisse">
-    <div className="result-caption"><span>{loading && !items.length ? 'Gegenstände werden gesucht …' : <><strong>{count(total)}</strong> Gegenstände</>}</span><span className="caption-tip">Klicken für Details <ChevronRight size={12} /></span></div>
+  return <section className="results" aria-label="Search results">
+    <div className="result-caption"><span>{loading && !items.length ? 'Searching items …' : <><strong>{count(total)}</strong> Items</>}</span><span className="caption-tip">Click for details <ChevronRight size={12} /></span></div>
     <div className="table-head" role="row">{table.getFlatHeaders().map(header => {
       const sortable = ['name', 'key', 'tier', 'max_stack'].includes(header.id);
       const active = query.sort === (header.id === 'max_stack' ? 'stack' : header.id);
-      return <div key={header.id} role="columnheader">{sortable ? <button onClick={() => sort(header.id)} aria-label={`Nach ${header.column.columnDef.header} sortieren`}>
+      return <div key={header.id} role="columnheader">{sortable ? <button onClick={() => sort(header.id)} aria-label={`Sort by ${header.column.columnDef.header}`}>
         {flexRender(header.column.columnDef.header, header.getContext())}{active && (query.descending ? <ArrowDown size={12} /> : <ArrowUp size={12} />)}
       </button> : flexRender(header.column.columnDef.header, header.getContext())}</div>;
     })}</div>
-    <div className="table-scroll" ref={parent} onScroll={e => { const el = e.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 250 && more && !loading) loadMore(); }} role="listbox" aria-label="Gegenstände" aria-busy={loading}>
-      {!items.length ? <div className="empty-state">{loading ? <><LoaderCircle className="spin" /><h3>Daten werden geladen</h3><p>Einen Moment bitte.</p></> : <><SearchX size={32} strokeWidth={1.3} /><h3>Keine passenden Gegenstände</h3><p>Versuche einen anderen Begriff oder entferne die Filter.</p><button className="secondary" onClick={reset}>Suche zurücksetzen</button></>}</div> :
+    <div className="table-scroll" ref={parent} onScroll={e => { const el = e.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 250 && more && !loading) loadMore(); }} role="listbox" aria-label="Items" aria-busy={loading}>
+      {!items.length ? <div className="empty-state">{loading ? <><LoaderCircle className="spin" /><h3>Loading data</h3><p>One moment, please.</p></> : <><SearchX size={32} strokeWidth={1.3} /><h3>No matching items</h3><p>Try another term or remove the filters.</p><button className="secondary" onClick={reset}>Reset search</button></>}</div> :
         <div style={{ height: virtual.getTotalSize(), position: 'relative', width: '100%' }}>
           {virtual.getVirtualItems().map(v => { const row = rows[v.index]; return <div role="option" aria-selected={selected === row.original.key} tabIndex={0} key={row.id} data-item-key={row.id}
             className={`item-row ${selected === row.original.key ? 'selected' : ''}`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: v.size, transform: `translateY(${v.start}px)` }}
@@ -49,8 +49,8 @@ export function ItemTable({ items, total, session, loading, more, loadMore, rese
               }
             }}>{row.getVisibleCells().map(cell => <div key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>)}</div>; })}
         </div>}
-      {items.length > 0 && more && <button className="load-more" onClick={loadMore} disabled={loading}>{loading ? 'Wird geladen …' : 'Weitere Gegenstände laden'}</button>}
+      {items.length > 0 && more && <button className="load-more" onClick={loadMore} disabled={loading}>{loading ? 'Loading …' : 'Load more items'}</button>}
     </div>
-    <footer className="table-footer"><span>{count(items.length)} von {count(total)} geladen</span><span><span className="status-dot" /> Lokale Spieldaten</span></footer>
+    <footer className="table-footer"><span>{count(items.length)} of {count(total)} loaded</span><span><span className="status-dot" /> Local game data</span></footer>
   </section>;
 }

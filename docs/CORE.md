@@ -1,17 +1,10 @@
-# CLI und lesender Core
+# CLI and Reading Core
 
-Die CLI liest die lokale Installation, prüft bekannte Dateihashes und macht Items
-als JSON und über eine SQLite-FTS5-Suche zugänglich. Diese Anleitung beschreibt
-die vorhandenen Befehle; konkrete Testresultate stehen in [PROGRESS.md](PROGRESS.md).
-Die [Desktopoberfläche](DESKTOP.md) verwendet denselben Core. Modexport und
-Apply/Restore sind noch nicht implementiert. Save-
-Verzeichnisse werden erkannt, ihre Inhalte werden noch nicht ausgewertet.
+The CLI reads the local installation, checks known file hashes and makes items accessible as JSON and via a SQLite FTS5 search. This guide describes the existing commands; Concrete test results are in [PROGRESS.md](PROGRESS.md). The [Desktop interface](DESKTOP.md) uses the same core. Modexport and Apply/Restore are not yet implemented. Save directories are recognized, their contents are not yet evaluated.
 
-## Bauen und konfigurieren
+## Build and configure
 
-Die Beispiele werden in PowerShell **im Projektordner** ausgeführt. Benötigt
-werden Rust 1.95 oder neuer und unter Windows C++-Buildwerkzeuge mit Windows SDK;
-SQLite wird mitgebaut.
+The examples are executed in PowerShell ** in the project folder**. Requires Rust 1.95 or newer and under Windows C++ build tools with Windows SDK; SQLite is being built.
 
 ```powershell
 cargo build --workspace --locked
@@ -19,38 +12,25 @@ $cli = ".\target\debug\cd-cli.exe"
 & $cli --help
 ```
 
-Alternativ lässt sich jeder Aufruf als `cargo run --locked -p cd-cli -- <Befehl>`
-ausführen. Unter Linux liegt die gebaute CLI in `target/debug/cd-cli`.
+Alternatively, each call can be executed as `cargo run --locked -p cd-cli -- <command>`. Under Linux, the built CLI is in `target/debug/cd-cli`.
 
-Die lokale `.env` ist bereits eingerichtet. Für eine andere Installation kann
-`.env.example` als Vorlage dienen:
+The local `.env` is already set up. For another installation, `.env.example` can serve as a template:
 
 ```dotenv
 CD_GAME_DIR=C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert
-CD_SAVE_DIR=C:/Users/<Benutzer>/AppData/Local/Pearl Abyss/CD/save
+CD_SAVE_DIR=C:/Users/<User>/AppData/Local/Pearl Abyss/CD/save
 ```
 
-Priorität bei der Spielauswahl: `--game`, gespeicherte Workbench-Einstellungen,
-Prozessumgebung, `.env`, automatische Erkennung. `--project` wählt den Projektordner
-mit `.env` und `settings.json`; Ausgaben und Caches sind
-auf dessen Unterordner `.local/` und `exports/` begrenzt. Standard ist das aktuelle
-Verzeichnis. Relative konfigurierte Pfade
-beziehen sich auf diesen Projektordner. Bei mehreren automatisch gefundenen
-Installationen ist eine Auswahl erforderlich. Ein ausdrücklich gesetzter, aber
-ungültiger Spielpfad wird als Fehler gemeldet.
+Priority in game selection: `--game`, saved Workbench settings, process environment, `.env`, automatic detection. `--project` selects the project folder with `.env` and `settings.json`; Outputs and caches are limited to its subfolders `.local/` and `exports/`. Standard is the current directory. Relative configured paths refer to this project folder. For multiple automatically found installations, a selection is required. An explicitly set but invalid game path is reported as an error.
 
 ```powershell
 & $cli detect
 & $cli --game "D:\SteamLibrary\steamapps\common\Crimson Desert" detect
 ```
 
-`detect` liefert Installationspfade, Plattform, verfügbare Build-ID und Save-
-Verzeichnisse. Die Erkennung berücksichtigt Steam-Bibliotheken, Epic-Manifeste,
-gängige Xbox-/Game-Pass-Verzeichnisse sowie Pearl-Abyss-Savepfade und Proton-
-Bibliotheken. Unzugängliche Paketinstallationen benötigen einen lesbaren expliziten
-Pfad; die CLI verändert keine Zugriffsrechte.
+`detect` provides installation paths, platform, available build ID and save directories. The detection takes into account Steam libraries, epic manifests, popular Xbox/Game Pass directories, and Pearl Abyss save paths and Proton libraries. Inaccessible package installations require a readable explicit path; The CLI does not change access rights.
 
-## Fingerprint und Roundtrip
+## Fingerprint and Roundtrip
 
 ```powershell
 & $cli fingerprint
@@ -58,27 +38,17 @@ Pfad; die CLI verändert keine Zugriffsrechte.
 & $cli roundtrip --all-fields
 ```
 
-`fingerprint` prüft EXE-Version, erfasste Metadaten, verwendete Tabellen und die
-gewählte Item-Lokalisierung gegen den hinterlegten Lesebuild. Aktuell ist das
-Schema `steam-25381195-gamedata-2.3-v2` hinterlegt. Ein Update oder veränderte
-Eingaben sperren die semantische Interpretation. Eine Diagnose bleibt möglich:
+`fingerprint` checks EXE version, captured metadata, tables used and the selected item localization against the stored read build. Currently, the schema `steam-25381195-gamedata-2.3-v2` is stored. An update or altered input blocks the semantic interpretation. A diagnosis remains possible:
 
 ```powershell
 & $cli fingerprint --metadata-only --output .local/build-diagnose.json
 ```
 
-`--metadata-only` hasht EXE und erfasste Metadatendateien, ohne Tabellen semantisch
-zu lesen. Dieser Modus bestätigt kein unterstütztes Leseschema. Auch ein vollständig
-passender Fingerprint setzt `certified_vanilla` **nicht** auf wahr: bekannte Bytes
-sind kein Nachweis einer sauberen Originalinstallation und keine Apply-Freigabe.
+`--metadata-only` hashes EXE and captured metadata files without semantically reading tables. This mode does not confirm a supported reading schema. Even a fully matching fingerprint holds `certified_vanilla` **not**: known bytes are no proof of a clean original installation and no apply release.
 
-`roundtrip` vergleicht im Speicher Originalbytes mit der Serialisierung von
-Tabellenbody/-header, Iteminfo, PALOC sowie Archivmetadaten. `--all-fields` prüft
-zusätzlich die lückenlose Feldabdeckung aller Iteminfo-Datensätze. Das schreibt
-keine Daten zurück ins Spiel. Ein Rohdaten-Roundtrip bestätigt den Erhalt der Bytes,
-nicht automatisch die Bedeutung der enthaltenen Felder.
+`roundtrip` compares original bytes in memory with the serialization of table body/header, item info, PALOC and archive metadata. `--all-fields` additionally checks the seamless field coverage of all Iteminfo datasets. This doesn't write data back into the game. A raw data round trip confirms the receipt of the bytes, not automatically the meaning of the contained fields.
 
-## Items und Rohfelder lesen
+## Reading items and raw fields
 
 ```powershell
 & $cli item 2200
@@ -86,15 +56,11 @@ nicht automatisch die Bedeutung der enthaltenen Felder.
 & $cli dump iteminfo --item 2200 --fields --output .local/item2200.json
 ```
 
-`item` liefert lokalisierte Angaben und den typisierten Itemdatensatz. `--fields`
-ergänzt Feldbereiche und Rohinformationen. Unbestätigte Bedeutungen bleiben
-unbenannt; numerische Kategorien werden nicht mit erfundenen Labels versehen.
-Ohne `--output` wird JSON auf die Standardausgabe geschrieben.
+`item` provides localized information and the typed item data set. `--fields` complements field areas and raw information. Unconfirmed meanings remain unnamed; Numerical categories are not provided with invented labels. Without `--output`, JSON is written to the standard output.
 
-`dump iteminfo` gibt alle Itemdatensätze aus. Ein vollständiger Felddump mit
-`--fields` verlangt `--item`, damit die Ausgabe auf einen Datensatz begrenzt bleibt.
+`dump iteminfo` outputs all item data sets. A full field dump with `--fields` requires `--item` to keep the output limited to one record.
 
-Es gibt **14 Tabellenindizes**: `iteminfo` und 13 weitere Tabellen:
+There are **14 table indices**: `iteminfo` and 13 more tables:
 
 ```text
 characterinfo       crafttoolgroupinfo  crafttoolinfo
@@ -104,24 +70,17 @@ skill               stageinfo           storeinfo
 vehicleinfo
 ```
 
-Bei `iteminfo` wird die vollständige Struktur typisiert gelesen/serialisiert;
-unbekannte Bereiche bleiben erhalten. Die anderen Tabellen werden als geprüfte
-Schlüssel-/Offsetindizes mit **uninterpretierten Datensatzbytes** behandelt:
+At `iteminfo`, the complete structure is typed read/serialized; Unknown areas are preserved. The other tables are treated as tested key/offset indices with **uninterpreted dataset bytes**:
 
 ```powershell
 & $cli dump storeinfo
 ```
 
-Dieser Aufruf zeigt Datensatzgrenzen und Hashes. `dump <Tabelle> --item <Schlüssel>`
-liefert einen ausgewählten Rohdatensatz als Hexbytes. Die tatsächlichen Schlüssel
-kommen aus dem jeweiligen Index. Rezepte, Shopbestand, Trustwerte und Skillkosten
-werden dadurch noch nicht als editierbare Felder angeboten.
+This call shows dataset limits and hashes. `dump <table> --item <key>` provides a selected raw data set as hexbytes. The actual keys come from the respective index. Recipes, shop inventory, trust values and skill costs are not yet offered as editable fields.
 
-Seit Phase 3 interpretiert das zusätzliche Modul `crafting` Rezept-/Gruppen-
-records und einfache Item-Dropsets. Die bestehenden `dump`-Ausgaben bleiben
-unverändert. CLI-Nutzung und Grenzen: [CRAFTING.md](CRAFTING.md).
+Since phase 3, the additional module `crafting` interprets recipe/group records and simple item dropsets. The existing `dump` outputs remain unchanged. CLI usage and limits: [CRAFTING.md](CRAFTING.md).
 
-## Deutsch, weitere Sprachen und Suche
+## German, other languages and search
 
 ```powershell
 & $cli languages
@@ -131,82 +90,55 @@ unverändert. CLI-Nutzung und Grenzen: [CRAFTING.md](CRAFTING.md).
 & $cli --language eng item 2200
 ```
 
-Standard ist `ger`; `de` ist ein Alias. Englisch akzeptiert `eng` oder `en`.
-Die hinterlegten Itemsprachen sind:
+Standard is `ger`; `de` is an alias. English accepted `eng` or `en`. The stored item languages are:
 
 ```text
 ara eng fre ger ita jpn kor pol por-br rus spa-es spa-mx tur zho-cn zho-tw
 ```
 
-Geprüft wird jeweils die Item-PALOC-Datei der gewählten Sprache. Fehlt die
-Übersetzung eines einzelnen Items, dienen vorhandener Standardtext bzw. interner
-Schlüssel als Fallback. `name_resolved` unterscheidet eine Namensangabe vom reinen
-Schlüsselfallback; es beweist nicht, dass der Text aus der gewählten PALOC stammt.
-Das ist keine Lokalisierung sämtlicher Spieltexte oder der noch ausstehenden GUI.
+The item PALOC file of the selected language is checked. If the translation of a single item is missing, existing standard text or internal key as a fallback. `name_resolved` distinguishes a name from a pure key fallback; it does not prove that the text came from the chosen PALOC. This is not a localization of all game texts or the pending GUI.
 
-FTS5 sucht in Namen, Beschreibungen und internen Schlüsseln. `--item-type` nimmt
-einen numerischen Typ, `--category` den im Datensatz sichtbaren Kategoriecode:
+FTS5 searches in names, descriptions and internal keys. `--item-type` takes a numeric type, `--category` the category code visible in the dataset:
 
 ```powershell
 & $cli search --item-type 1 --limit 20
 ```
 
-Der lokale Cache liegt standardmäßig in `.local/index/items.sqlite`. `index` und
-`search` bauen ihn bei Bedarf auf; ein geänderter Fingerprint, Sprachwechsel oder
-Schemawechsel löst einen Neuaufbau aus. `--cache .local/index/anderer-name.sqlite`
-kann einen getrennten Cache wählen.
+The local cache is in `.local/index/items.sqlite` by default. `index` and `search` build it up as needed; a changed fingerprint, language change or schema change triggers a new setup. `--cache .local/index/anderer-name.sqlite` can choose a separate cache.
 
-## Zwei Builds vergleichen
+## Compare two builds
 
-Zwei Manifestdateien müssen zuerst erzeugt werden, beispielsweise jeweils vor
-und nach einem Spielupdate. Für vergleichbare Metadatenberichte wird in beiden
-Aufrufen derselbe Modus verwendet:
+Two manifest files must be created first, for example before and after a game update. For comparable metadata reports, the same mode is used in both calls:
 
 ```powershell
 & $cli fingerprint --metadata-only --output .local/before.json
-# Den folgenden Snapshot erst zum späteren Vergleichszeitpunkt erzeugen.
+# Create the following snapshot only at the later comparison time.
 & $cli fingerprint --metadata-only --output .local/after.json
 & $cli diff .local/before.json .local/after.json
 ```
 
-`diff` vergleicht die gespeicherten Hashes und EXE-Versionen, ohne einen neueren
-Build zu interpretieren. Ein vollständiger Fingerprint enthält zusätzlich
-Tabellen-/Lokalisierungshashes; für solche Vergleiche müssen beide Builds ein
-unterstütztes Leseschema haben. Ein leerer Diff bedeutet nur, dass die im Manifest
-erfassten Werte übereinstimmen; es ist keine Prüfung sämtlicher Spielarchive.
+`diff` compares the saved hashes and EXE versions without interpreting a newer build. A complete fingerprint additionally contains table/localization hashes; For such comparisons, both builds must have a supported reading schema. An empty diff only means that the values recorded in the manifest match; It is not an audit of all game archives.
 
-## Lokale Schreibgrenze
+## Local writing limit
 
-`--output` erzeugt ausschließlich **neue Dateien unter `.local/` oder `exports/`**
-innerhalb des Projekts. Andere Ziele werden auch dann abgelehnt, wenn sie im
-Projekt liegen. Dieselbe Beschränkung gilt für SQLite-Caches. Beide Ausgabeordner
-sind von Git ausgeschlossen. Bestehende JSON-Dateien werden nicht überschrieben;
-für einen weiteren Snapshot ist ein neuer Name erforderlich. Verwende `--output` statt Shellumleitung, damit der programminterne
-Pfadschutz auf das Ausgabeziel angewendet wird.
+`--output` only creates **new files under `.local/` or `exports/`** within the project. Other goals are also rejected if they are in the project. The same limitation applies to SQLite caches. Both output folders are excluded from Git. Existing JSON files are not overwritten; For another snapshot, a new name is required. Use `--output` instead of shell redirection so that the program's internal path protection is applied to the output target.
 
-Alle erkannten und ausdrücklich konfigurierten Spiel-/Save-Wurzeln sind geschützt,
-auch wenn ein konfiguriertes Verzeichnis noch nicht existiert. Vorhandene
-Verzeichnisverknüpfungen werden aufgelöst. Bestehende Hardlinks sowie verknüpfte
-SQLite-Dateien/-Nebendateien werden abgelehnt. Der eigene reguläre SQLite-Cache darf
-wiederverwendet werden; diese Ausnahme gilt nicht für JSON-Dumps.
+All recognized and explicitly configured game/save roots are protected, even if a configured directory does not yet exist. Existing directory links are dissolved. Existing hardlinks and linked SQLite files/additional files are rejected. Your own regular SQLite cache may be reused; This exemption does not apply to JSON dumps.
 
-## Rust-Schnittstellen
+## Rust interfaces
 
-| Einstieg | Zweck |
+|Entry|Zweck|
 |---|---|
-| `discover_project(project, game_override)` | Konfiguration und lesende Installationserkennung zusammenführen. |
-| `Workspace::open(project, game_override, language)` | Geprüfte Spieldaten und lokale Ausgaberegeln gemeinsam öffnen. |
-| `workspace.data()` | Unveränderliche `GameData`; `tables`, `item_detail`, `dump_table`, `roundtrip` und `fingerprint`. |
-| `workspace.build_index(cache)` / `workspace.search(query, cache)` | Abgeleiteten lokalen Index aufbauen/abfragen. |
-| `workspace.write_json(path, value)` | Geschützte neue JSON-Ausgabe; kein Überschreiben. |
-| `fingerprint::Fingerprint::inspect(game)` / `fingerprint::diff(before, after)` | Diagnose ohne semantische Interpretation und Vergleich gespeicherter Fingerprints. |
-| `PathPolicy::from_roots(roots, output_root)` | Alle Spiel-/Save-Wurzeln gegen lokale Ausgaben schützen. |
-| `browser::BrowserSession` | Dauerhafte Desktop-Sitzung: geprüfter Snapshot, sprach-/buildbezogener Index, paginierte Suche, Rohfelder, echte Icons und geschützte Itemexporte. |
+|`discover_project(project, game_override)`|Combine configuration and reading installation recognition.|
+|`Workspace::open(project, game_override, language)`|Open verified game data and local output rules together.|
+|`workspace.data()`|Immutable `GameData`; `tables`, `item_detail`, `dump_table`, `roundtrip` and `fingerprint`.|
+|`workspace.build_index(cache)` / `workspace.search(query, cache)`|Build/request derived local index.|
+|`workspace.write_json(path, value)`|Protected new JSON edition; No overwriting.|
+|`fingerprint::Fingerprint::inspect(game)` / `fingerprint::diff(before, after)`|Diagnosis without semantic interpretation and comparison of stored fingerprints.|
+|`PathPolicy::from_roots(roots, output_root)`|Protect all game/save roots against local spending.|
+|`browser::BrowserSession`|Permanent desktop session: checked snapshot, language/build related index, paginated search, raw fields, real icons, and protected item exports.|
 
-`GameData` bietet keine Schreiboperation auf die Installation. Indexinternas sind
-privat; öffentliche Workspace-Methoden prüfen die Ausgabepfade vor dem Öffnen.
-Die selektiv integrierte MIT-Formatbibliothek liegt unter `vendor/crimson-format`;
-Herkunft und Grenzen sind in [CREDITS.md](../CREDITS.md) dokumentiert.
+`GameData` does not provide a write operation to the installation. index intranas are private; Public workspace methods check the output paths before opening. The selectively integrated MIT format library is below `vendor/crimson-format`; Origin and boundaries are documented in [CREDITS.md](../CREDITS.md).
 
 ## Tests
 
@@ -216,14 +148,6 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
-Synthetische Tests brauchen keine Spielinstallation. Der Live-Roundtrip-Test liest
-`CD_GAME_DIR` aus Umgebung oder `.env`: ohne konfigurierten Pfad wird er ausdrücklich
-übersprungen; ein konfigurierter, aber fehlender, veränderter oder nicht unterstützter
-Build lässt ihn fehlschlagen. Live-Prüfungen lesen ausschließlich; sie erzeugen
-keinen Suchcache und analysieren keine Save-Inhalte.
+Synthetic tests do not require a game installation. The live round trip test reads `CD_GAME_DIR` from the environment or `.env`: without a configured path, it is explicitly skipped; A configured but missing, altered or unsupported build makes it fail. Live exams read exclusively; They do not generate a search cache and do not analyze save content.
 
-[CI](../.github/workflows/core.yml) ist für Windows und Linux eingerichtet. Linux
-wurde lokal nicht ausgeführt, weil kein Docker-Daemon verfügbar war. Ein konfigurierter
-Workflow ist noch kein erfolgreicher Linux-Testlauf. Ausgeführte Prüfungen und
-verbleibende Arbeit stehen in [PROGRESS.md](PROGRESS.md); die aktuelle GUI ist in
-[DESKTOP.md](DESKTOP.md) beschrieben.
+[CI](../.github/workflows/core.yml) is set up for Windows and Linux. Linux did not run locally because there was no Docker daemon available. A configured workflow is not yet a successful Linux test run. Executions performed and remaining work are in [PROGRESS.md](PROGRESS.md); The current GUI is described in [DESKTOP.md](DESKTOP.md).

@@ -1,216 +1,90 @@
-# Phase 0 – Formate und lokaler Build
+# Phase 0 – Formats and Local Build
 
-**Ergänzung Phase 2:** Desktop-Itembrowser und reale Itemicons sind implementiert.
-Zusätzliches `stringinfo` (31.812 Records) ist SHA-geprüft und durch typisierte
-Body-/Header-Roundtrips abgesichert; Details in [DESKTOP.md](DESKTOP.md).
-Händler-/Drop-/Rezeptbeziehungen bleiben ausdrücklich ungeklärt.
+**Supplement phase 2:** Desktop item browsers and real Item icons are implemented. Additional `stringinfo` (31,812 Records) is SHA-certified and secured by typed body/header round trips; Details in [DESKTOP.md](DESKTOP.md). Dealer/drop/prescription relationships remain explicitly unclear.
 
-**Ergänzung Phase 1:** Der native Core ist jetzt implementiert und geprüft;
-siehe [CORE.md](CORE.md), [FORMAT_PORT.md](FORMAT_PORT.md) und
-[PROGRESS.md](PROGRESS.md). Die folgenden Abschnitte bleiben der Recherchebericht
-aus Phase 0. Neu verifiziert: alle 14 Tabellenindizes mit Body-/Header-Roundtrip,
-typisiertes Iteminfo, 15 Itemsprachen und PAPGT/PAMT im eigenen Rust-Core.
-Quest-/Stage-Header zählen mit `u32`, die übrigen erfassten Header mit `u16`.
-13 Tabellenbodys bleiben uninterpretierte Bytes, ohne semantische Editorfreigabe.
+**Supplement phase 1:** The native core is now implemented and tested; See [CORE.md](CORE.md), [FORMAT_PORT.md](FORMAT_PORT.md) and [PROGRESS.md](PROGRESS.md). The following sections remain the research report from phase 0. Re-verified: all 14 table indices with body/header roundtrip, typed item info, 15 item languages and PAPGT/PAMT in their own Rust core. Quest/Stage headers count with `u32`, the other recorded headers with `u16`. 13 Table bodies remain uninterpreted bytes, without semantic editor sharing.
 
-Stand: 19.09.2026. Grundlage ist die aktualisierte `SPEC.md` mit eigener
-Apply-Engine. **Beobachtungen sind keine Vanilla-Zertifizierung.** Die reale
-Installation wurde ausschließlich gelesen; Referenztools wurden nur in isolierten
-Projektverzeichnissen gebaut. Saveinhalte wurden nicht untersucht.
+Status: 19.09.2026. The basis is the updated `SPEC.md` with its own apply engine. **Observations are not vanilla certification.** The real installation has been read exclusively; Reference tools were built only in isolated project directories. Save contents have not been studied.
 
-Die vollständigen geprüften Revisionen und Lizenzentscheidungen stehen in
-[CREDITS.md](../CREDITS.md). Detailbelege:
-[Archive](research/ARCHIVES.md), [Tabellen](research/TABLES.md),
-[Apply/Overlay](research/APPLY.md). Jede Aussage zu älteren Schemata bleibt an
-ihren Quellstand gebunden.
+The complete audited revisions and licensing decisions are in [CREDITS.md](../CREDITS.md). Detailed documents: [Archive](research/ARCHIVES.md), [Tables](research/TABLES.md), [Apply/Overlay](research/APPLY.md). Any statement about older schemes remains tied to their source status.
 
-## Installationsbeobachtung
+## Installation monitoring
 
-| Merkmal | Tatsächlich festgestellt |
+|Characteristic|In fact, it was established that:|
 |---|---|
-| Plattform | Steam, App-ID `3321460`, Anzeigename „Crimson Desert Enhanced“ |
-| Installationsordner | `C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert` |
-| Steam-Build-ID | `25381195` |
-| Hauptprogramm | `bin64/CrimsonDesert.exe`, 397.242.776 Bytes |
-| EXE-Datei-/Produktversion | `1.0.0.2944` |
-| EXE SHA-256 | `6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7` |
-| Meta-Registry | `meta/0.papgt`, 679 Bytes; 39 registrierte Gruppen |
-| Registry SHA-256 | `c03ced405f4c409f1472b85465dff763e0fd9ca9c68e29481510780494d4eaea` |
-| Registry-interner Jenkins-Hash | gespeichert und berechnet jeweils `0x953ce06a` |
-| Vorhandene numerische Gruppen | 35; alle in PAPGT registriert |
-| Registriert, ohne Ordner | `0036`, `0038`, `0039`, `0040` – optionale Gruppen, keine frei belegbaren IDs |
-| Statische Tabellen | Gruppe `0008`, `gamedata/binarystaticinfo__/bin/` |
-| Deutsche Lokalisierung | Gruppe `0027`, `gamedata/stringtable/binary__/ger/`, 39 Namespaces |
-| Tatsächlicher Save-Stamm | `%LOCALAPPDATA%/Pearl Abyss/CD/save`, 11 `.save`-Dateien gefunden |
+|Plattform|Steam, App ID `3321460`, display name "Crimson Desert Enhanced"|
+|Installationsordner|`C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert`|
+|Steam-Build-ID|`25381195`|
+|Main programme|`bin64/CrimsonDesert.exe`, 397,242,776 Bytes|
+|EXE file/product version|`1.0.0.2944`|
+|EXE SHA-256|`6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`|
+|Meta-Registry|`meta/0.papgt`, 679 bytes; 39 Registered groups|
+|Registry SHA-256|`c03ced405f4c409f1472b85465dff763e0fd9ca9c68e29481510780494d4eaea`|
+|Registry-interner Jenkins-Hash|stored and calculated each `0x953ce06a`|
+|Existing numerical groups|35; All registered in PAPGT|
+|Registered, without folder|`0036`, `0038`, `0039`, `0040` – optional groups, no freely available IDs|
+|Static tables|Gruppe `0008`, `gamedata/binarystaticinfo__/bin/`|
+|German localisation|Gruppe `0027`, `gamedata/stringtable/binary__/ger/`, 39 Namespaces|
+|Actual Save tribe|`%LOCALAPPDATA%/Pearl Abyss/CD/save`, 11 `.save` files found|
 
-Der in der Spec beispielhaft genannte Save-Pfad unter `CrimsonDesert/Saved/SaveGames`
-existiert hier nicht. Steam wurde direkt über Bibliotheks-/Appmetadaten gefunden.
-Epic-/Game-Pass-Erkennung ist noch keine implementierte oder verifizierte Funktion.
+The save path under `CrimsonDesert/Saved/SaveGames` mentioned by way of example in the spec does not exist here. Steam was found directly via library/appetam data. Epic/Game Pass detection is not yet an implemented or verified feature.
 
-Der [maschinenlesbare Beobachtungsbericht](builds/steam-25381195.observed.json)
-enthält 38 Originaldatei-Hashes (EXE, PAPGT, PAVER und 35 PAMTs), 28 extrahierte
-Tabellen-Dateihashes, Lokalisierungsdaten zur Integritätsprüfung und die realen
-Roundtrip-Ergebnisse. Er enthält **keine Tabelleninhalte, Assets oder Savebytes**.
-Die 28 Tabellenfiles sind Bodies und Header von `characterinfo`, `crafttoolinfo`,
-`crafttoolgroupinfo`, `dropsetinfo`, `fieldinfo`, `inventory`, `iteminfo`,
-`multichangeinfo`, `questinfo`, `regioninfo`, `skill`, `stageinfo`, `storeinfo` und
-`vehicleinfo`. Weitere künftig verwendete Tabellen müssen ergänzend erfasst werden.
+The [Machine-readable observation report](builds/steam-25381195.observed.json) Contains 38 Original file hashes (EXE, PAPGT, PAVER and 35 PAMTs, 28 extracted table file hashes, localization data for integrity checking and the real round trip results. **No table content, assets or savebytes**The 28 Table files are Bodies and headers of `characterinfo`, `crafttoolinfo`, `crafttoolgroupinfo`, `dropsetinfo`, `fieldinfo`, `inventory`, `iteminfo`, `multichangeinfo`, `questinfo`, `regioninfo`, `skill`, `stageinfo`, `storeinfo` and `vehicleinfo`Further tables to be used in the future need to be supplemented.
 
-Die Daten passen zum von crimson-rs beschriebenen 2.03-Layout. Die EXE-Version
-ist jedoch nicht identisch mit der öffentlich bezeichneten Patchversion; sie wird
-nicht entsprechend umbenannt. Es gibt noch keine freigegebene Workbench-Schema-
-Registry. Unbekannte Hashkombinationen müssen in Phase 1 abgewiesen werden.
+The data matches the 2.03 layout described by crimson-rs. However, the EXE version is not the same as the publicly designated patch version; It will not be renamed accordingly. There is no released Workbench scheme registry yet. Unknown hash combinations must be rejected in phase 1.
 
-## PAZ, PAMT und Gruppenregistry
+## PAZ, PAMT and Group Registry
 
-Die numerischen Gruppenordner enthalten `0.pamt` und nummerierte `.paz`-Chunks.
-PAMT führt Pfade/Namen, Chunkzuordnung, Offsets, komprimierte/unkomprimierte Größen
-und Flags; PAZ enthält die Nutzdaten. Metadaten und Payload werden getrennt gelesen.
-Boundschecks müssen vor Allokation, Seek, Entschlüsselung und Dekompression gelten.
+The numeric group folders contain `0.pamt` and numbered `.paz` chunks. PAMT performs paths/names, chunk mapping, offsets, compressed/uncompressed sizes and flags; PAZ contains the useful data. Metadata and Payload are read separately. Boundschecks must apply before allocation, seek, decryption and decompression.
 
-Die [Unpacker-Spezifikation](https://github.com/lazorr410/crimson-desert-unpacker/blob/f0b6fef67a3ecf5d00d90c7aab4bbde7403a9d7e/PAZ_DECRYPTION.md)
-und der aktuelle Rust-Reader beschreiben ChaCha20. Das ältere Rezept benutzt einen
-kleingeschriebenen Basisdateinamen und feste Ableitungskonstanten. Der tatsächlich
-hier geprüfte [Rust-Code](https://github.com/bbfox0703/crimson-rs/blob/b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0/src/crypto/chacha20.rs)
-benutzt die Basename-Checksum **plus drei PAMT-`encrypt_info`-Bytes** und führt
-selbst keine Lowercase-Normalisierung aus. Den Archivnamen daher unverändert
-übernehmen; Verzeichnisanteil entfernen. Counter-/Nonce-Semantik muss mit der
-benutzten Rust-ChaCha-Variante übereinstimmen. Das historische feste Rezept ist
-keine universelle aktuelle Schlüsselableitung.
+The [Unpacker-Spezifikation](https://github.com/lazorr410/crimson-desert-unpacker/blob/f0b6fef67a3ecf5d00d90c7aab4bbde7403a9d7e/PAZ_DECRYPTION.md) and the current Rust reader describe ChaCha20. The older recipe uses a lowercase base file name and fixed derivative constants. The actual [Rust-Code](https://github.com/bbfox0703/crimson-rs/blob/b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0/src/crypto/chacha20.rs) checked here uses the basename checksum **plus three PAMT-`encrypt_info`-bytes** and does not perform a lowercase normalization itself. Therefore, adopt the archive name unchanged; Remove directory portion. Counter/Nonce semantics must match the Rust ChaCha variant used. The historical fixed recipe is not a universal current key derivation.
 
-Der aktuelle Rust-Code ordnet das untere Flags-Nibble als 0=None, 1=Partial,
-2=LZ4, 3=Zlib, 4=QuickLZ zu; die März-Dokumentation weicht bei 3/4 davon ab.
-None/LZ4/Zlib und einige Partialvarianten sind implementiert, QuickLZ nicht.
-Verschlüsselung steht im oberen Nibble: None/ChaCha20 werden unterstützt,
-ICE/AES nicht. Unbekannte Flags muss Workbench ausdrücklich ablehnen, statt den
-teilweisen None-Fallback des Referenzparsers zu übernehmen. Kein LZ4-Frame unterstellen und
-nicht allein aus gleicher/ungleicher Länge den Codec erraten. Die bestehende
-Rust-Implementierung unterstützt mehrere Header-/DDS-Mip-Teilkompressionsfälle,
-aber daraus folgt keine universelle Texturunterstützung. Lokale Tabellenextraktion
-gelang; ein vollständiger Weltkarten-Texturtest wurde nicht ausgeführt.
+The current Rust code assigns the lower flag nibble as 0=None, 1=Partial, 2=LZ4, 3=Zlib, 4=QuickLZ; The March documentation deviates from this at 3/4. None/LZ4/Zlib and some partial variants are implemented, QuickLZ is not. Encryption is in the upper nibble: None/ChaCha20 is supported, ICE/AES is not. Unknown flags must expressly reject Workbench instead of accepting the partial none-fallback of the reference parser. Do not assume an LZ4 frame and do not guess the codec from the same / unequal length alone. The existing Rust implementation supports multiple header/DDS mip partial compression cases, but this does not result in universal texture support. Local table extraction succeeded; A complete world map texture test has not been performed.
 
-`meta/0.papgt` registriert Gruppen samt optionalem Flag, Sprachmaske und PAMT-Hash.
-Der referenzierte Aufbau hat einen 12-Byte-Header, 12-Byte-Gruppenrecords und eine
-größenpräfigierte Namenstabelle. Im lokalen Build beträgt die allgemeine Sprachmaske
-`0x7fff`; ältere Quellen und einige Builder benutzen `0x3fff`. Weder diese Konstante
-noch Gruppenzählungsheuristiken werden blind übernommen.
+`meta/0.papgt` registers groups with an optional flag, voice mask and PAMT hash. The referenced setup has a 12 byte header, 12 byte group records and a size-defined name table. In the local build, the general voice mask is `0x7fff`; older sources and some builders use `0x3fff`. Neither this constant nor group-counting heuristics are blindly adopted.
 
-Für Overlays beschreibt CDUMM `hashlittle` über PAZ-Daten und über PAMT/PAPGT ab
-Byte 12, Seed `0xC5EDE`; die Gruppenregistry referenziert den richtigen PAMT-Hash.
-Diese 32-Bit-Spielchecksummen sind **nicht** die SHA-256-Build-/Backupsignaturen.
-Genaue Layouts und Quellzeilen stehen in [APPLY.md](research/APPLY.md).
+For overlays, CDUMM`hashlittle` describes PAZ data and PAMT/PAPGT byte 12, seed `0xC5EDE`; the group registry references the correct PAMT hash. These 32-bit game checksums are **not** the SHA-256 build/backup signatures. Exact layouts and source lines are in [APPLY.md](research/APPLY.md).
 
-## Tabellen und die Septemberänderungen
+## Tables and the September Changes
 
-Der alte interne Pfad `gamedata/binary__/client/bin/` wurde durch
-`gamedata/binarystaticinfo__/bin/` ersetzt. Body/Header heißen nun
-`.staticinfobody` und `.staticinfoheader` statt `.pabgb/.pabgh`. Das ist lokal
-bestätigt. [CDUMMs table_ext.py](https://github.com/faisalkindi/CrimsonDesert-UltimateModsManager/blob/b5de424f39ac95e2ef322dd4ed1953ecdd0c5ee6/src/cdumm/archive/table_ext.py)
-datiert die Änderung auf den 04.09.2026; NattKhs `table_layout.py` nennt 2.01.00.
+The old internal path `gamedata/binary__/client/bin/` has been replaced by `gamedata/binarystaticinfo__/bin/`. Body/Header are now called `.staticinfobody` and `.staticinfoheader` instead of `.pabgb/.pabgh`. This is confirmed locally. [CDUMMs table_ext.py](https://github.com/faisalkindi/CrimsonDesert-UltimateModsManager/blob/b5de424f39ac95e2ef322dd4ed1953ecdd0c5ee6/src/cdumm/archive/table_ext.py) dates the change to 04.09.2026; NattKhs`table_layout.py` is called 2.01.00.
 
-Bodies enthalten unterschiedlich aufgebaute Records mit Längen, Strings, Arrays
-und optionalen/getaggten Unterstrukturen. Header sind Schlüssel→Bodyoffset-Indizes;
-die Schlüsselbreite ist tabellenspezifisch. Bei Iteminfo ist das bekannte Muster
-`u16 count + N × (u32 key, u32 offset)`; andere Tabellen benutzen u16-Keys.
-Speicherlayout-Offsets aus IDA sind keine Datei-Offsets. Unbekannte Felder,
-Reihenfolge und Padding bleiben unverändert roh erhalten.
+Bodies contain differently constructed records with lengths, strings, arrays and optional/tagged substructures. Headers are key→bodyoffset indices; the key width is table-specific. For Iteminfo, the familiar pattern is `u16 count + N × (u32 key, u32 offset)`; Other tables use u16 keys. Memory layout offsets from IDA are not file offsets. Unknown fields, order and padding remain unchanged raw.
 
-Bei Größenänderungen muss der passende Header aus den **neu serialisierten**
-Records aufgebaut werden. Ein Vanillaheader neben gewachsenem Body kann still
-falsche Items adressieren, auch wenn das Spiel startet. Daher werden Body und
-Header als zusammengehöriger Prüf- und Ausgabegegenstand behandelt.
+For size changes, the appropriate header must be set up from the ** newly serialized** records. A vanilla header next to a grown body can silently address false items even when the game starts. Therefore, body and header are treated as a related test and output item.
 
 ### Shops
 
-Die [aktuelle CDUMM-Storequelle](https://github.com/faisalkindi/CrimsonDesert-UltimateModsManager/blob/b5de424f39ac95e2ef322dd4ed1953ecdd0c5ee6/src/cdumm/engine/storeinfo_native_parser.py)
-beschreibt für ihren gepinnten September-Build acht neue rohe Bytes zwischen
-optionalem `sub_data` und `effect_list`-Count sowie ein zusätzliches Byte im
-Storeteil. Die acht Bytes besitzen keine bestätigte fachliche Bedeutung.
-Ältere NattKh-Parser nehmen 105 bzw. 113 Bytes an und widersprechen sich teilweise
-bei Lese-/Schreiboffsets. Das ist **kein universeller Fixed-size-Recordvertrag**.
-Die lokale Storetabelle ist vorhanden/gehasht; ein vollständiger Store-Roundtrip
-und die aktuellen Stock-/Refreshsemantiken sind noch nicht nachgewiesen.
+For its pinned September build, the [current CDUMM store source](https://github.com/faisalkindi/CrimsonDesert-UltimateModsManager/blob/b5de424f39ac95e2ef322dd4ed1953ecdd0c5ee6/src/cdumm/engine/storeinfo_native_parser.py) describes eight new raw bytes between the optional `sub_data` and `effect_list` count as well as an additional byte in the store section. The eight bytes have no confirmed technical significance. Older NattKh parsers take 105 or 113 Bytes and contradict each other partially in read/write offsets. This is **not a universal fixed-size record contract**. The local store table is present/hated; A complete store round trip and the current stock/refresh semantics have not yet been proven.
 
 ### Iteminfo
 
-Der lokale Body hat 6.465.724 Bytes und 6.816 Items. Seine SHA-256 ist
-`87a1bbcd77bcaf64fd8d615531bd868a3ed0ca1d3f410ce6dbcb51a6f2c628ce`.
-`parse_iteminfo_from_bytes` → `serialize_iteminfo` des gepinnten crimson-rs ergab
-**byteidentische Ausgabe**. Jedes gelesene `inventory_info_list` hat zehn Einträge,
-passend zur 2.03-Erweiterung gegenüber neun. Der Tabellenheader ist gehasht; sein
-eigenständiger Parser-/Serializer-Nachweis ist noch ein Workbench-Testauftrag.
+The local body has 6,465,724 bytes and 6,816 items. Its SHA-256 is `87a1bbcd77bcaf64fd8d615531bd868a3ed0ca1d3f410ce6dbcb51a6f2c628ce`. `parse_iteminfo_from_bytes` → `serialize_iteminfo` of the pinned crimson-rs resulted in **byteidentical output**. Each `inventory_info_list` read has ten entries, matching the 2.03 extension versus nine. The table header is hashed; its independent parser/serializer proof is still a Workbench test order.
 
-Eine erfolgreiche Serialisierung beweist nicht die Wirkung sämtlicher Statfelder.
-Insbesondere benötigt B11 validierte Statnamensräume und kompatible Buff-/Item-
-Kombinationen. „Lossy“-Parser, die unlesbare Records überspringen, erfüllen die
-Spec nicht und dürfen keine Editoren oder Buildfreigaben begründen.
+Successful serialization does not prove the effect of all stat fields. In particular, B11 requires validated statname spaces and compatible buff/item combinations. Lossy parsers that skip unreadable records do not comply with the spec and may not create editors or build releases.
 
-## Lokalisierung
+## Localisation
 
-Seit dem aktuellen Layout liegen Sprachdateien in Namespace-Dateien je Sprache.
-Lokal ist Deutsch `ger` in Gruppe `0027`. Die geprüfte `item.paloc` hat 649.912 Bytes,
-einen `paloc`-Header von `0x200` Bytes und einen LZ4-Block von 649.400 Bytes, der
-zu 1.807.930 Bytes dekomprimiert. Darin wurden 13.575 Einträge gelesen.
+Since the current layout, language files are in namespace files per language. Local is German `ger` in group `0027`. The tested `item.paloc` has 649,912 bytes, a `paloc` header of `0x200` bytes and an LZ4 block of 649,400 bytes, which decompresses to 1,807,930 bytes. In it, 13,575 entries were read.
 
-Der **dekomprimierte PALOC-Payload** lässt sich bytegleich parsen/serialisieren.
-Das ist kein Nachweis identischer LZ4-Neukompression oder eines Roundtrips der
-gesamten verpackten Datei. Für die geplante lesende Lokalisierung genügt zunächst
-die geprüfte Dekodierung; der Originalcontainer bleibt unverändert. Weitere
-Namespaces/Sprachen und alle Item-Key-Verknüpfungen brauchen Integrationstests.
+The **decompressed PALOC payload** can be parsed/serialized byte-identical. This is not evidence of identical LZ4 recompression or a round trip of the entire packaged file. For the planned reading localization, the checked decoding is first sufficient; The original container remains unchanged. Additional namespaces/languages and all item-key links require integration tests.
 
-## Saves und Fortschritt
+## Saves and Progress
 
-Die [Save-Formatquelle](https://github.com/bbfox0703/crimson-rs/blob/b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0/src/save/mod.rs)
-beschreibt einen 0x80-Byte-Header mit `SAVE`-Magic, Version/Flags, Größenfeldern,
-16-Byte-Nonce und HMAC-SHA256. Der Body wird ChaCha20-entschlüsselt und als
-LZ4-Block dekodiert; HMAC prüft die entschlüsselten komprimierten Bytes.
-Versionabhängige Schlüssel und weitere rohe Headerfelder sind zu beachten.
-Die Referenz kann einen Body trotz falschem HMAC mit `hmac_ok=false` zurückgeben.
-Workbench darf ihn nicht als verlässlich gelesenen Fortschritt behandeln; die
-Integritätsprüfung braucht einen ausdrücklichen Fehlerzustand und Wiederholungslesung.
+The [Save-Formatquelle](https://github.com/bbfox0703/crimson-rs/blob/b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0/src/save/mod.rs) describes a 0x80 byte header with `SAVE` magic, version/flags, size fields, 16 byte-nonce and HMAC-SHA256. The body is decoded ChaCha20 and decoded as LZ4 block; HMAC checks the decrypted compressed bytes. Version-dependent keys and other raw header fields must be observed. The reference can return a body with `hmac_ok=false` despite the wrong HMAC. Workbench shall not treat it as reliable read progress; the integrity check requires an explicit error state and repeat reading.
 
-Quest-/Mission-/Stage-Verknüpfungen sind aus Quellen bekannt. Welche Savezustände
-im **hier installierten Build** welcher 100%-Kategorie entsprechen, wurde nicht
-geprüft. Auch eine vollständige Collectible-Abdeckung ist nicht belegt. Lokale
-Spielstände wurden weder kopiert noch entschlüsselt oder verändert. Für Phase 7:
-geteiltes Read-only-Öffnen, konsistente Wiederholungslesung bei parallelem Speichern,
-keine Save-Writer-API aus Referenzen übernehmen.
+Quest/mission/stage links are known from sources. Which save states in the **build** installed here correspond to which 100% category was not checked. Also, a complete collectible coverage is not occupied. Local saved games have not been copied, decrypted or modified. For phase 7: Shared read-only opening, consistent repeat reading with parallel storage, no save-writer API from references.
 
-## Eigene Apply-Engine und Referenzfehler
+## Own application engine and reference errors
 
-CDUMM dient allein als Quellreferenz. Eigene numerische PAZ/PAMT-Gruppen werden in
-PAPGT registriert; laut aktuellem Referenzcode gewinnt der erste passende Eintrag.
-Deshalb setzt dessen Builder Overlayeinträge vor Vanilla. Die numerisch höchste
-Gruppennummer allein ist kein Vorrangnachweis. Alle aktiven Module müssen vor
-Ausgabe pro Tabellenpfad zusammengeführt werden; das Spiel macht keinen Feldmerge.
+CDUMM serves only as a source reference. own numerical PAZ/PAMT groups are registered in PAPGT; According to the current reference code, the first matching entry wins. That’s why its builder puts overlay entries before vanilla. The numerically highest group number alone is not a proof of priority. All active modules must be merged per table path before output; The game does not make a field merge.
 
-NattKhs [MODDING_GUIDE](https://github.com/NattKh/CRIMSON-DESERT-SAVE-EDITOR-AND-GAME-MODS/blob/96e7f78fcb00d6cb5615171a7f359f0c2de5b114/CrimsonGameMods/MODDING_GUIDE.md)
-berichtet ältere Fehler mit nichtnumerischen Gruppen, alten Headeroffsets und
-gemeinsam gepacktem `iteminfo`/`equipslotinfo`. Diese Hinweise werden zu Regressionstests;
-seine alten Pfade, Sprachmasken und vermeintlich freien Gruppen-IDs sind keine
-aktuellen Vorgaben. Andere Manager können unbekannte Gruppen entfernen – dies
-muss später als fremde Zustandsänderung erkannt werden.
+NattKhs [MODDING_GUIDE](https://github.com/NattKh/CRIMSON-DESERT-SAVE-EDITOR-AND-GAME-MODS/blob/96e7f78fcb00d6cb5615171a7f359f0c2de5b114/CrimsonGameMods/MODDING_GUIDE.md) reports older errors with non-numerical groups, old header offsets and commonly packed `iteminfo`/`equipslotinfo`. These indications become regression tests; his old paths, language masks and supposedly free group IDs are not current requirements. Other managers can remove unknown groups – this must later be recognized as a foreign Zustandchange.
 
-Die lokale Registry ist konsistent, aber der Overlayvorrang wurde absichtlich
-nicht durch Spielverzeichnis-Schreibversuche geprüft. [APPLY_DESIGN](APPLY_DESIGN.md)
-beschreibt Backupherkunft, Journal, Crash-Recovery, laufendes-Spiel-Sperre auch
-für Restore sowie die Grenzen eines bloßen Tempdatei-Rename. In-place-Patching
-ist kein implementierter Fallback. `meta/0.pathc` muss für reine Tabellenoverlays
-nach der Referenz nicht geändert werden.
+The local registry is consistent, but the overlay rank was deliberately not checked by game directory writing attempts. [APPLY_DESIGN](APPLY_DESIGN.md) describes backup origin, journal, crash recovery, running game lock also for restorers as well as the limits of a mere tem file name. In-place patching is not an implemented fallback. `meta/0.pathc` does not need to be changed for pure table overlays after the reference.
 
-## Integrationsentscheidung und Prüfgrenzen
+## Integration decision and test limits
 
-crimson-rs ist MIT-lizenziert, lokal mit Rust 1.95 gebaut und für den geprüften
-Itembody/PALOC-Payload geeignet. Es stellt aber nur `cdylib`/`staticlib` und private
-Rust-Module bereit. Ein unverändertes gepinntes Git-Dependency bietet somit nicht
-die gewünschte öffentliche Rust-API. Phase 1 soll einen kleinen gepflegten Fork
-mit `rlib`/öffentlichen Core-Modulen oder eine begrenzte, lizenzierte Portierung
-entscheiden. Python/C-ABI dienten hier nur dem Referenznachweis.
+crimson-rs is MIT-licensed, built locally with Rust 1.95 and suitable for the tested Itembody/PALOC payload. However, it only provides `cdylib`/`staticlib` and private Rust modules. An unchanged pinned Git-Dependency therefore does not offer the desired public Rust-API. Phase 1 should decide a small maintained fork with `rlib`/public core modules or a limited, licensed porting. Python/C-ABI served here only the reference proof.
 
-Die Referenztests meldeten 354 bestanden, 46 ignoriert, 0 fehlgeschlagen. Einige
-Live-Tests melden ohne Fixtures intern frühzeitig Erfolg; dieser Suite-Lauf ist
-deshalb kein umfassender Realdateibeweis. Separat tatsächlich geprüft wurden
-Itembody, `0008/0.pamt`, `meta/0.papgt` sowie der deutsche Item-PALOC-Payload.
-Keine App-, Frontend-, Apply-, Restore- oder In-game-Tests wurden durchgeführt.
-Ein vollständiger PAZ-Backupsnapshot wurde in Phase 0 nicht angelegt und ist vor
-jeder späteren Schreibfreigabe weiterhin erforderlich.
+The reference tests reported 354 passing, 46 ignored, 0 failed. Some live tests report early success internally without fixtures; This suite run is therefore not a comprehensive real file proof. Separately actually checked Itembody, `0008/0.pamt`, `meta/0.papgt` as well as the German Item PALOC payload. No app, frontend, apply, restore or in-game tests were performed. A full PAZ backup snapshot was not created in phase 0 and is still required before each subsequent write authorization.

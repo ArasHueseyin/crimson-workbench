@@ -12,13 +12,13 @@ export function ItemImage({ session, itemKey, large = false, label }: { session:
     const id = `${session}:${itemKey}`;
     if (!icons.has(id)) {
       if (icons.size > 384) icons.clear();
-      icons.set(id, api.icon(session, itemKey).catch(() => ({ data_url: null, source: null, reason: 'Icon derzeit nicht verfügbar' })));
+      icons.set(id, api.icon(session, itemKey).catch(() => ({ data_url: null, source: null, reason: 'Icon currently unavailable' })));
     }
     icons.get(id)!.then(value => { if (active) setIcon(value); });
     return () => { active = false; };
   }, [session, itemKey]);
   const content=icon?.data_url?<img src={icon.data_url} alt="" draggable={false}/>:<Box size={large?54:24} strokeWidth={1.2}/>;
-  return <>{large&&icon?.data_url?<button type="button" className="item-image large zoom-image" aria-label="Itembild vergrößern" title="Bild vergrößern" onClick={()=>setZoom(true)}>{content}</button>:<span className={`item-image ${large?'large':''}`} title={icon?.reason??icon?.source??'Icon wird geladen'}>{content}</span>}
-    {zoom&&icon?.data_url&&<ImagePreview src={icon.data_url} title={label??`Item ${itemKey}`} caption="Originales Spielicon, vergrößert dargestellt." onClose={()=>setZoom(false)}/>}
+  return <>{large&&icon?.data_url?<button type="button" className="item-image large zoom-image" aria-label="Enlarge item image" title="Enlarge image" onClick={()=>setZoom(true)}>{content}</button>:<span className={`item-image ${large?'large':''}`} title={icon?.reason??icon?.source??'Loading icon'}>{content}</span>}
+    {zoom&&icon?.data_url&&<ImagePreview src={icon.data_url} title={label??`Item ${itemKey}`} caption="Original game icon, enlarged." onClose={()=>setZoom(false)}/>}
   </>;
 }

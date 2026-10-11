@@ -394,7 +394,7 @@ mod tests {
             name: name.into(),
             description: String::new(),
             item_type: 1,
-            category: Some("Nahrung".into()),
+            category: Some("Food".into()),
             max_stack_count: 99,
             detail_json: "{\"raw\":[]}".into(),
         }
@@ -563,7 +563,7 @@ mod tests {
         let filtered = index.search(SearchQuery {
             text: "Apfel".into(),
             item_type: Some(1),
-            category: Some("Nahrung".into()),
+            category: Some("Food".into()),
             ..SearchQuery::default()
         })?;
         assert_eq!(filtered.total, 2);

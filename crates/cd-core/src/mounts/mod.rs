@@ -29,20 +29,20 @@ pub struct Mount {
 }
 fn family(vehicle: u16) -> Option<&'static str> {
     Some(match vehicle {
-        16960 => "Pferde",
-        16962 => "Wildschweine",
-        16966 => "Wölfe",
-        16968 => "Löwen",
-        16969 => "Tiger",
-        16978 => "Kamele",
-        16979 => "Bären",
-        16980 => "Rentiere",
-        16982 => "Kukuvögel",
-        16983 => "Elefanten",
-        16985 => "Leguane",
-        16986 => "Dinosaurier",
-        16993 => "Steinböcke",
-        16994 => "Rinder",
+        16960 => "Horses",
+        16962 => "Boars",
+        16966 => "Wolves",
+        16968 => "Lions",
+        16969 => "Tigers",
+        16978 => "Camels",
+        16979 => "Bears",
+        16980 => "Reindeer",
+        16982 => "Kuku birds",
+        16983 => "Elephants",
+        16985 => "Iguanas",
+        16986 => "Dinosaurs",
+        16993 => "Ibexes",
+        16994 => "Cattle",
         _ => return None,
     })
 }
@@ -99,8 +99,8 @@ pub fn catalog(data: &GameData) -> Result<Vec<Mount>> {
                 &fallback
             })
             .to_owned();
-        out.push(Mount{key,internal,name,description:format!("Reittier der Gruppe {family}. Wird dauerhaft im Stall des ausgewählten Spielstands registriert."),
-            family:family.into(),vehicle,owned:0,supported:false,reason:"Spielstand auswählen.".into(),registration:"unavailable".into()});
+        out.push(Mount{key,internal,name,description:format!("Mount in the {family} group. Registered permanently in the stable of the selected save."),
+            family:family.into(),vehicle,owned:0,supported:false,reason:"Select a save.".into(),registration:"unavailable".into()});
     }
     out.sort_by(|a, b| a.name.cmp(&b.name).then(a.key.cmp(&b.key)));
     Ok(out)
@@ -136,15 +136,17 @@ impl Request {
             || !hex(&self.lobby_sha256, 64)
             || self.key == 0
         {
-            return Err(bad("Ungültige Reittier-Anfrage."));
+            return Err(bad("Invalid mount request."));
         }
         Ok(())
     }
 }
 pub fn save_root() -> Result<PathBuf> {
     Ok(
-        PathBuf::from(std::env::var_os("LOCALAPPDATA").ok_or_else(|| bad("LOCALAPPDATA fehlt."))?)
-            .join("Pearl Abyss/CD/save"),
+        PathBuf::from(
+            std::env::var_os("LOCALAPPDATA").ok_or_else(|| bad("LOCALAPPDATA missing."))?,
+        )
+        .join("Pearl Abyss/CD/save"),
     )
 }
 pub fn snapshot(mut mounts: Vec<Mount>, root: &Path, selected: Option<&str>) -> Result<Snapshot> {
@@ -154,7 +156,7 @@ pub fn snapshot(mut mounts: Vec<Mount>, root: &Path, selected: Option<&str>) -> 
             saves
                 .iter()
                 .find(|s| s.id == id)
-                .ok_or_else(|| bad("Spielstand nicht gefunden."))?,
+                .ok_or_else(|| bad("Save not found."))?,
         ),
         None => saves.first(),
     };
@@ -167,9 +169,9 @@ pub fn snapshot(mut mounts: Vec<Mount>, root: &Path, selected: Option<&str>) -> 
         lobby_sha256: String::new(),
         game_running: running,
         message: if running {
-            "Zum Hinzufügen speichern und das Spiel vollständig schließen."
+            "Save and fully close the game before adding a mount."
         } else {
-            "Ein Reittier auswählen und im Stall registrieren. Danach diesen Spielstand laden."
+            "Choose a mount and register it in the stable. Then load this save in game."
         }
         .into(),
     };
@@ -179,7 +181,7 @@ pub fn snapshot(mut mounts: Vec<Mount>, root: &Path, selected: Option<&str>) -> 
         out.lobby_sha256 = hash_bytes(&lobby);
         edit::annotate(&save, &mut mounts)?;
     } else {
-        out.message = "Keine vollständigen Spielstände gefunden.".into();
+        out.message = "No complete saves found.".into();
     }
     out.mounts = mounts;
     out.saves = saves;
@@ -196,6 +198,6 @@ pub fn register(
     let mount = mounts
         .iter()
         .find(|m| m.key == request.key)
-        .ok_or_else(|| bad("Kein auswählbares Reittier mit dieser ID."))?;
+        .ok_or_else(|| bad("No selectable mount with this ID."))?;
     files::register(game, project, root, request, mount, mounts)
 }

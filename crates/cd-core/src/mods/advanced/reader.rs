@@ -312,7 +312,7 @@ pub fn reoccupation(bytes: &[u8]) -> Result<Record> {
         "reoccupation",
         vec![delay],
     );
-    row.description = "Wartezeit der Gebietswiederbesetzung. Andere Bedingungen und Quest-Zeitgeber bleiben erhalten. Spielzeiteinheit und Wirkung sind noch nicht abgenommen.".into();
+    row.description = "Territory reoccupation wait. Other conditions and quest timers are preserved. Game time unit and effects have not been validated in game.".into();
     Ok(row)
 }
 pub fn equip(bytes: &[u8]) -> Result<Record> {

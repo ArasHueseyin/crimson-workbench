@@ -1,70 +1,39 @@
-# Sicherung und Wiederherstellung – v0.4.6
+# backup and recovery – v0.4.6
 
-Die Modwerkstatt kann bestehende **geschützte Projektproben** wieder öffnen,
-deren Sicherung prüfen und die Rücknahme vorab anzeigen. Diese Funktion arbeitet
-ausschließlich unter `.local/rehearsals/<id>` im Projekt. Sie kann keine
-Spielinstallation wiederherstellen und erteilt keine Live-Schreibfreigabe.
+The mod workshop can reopen existing **protected workspace rehearsals**, check their backup and display the return in advance. This function works exclusively under `.local/rehearsals/<id>` in the project. It cannot restore a game installation and does not issue live write authorization.
 
-## Bedienung
+## Operation
 
-1. **Modwerkstatt → Sicherung & Wiederherstellung → Projektproben laden**.
-2. Eine Projektprobe auswählen und **Backup und Rücknahme prüfen** wählen.
-   Direkt nach einer neuen Probe führt **Letzte Projektprobe prüfen** zum selben
-   Prüfablauf. Das Laden der Liste allein startet keine Wiederherstellung.
-3. Die Vorschau nennt Sicherungsgröße und SHA-256, geprüfte Quellen, offene
-   Transaktionen sowie die zu ersetzenden oder zu entfernenden Dateien mit ihren
-   Vorher-/Nachher-Hashes. Leere eigene Gruppenordner werden zusätzlich genannt.
-4. **Projektkopie wiederherstellen** schließt eine offene Transaktion ab und
-   stellt anschließend die ursprüngliche Registry wieder her. Die App liest
-   danach den tatsächlichen Zustand erneut ein. Bei einer bereits vollständig
-   zurückgesetzten Probe ist der Knopf gesperrt.
+1. **Mod Workshop → backup & restore → workspace rehearsals load**.
+2. Select a workspace rehearsal and select **Check backup and return**.
+Immediately after a new sample **last workspace rehearsaltest** leads to the same test sequence. Loading the list alone does not start a restore.
+3. The preview is called fuse size and SHA-256, tested sources, open
+Transactions as well as the files to be replaced or removed with their before/after hashes. Empty own group folders are additionally mentioned.
+4. **Recover project copy** completes an open transaction and
+Then restore the original registry. The app then reads the actual Zustand again. If the sample is already completely reset, the button is locked.
 
-Normale erfolgreiche Proben sind bereits zurückgesetzt. Die Funktion hilft bei
-abgebrochenen Proben oder einem späteren erneuten Öffnen; der Nutzer muss keinen
-Abbruch erzeugen. Alte v2-Proben und beschädigte Marker werden in der Liste mit
-Begründung angezeigt und sind für diesen Ablauf nicht auswählbar. Die bestehende
-CLI `mod-recover` bleibt für alte Proben erhalten.
+Normal successful samples are already reset. The function helps with aborted samples or a later reopening; the user does not have to create an abort. Old v2 samples and damaged markers are displayed in the list with justification and are not selectable for this expiration. The existing CLI `mod-recover` is retained for old samples.
 
-## Sicherungs- und Vorschaugrenzen
+## Safeguarding and preview limits
 
-- Die Liste liest ausschließlich Marker. Sie ist auf 2.000 Verzeichniseinträge
-  begrenzt und zeigt höchstens 200 Einträge absteigend nach Ordnername.
-- Die ausgewählte v3-Probe muss ihr hashgebundenes Schutzmanifest, ihre Quellen,
-  das bestehende Engine-Lock, die Registry-Sicherung und die Historie besitzen.
-  **Die neue Vorschau und die darauf folgende Wiederherstellung legen fehlende
-  Backups oder Historien niemals neu an.** Eine unvollständige Initialisierung
-  bleibt zur Diagnose erhalten; eine neue Probe bekommt einen eigenen Ordner.
-- Die Prüfung hält die vorhandenen Start-/Quell-/Backup-/Ordnersperren an der
-  Projektkopie und das exklusive Transaktionslock. Es werden keine Inhaltsdateien,
-  Marker, Backups oder Journale angelegt oder verändert. Windows kann durch
-  Lesezugriffe Dateisystem-Zugriffsmetadaten ändern.
-- Die Rücknahmevorschau ist an den physischen Projektpfad, Marker, Backuphash,
-  nächste Transaktionsnummer, offene Transaktion, Registryzustand und die konkret
-  vorhandenen zu entfernenden Dateien gebunden. Unmittelbar vor Restore wird sie
-  unter erneut gehaltenen Sperren rekonstruiert und verglichen. Eine andere
-  Projektkopie oder ein veralteter Plan wird abgewiesen.
-- Der Planbezeichner ist ein Änderungsvergleich, kein Herkunftszertifikat und
-  kein Sicherheitsgeheimnis. Der bestehende Pfadschutz, das Schutzmanifest und
-  die erneuten Quell-/Backup-/Historienprüfungen bleiben erforderlich.
-- Fehlende aktive Dateien, fremde Inhalte, beschädigte Backups, Hardlinks,
-  veränderte Quellen oder Registry und ein bereits laufendes geschütztes
-  Testprogramm verhindern die Wiederherstellung. Es gibt keine automatische
-  Reparatur oder Wiederholung nach einem Fehler.
+- The list only reads markers. It is on 2,000 directory entries
+limited and shows at most 200 entries descending by folder name.
+- The selected v3 sample must display its hash-bound protective manifesto, its sources,
+have the existing engine lock, the registry backup and the history. **The new preview and subsequent recovery never recreate missing backups or histories.** An incomplete initialization remains for diagnosis; A new sample gets its own folder.
+- The test keeps the existing start/source/backup/folder locks at the
+Project copy and the exclusive transaction lock. No content files, markers, backups or journals are created or modified. Windows can modify file system access metadata through read accesses.
+- The return preview is to the physical project path, marker, backup hash,
+next transaction number, open transaction, registry state and the specific files to be removed. Immediately before Restore, it is reconstructed and compared under renewed locks. Another project copy or outdated plan will be rejected.
+- The plan identifier is a change comparison, not a certificate of origin and
+No security secret. Existing Path Protection, Protective Manifesto and re-source/backup/history checks remain necessary.
+- Missing active files, foreign content, damaged backups, hardlinks,
+altered sources or registry and an already running protected test program prevent the recovery. There is no automatic repair or repetition after an error.
 
-Bei einer offenen Transaktion entscheidet die bereits sichtbare Registry wie im
-bisherigen Kern: Vorher-Zustand bedeutet Rollback, Nachher-Zustand bedeutet
-Abschluss des Commits. Nur nachgewiesene eigene obsolete Dateien werden entfernt.
-Danach wird gegebenenfalls eine eigene Restore-Transaktion angelegt, die zuerst
-die Registry auf die Sicherung zurücksetzt und erst dann die aktiven eigenen
-Overlaydateien entfernt. Ursprüngliche Archive bleiben unberührt. Sicherung,
-frühere Journale und private Stagingdaten bleiben erhalten.
+In the case of an open transaction, the already visible registry decides as in the previous core: Before-Zustand means rollback, After-Zustand means completion of the commit. Only proven own obsolete files are removed. After this, a separate restore transaction may be created, which first resets the registry to the backup and only then removes the active own overlay files. Original archives remain unaffected. backup, earlier journals and private staging data are preserved.
 
-Ein Ergebnisbericht `recovery-<id>.json` wird innerhalb derselben Probe erzeugt.
-Schlägt nur dieser Berichtsexport fehl, kann der Restore bereits abgeschlossen
-sein; **erneut prüfen** zeigt dann den tatsächlichen Zustand. Es wird niemals
-automatisch nochmals geschrieben.
+A result report `recovery-<id>.json` is generated within the same sample. If only this report export fails, the restore can already be completed; **check again** then shows the actual Zustand. It is never automatically rewritten.
 
-## CLI und API
+## CLI and API
 
 ```powershell
 cargo run -p cd-cli --locked -- mod-backups
@@ -72,27 +41,10 @@ cargo run -p cd-cli --locked -- mod-restore-preview .local/rehearsals/<id>
 cargo run -p cd-cli --locked -- mod-restore .local/rehearsals/<id> --review-id <review_id>
 ```
 
-Die `review_id` stammt aus der unmittelbar vorher geprüften Vorschau.
-`apply::recovery::{list, inspect, restore}` verwendet dieselbe Projektpfadgrenze
-wie die bisherigen Proben. Desktopbefehle `rehearsal_list`, `rehearsal_review`
-und `rehearsal_restore` verlangen eine aktuelle Katalogsitzung und sind nur für
-das lokale Hauptfenster freigegeben. Ein Sitzungswechsel oder Ansichtswechsel
-verhindert die Anzeige verspäteter UI-Antworten. Eine bereits gestartete
-Transaktion läuft unter ihren Sperren zu Ende; Navigation ist kein Abbruch.
+The `review_id` comes from the preview checked immediately beforehand. `apply::recovery::{list, inspect, restore}` uses the same project path boundary as the previous samples. Desktop commands `rehearsal_list`, `rehearsal_review` and `rehearsal_restore` require a current catalog session and are only shared for the local main window. A change of session or view prevents the display of delayed UI responses. An already started transaction ends under its locks; Navigation is not an abort.
 
-## Nachweise und offene Arbeit
+## Evidence and open work
 
-Sechs neue Core-Tests prüfen lesende Vorschau, fehlende Sicherung, identische
-Vorher-/Nachher-Hashes, offene Transaktionen vor/nach Commit, veraltete oder
-fremde Vorschauen, beschädigte Quellen/Backups/Registry/Overlays, Hardlinks,
-geschützte Pfade und begrenzte Listen. An allen 69 bestehenden
-Apply-/Reapply-/Restore-Abbruchpunkten werden zusätzlich die Vorschau-Hashes
-gegen die tatsächlich wiederhergestellten oder entfernten Dateien geprüft.
-Vier UI-Flows prüfen den expliziten Ablauf, fehlerhafte Sicherungen, veraltete
-Pläne, leere/alte Einträge, Navigation während einer Prüfung und 1024px Breite.
+Six new core tests check reading previews, missing backup, identical before/after hashes, open transactions before/after commit, obsolete or third-party previews, corrupted sources/backups/registry/overlays, hardlinks, protected paths and limited lists. At all 69 existing Apply/Reapply/Restore abort points, the preview hashes are additionally checked against the actually restored or removed files. Four UI flows check the explicit sequence, faulty backups, outdated plans, empty/old entries, navigation during a check and 1024px width.
 
-Der erfolgreiche vollständige Inhaltsvergleich der Nutzerinstallation bleibt
-ein [separater Cachevergleich](CONTENT_AUDIT.md). Unabhängig bestätigte
-Vanilla-Herkunft, Live-Backup-/Updateintegration, vollständige Absicherung der
-Live-Start-/Ladepfade und In-game-Abnahme bleiben offen. Phase 4 ist noch nicht
-abgeschlossen; Phase 5 wurde nicht begonnen.
+The successful complete content comparison of the user installation remains a [Separate cache comparison](CONTENT_AUDIT.md). Independently confirmed vanilla origin, live backup/update integration, full protection of live start/load paths and in-game acceptance remain open. Phase 4 is not yet completed; Phase 5 was not started.

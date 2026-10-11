@@ -1,90 +1,53 @@
-# Gespeicherte Ausgangsbasis und Registry-Sicherung – v0.4.7
+# Saved baseline and Registry-backup – v0.4.7
 
-Die Modwerkstatt kann einen vollständigen exportierten Inhaltsprüfbericht mit
-der aktuellen Dateiliste, den Steam-Depotlisten und der Registry vergleichen.
-Danach speichert sie den unveränderten Bericht und eine erneut geprüfte Kopie
-von `meta/0.papgt` im Projekt. Damit ist der beobachtete Ausgangsstand nach einem
-App-Neustart verfügbar. Die Originalarchive werden nicht kopiert oder erneut
-gehasht; diese Funktion ist keine vollständige Spielsicherung.
+The Mod Workshop can compare a full exported content review with the current file list, Steam repository lists, and registry. After that, it saves the unchanged report and a re-checked copy of `meta/0.papgt` in the project. Thus, the observed baseline is available after an app restart. The original archives are not copied or hashed again; This function is not a complete backup.
 
-Seit v0.4.8 kann der separate [Live-Adapter](LIVE_APPLY.md) einen solchen Stand
-mit zusätzlicher Herkunftsbestätigung und frischen geschützten Quellhashes nutzen.
-Die hier beschriebene Speicherung allein richtet Live-B0 nicht ein.
+Since v0.4.8, the separate [Live-Adapter](LIVE_APPLY.md) can use such a stand with additional confirmation of origin and fresh protected source hashes. The storage described here alone does not set up Live-B0.
 
-## Bedienung
+## Operation
 
-1. **Modwerkstatt → Ausgangsbasis & Registry-Sicherung → Prüfstände laden**.
-2. Einen zuvor exportierten Bericht auswählen und **Bericht für Ausgangsbasis
-   prüfen** wählen. Dateien, Größen, Depot- und Buildidentität sowie der aktuelle
-   Registry-Inhalt müssen zum Bericht passen.
-3. **Ausgangsbasis speichern** kopiert Bericht und Registry in einen neuen
-   Projektordner. Die Vorschau wird vor dem Speichern erneut geprüft. Eine
-   geänderte Installation oder Berichtsdatei macht die Vorschau ungültig.
-4. Später den gespeicherten Ausgangsstand auswählen und **Gespeicherten Stand
-   prüfen** wählen. Die App prüft die gespeicherten Dateien und vergleicht die
-   aktuellen Installationsmetadaten. Alte Sicherungen werden nicht überschrieben.
+1. **Mod Workshop → baseline & Registry-backup → Load test benches**.
+2. Select a previously exported report and **report for baseline
+Select **. Files, sizes, repository and build identity, and current registry content must fit the report.
+3. **baseline save** copies report and registry to a new
+Project folder. The preview is checked again before the storage. A modified installation or report file invalidates the preview.
+4. Later select the stored baseline and **Stored status
+Select **. The app checks the stored files and compares the current installation metadata. Old fuses are not overwritten.
 
-Die ursprüngliche vollständige Inhaltsprüfung bleibt beim laufenden Spiel
-gesperrt. Deren bereits exportierter Bericht lässt sich hingegen während des
-Spielens übernehmen: Dieser Ablauf liest nur Metadaten und die kleine Registry,
-verwendet keine Start-/Schreibsperren und schreibt ausschließlich ins Projekt.
-Registry-Handles erlauben Read/Write/Delete-Sharing. Es wird kein Prozess gesteuert.
+The original full content check remains locked while the game is running. Their already exported report, on the other hand, can be adopted during play: This process only reads metadata and the small registry, does not use start/write locks and writes exclusively to the project. Registry handles allow read/write/delete sharing. No process is controlled.
 
-## Inhalt und Veröffentlichung
+## Content and publication
 
-Jeder Stand hat einen eigenen Ordner `.local/baselines/<id>` mit:
+Each stand has its own folder `.local/baselines/<id>` with:
 
-| Datei | Inhalt |
+|File|Content|
 |---|---|
-| `audit.json` | Byteidentische Kopie des ausgewählten vollständigen Prüfberichts einschließlich aller beobachteten SHA-256-Werte |
-| `registry.papgt` | Kopie der Registry, deren Größe und SHA-256 zum Prüfbericht passen |
-| `snapshot.json` | Versioniertes Abschlussmanifest mit Berichts-/Registryhash, Metadatenidentität und Erstellzeit |
+|`audit.json`|Byteidentical copy of the selected complete test report including all observed SHA 256 values|
+|`registry.papgt`|Copy of the registry, whose size and SHA-256 match the test report|
+|`snapshot.json`|Versioned final manifesto with report/registryhash, metadata identity and creation time|
 
-Bericht und Registry werden nach dem Schreiben erneut gelesen und verglichen.
-Auch die aktuellen Metadaten werden unmittelbar vor dem Abschluss nochmals
-verglichen. Erst danach wird das Manifest atomar als neue Datei veröffentlicht.
-Eine unterbrochene Kopie ohne gültiges Manifest kann nicht als gespeicherter
-Stand geöffnet werden. Sie bleibt zur Diagnose erhalten; Wiederholen erstellt
-einen neuen Ordner. Kein existierender Stand wird ergänzt oder ersetzt.
+Report and registry are re-read and compared after writing. The current metadata is also compared again immediately before the conclusion. Only then will the manifest atomar be published as a new file. An interrupted copy without a valid manifest cannot be opened as a stored state. it is maintained for diagnosis; Repeat creates a new folder. No existing status is supplemented or replaced.
 
-Eingaben sind auf lokale Berichtdateien direkt unter `exports/` mit Namen
-`installation-audit-*.json` beschränkt. Berichtgröße maximal 8 MiB, Registry
-maximal 1 MiB, Manifest maximal 16 KiB. Unbekannte/mehrfach angegebene JSON-Felder,
-falscher Berichtstyp, Teilberichte, widersprüchliche Erfolgsflags, behauptete
-Vanilla-/Schreibfreigabe, doppelte oder unsichere Dateipfade, ungültige Hashes,
-unzulässige Größen und widersprüchliche Depotlisten werden abgewiesen. Projekt-
-und Spiel-/Save-Pfadgrenzen sowie Hardlinkprüfungen bleiben aktiv.
+Entries are limited to local report files directly under `exports/` with names `installation-audit-*.json`. Report size maximum 8 MiB, Registry maximum 1 MiB, Manifest maximum 16 KiB. Unknown/multiple specified JSON fields, incorrect report type, partial reports, conflicting success flags, claimed vanilla/write authorization, duplicate or insecure file paths, invalid hashes, inadmissible sizes and conflicting custodian lists are rejected. Project and game/save path boundaries as well as hardlink checks remain active.
 
-Die Listen sind auf je 2.000 Verzeichniseinträge begrenzt und zeigen höchstens
-200 passende Namen. Verknüpfte Einträge werden nicht angeboten. Der Nutzer
-wählt den Bericht bzw. Ausgangsstand ausdrücklich; eine neue Prüfung oder ein
-Speichervorgang wird nicht automatisch gestartet.
+The lists are limited to 2,000 directory entries and show at most 200 suitable names. Linked entries are not offered. The user selects the report or baseline expressly; A new check or storage process is not automatically started.
 
-## Bedeutung des Status
+## Significance of status
 
-- **Metadaten passen:** Gespeicherter Bericht und Registry-Kopie sind intakt;
-  aktuelle Build-/Depot-/Dateimetadaten und Registry passen zum gespeicherten
-  Stand. Das ist keine erneute Inhaltsprüfung der großen Archive.
-- **Installation weicht ab:** Der gespeicherte Stand bleibt erhalten; die
-  aktuelle Installation hat abweichende oder unvollständige Metadaten. Es erfolgt
-  keine Reparatur und kein Restore über einen möglicherweise neuen Build.
-- **Installation nicht prüfbar:** Der gespeicherte Stand ist intern intakt,
-  aber die Installation konnte nicht inventarisiert werden.
-- Ein beschädigter gespeicherter Bericht, eine geänderte Registry-Kopie oder
-  ein ungültiges Manifest führt zu einem Fehler statt einem Erfolgsstatus.
+- **Metadata fit:** Saved report and registry copy are intact;
+Current build/depot/file metadata and registry match the stored status. This is not a re-examination of the contents of the large archives.
+- **Installation deviates:** The stored status is preserved; they are:
+Current installation has deviant or incomplete metadata. There is no repair and no restore over a possibly new build.
+- **Installation not testable:** The stored status is internally intact,
+But the installation could not be inventoried.
+- A corrupted saved report, a modified registry copy, or
+An invalid manifesto leads to an error instead of a success status.
 
-Der Zeitpunkt der ursprünglichen Inhaltsprüfung bleibt sichtbar. Gleich große
-Archivänderungen mit passenden Metadaten können unbemerkt bleiben; ein eigener
-Test hält diese Grenze ausdrücklich fest. Vor Live-Apply müssen die relevanten
-Quellinhalte unter dem dafür vorgesehenen Schutz erneut geprüft werden.
+The time of the original content check remains visible. Similarly large archive changes with matching metadata can go unnoticed; an own test expressly establishes this limit. Before live apply, the relevant source contents must be checked again under the protection provided for this purpose.
 
-Die Herkunft bleibt **lokaler, nicht unabhängig authentifizierter Steam-Cache**.
-Das Manifest ist eine prüfbare Ablage und kein externes Herkunftszertifikat.
-`certified_vanilla` und `can_apply` bleiben false. Die gespeicherte Basis wird
-noch nicht als vertrauenswürdige B0-Live-Basis zugelassen; die Registry-Kopie
-kann nicht über diese Ansicht in die Installation zurückgeschrieben werden.
+The origin remains **local, not independently authenticated Steam cache**. The manifest is an auditable filing and not an external certificate of origin. `certified_vanilla` and `can_apply` remain false. The stored base is not yet approved as a trusted B0 live base; The registry copy cannot be written back to the installation via this view.
 
-## CLI und Desktop
+## CLI and Desktop
 
 ```powershell
 cargo run -p cd-cli --locked -- baseline-list
@@ -93,19 +56,10 @@ cargo run -p cd-cli --locked -- baseline-capture installation-audit-<name>.json 
 cargo run -p cd-cli --locked -- baseline-status <id>
 ```
 
-Die vier Desktopbefehle `baseline_catalog`, `baseline_preview`, `baseline_capture`
-und `baseline_inspect` verlangen eine aktuelle Katalogsitzung und sind nur für
-das lokale Hauptfenster zugelassen. Verspätete UI-Antworten nach Navigation oder
-Sitzungswechsel können keine alte Speichervorschau wieder aktivieren.
+The four desktop commands `baseline_catalog`, `baseline_preview`, `baseline_capture` and `baseline_inspect` require a current catalog session and are only allowed for the local main window. Delayed UI responses after navigation or session changes cannot re-enable old memory previews.
 
-## Testreihenfolge
+## Test sequence
 
-Der Nutzer hat am 20.09.2026 entschieden, die manuellen Spieltests erst nach
-Abschluss der Entwicklung aller Phasen durchzuführen. Sie bleiben dokumentiert
-und gelten bis dahin als offen. Automatisierte Tests, Sicherungs-/Pfadprüfungen
-und die Voraussetzungen für Live-Schreibzugriffe bleiben davon unabhängig.
+The user has decided on 20.09.2026 to carry out the manual in-game tests only after completion of the development of all phases. They remain documented and are considered open until then. Automated tests, backup/path checks and the requirements for live write operations remain independent of this.
 
-Sieben neue Core-Tests decken Speicherinhalt, Eingabegrenzen, unterbrochene
-Veröffentlichung, veraltete Vorschauen, Manipulation/Hardlinks, Updatezustand,
-Erhalt alter Sicherungen und unveränderte Quelldateien ab. Vier neue UI-Flows
-prüfen Übernahme, Wiederöffnen, Fehler-/Updatezustände und verworfene Vorschauen.
+Seven new core tests cover memory content, input limits, interrupted release, outdated previews, manipulation/hardlinks, update status, retention of old backups, and unchanged source files. Four new UI flows check takeover, reopen, error/update states and discarded previews.

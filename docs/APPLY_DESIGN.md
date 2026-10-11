@@ -1,130 +1,56 @@
-# B0 – Entwurf der eigenen Apply-Engine
+# B0 – Design of your own apply engine
 
-Stand: 20.09.2026. Der Zielentwurf stammt aus Phase 0. Seit v0.4.8 existieren
-Transaktionskern, geschützte Projektproben und ein eigener Live-Adapter für
-Einrichtung, Apply/Reapply, Restore sowie Recovery. [Aktuelle Implementierung,
-Vertrauensmodell, Basiswechsel und Grenzen](LIVE_APPLY.md).
-Der echte Nutzerbericht und das Registry-Backup sind gespeichert. Eine Live-
-Zulassung des Nutzerrechners wurde nicht vorgenommen. Manuelle Spieltests bleiben
-bis nach Abschluss aller Entwicklungsphasen zurückgestellt und blockieren die
-weitere Entwicklung nicht.
-Verbindliche Grundlage: aktualisierte `SPEC.md` und die Bitte des Nutzers, während
-des Spielens keine Spieldateien zu verändern. CDUMM ist ausschließlich eine
-Recherchequelle; es wird weder installiert noch aufgerufen oder vorausgesetzt.
+Status: 20.09.2026. The target design comes from phase 0. Since v0.4.8 there are transaction cores, protected workspace rehearsals and a live adapter for setup, apply/reapply, restore and recovery. [Current implementation, trust model, base change and boundaries](LIVE_APPLY.md). The real user report and the registry backup are saved. A live approval of the user computer was not made. Manual in-game tests remain postponed until all development phases have been completed and do not block further development. Mandatory basis: updated `SPEC.md` and the request of the user not to modify any game files while playing. CDUMM is exclusively a research source; it is neither installed nor called or provided.
 
-## Schreibgrenze
+## Write limit
 
-Nur B0 darf Spieldateien schreiben. Parser, Datenbank, Modmodule,
-Profilwechsel und CLI-Analyse arbeiten mit gelesenen Bytes und Änderungen im
-Arbeitsspeicher. Ein Profilwechsel plant dieselbe B0-Transaktion wie Apply.
-Spielstände sind in allen Phasen ausschließlich lesbar.
+Only B0 can write game files. Parser, database, mod modules, profile change and CLI analysis work with read bytes and changes in memory. A profile change plans the same B0 transaction as Apply. saved games are only readable in all phases.
 
-Während Crimson Desert läuft, sind Apply, Restore, Reparatur und Wiederanwendung
-gesperrt. Ein gefundenes Spiel wird weder beendet noch neu gestartet. Ein
-Lesefehler bei der Prozessprüfung gilt nicht als Nachweis, dass das Spiel beendet
-ist. Die Prüfung erfolgt vor der Planung und erneut unmittelbar vor dem Commit.
-Ein einfacher Prozesscheck allein beseitigt das Rennen mit einem gleichzeitigen
-Spielstart nicht: Für Phase 4 ist ein getesteter Windows-Schreibschutz-/Lock- und
-Abbruchmechanismus nötig. Dieser ist inzwischen an eigenen Kopien integriert und
-geprüft und an den vollständigen Inhaltsbericht mit allen darin erfassten EXEs angebunden.
+While Crimson Desert is running, Apply, Restore, Repair and Reapplication are locked. A found game is neither ended nor restarted. A reading error during process verification is not considered proof that the game has ended. The examination takes place before the planning and again immediately before the commit. A simple process check alone does not eliminate the race with a simultaneous game start: a tested Windows Writer Protection/Lock and Abort mechanism is necessary for phase 4. This is now integrated and checked on own copies and connected to the complete content report with all EXEs recorded therein.
 
-## Vertrauenswürdiger Ausgangszustand
+## Trustworthy baseline
 
-Ein frisch berechneter Hash ist eine Beobachtung, kein Beweis für Vanilla.
-Dateiversion, Steam-Build-ID oder ein fehlender Modordner reichen ebenfalls nicht.
-Eine bekannte Builddefinition muss die erwarteten Ausgangshashes der betroffenen
-Metadaten und Originalarchive enthalten oder aus einer unabhängig bestätigten
-Vanilla-Installation stammen. Backups werden nach dem Kopieren erneut gehasht.
-Die Phase-0-Beobachtung wird ausdrücklich nicht automatisch in eine erlaubte
-Builddefinition umgewandelt.
+A freshly calculated hash is an observation, not evidence of vanilla. File version, Steam-Build-ID or a missing modfolder are also not enough. A known build definition must contain the expected initial hashes of the affected metadata and original archives or come from an independently confirmed vanilla installation. Backups are hashed again after copying. The phase 0 observation is expressly not automatically converted into a permitted build definition.
 
-Der Vanilla-Buildfingerprint wird aus den ursprünglichen, zugeordneten Archiven
-bestimmt. Ein eigenes Overlay erhält ein separates Inhalts-/Besitzmanifest;
-dessen erzeugte Bytes dürfen weder die Vanilla-Basis ersetzen noch bei erneutem
-Apply als unbekannter neuer Spielbuild fehlklassifiziert werden. Effektiv geladene
-Tabellen und originale Basis bleiben bei Anzeige und Diagnose unterscheidbar.
+The Vanilla buildfingerprint is determined from the original, assigned archives. A separate overlay receives a separate content/possession manifest; Its generated bytes must neither replace the vanilla base nor be misclassified as an unknown new game build upon reapply. Effectively loaded tables and original base remain distinguishable during display and diagnosis.
 
-Unbekannte Builds, veränderte Ausgangsarchive und fremde Gruppen verhindern Apply.
-Die Spec erlaubt eine Rückfrage zu Fremdmods; eine Bestätigung hebt die Forderung
-nach nachgewiesenem Vanilla und getesteten Schemas nicht auf. Ein späterer
-Koexistenzmodus braucht eine gesondert überprüfte Ausgangsbasis und Konfliktplan.
-Steam-Dateiprüfung kann als manuelle Abhilfe genannt werden, wird aber nicht
-während des Spielens automatisch gestartet.
+Unknown builds, altered source archives and foreign groups prevent Apply. The spec allows a query about foreign mods; a confirmation does not cancel the requirement for proven vanilla and tested schemes. A later coexistence mode requires a separately verified baseline and conflict plan. Steam file verification can be mentioned as a manual remedy, but it does not start automatically while playing.
 
-Der Cache wurde für v0.4.2 genauer geprüft: Beide zum installierten Build
-gehörenden Depotmanifeste haben leere Signaturabschnitte. Sie bieten Dateihashes,
-aber bisher keinen unabhängig authentifizierten Ursprung. Details und IDs:
-[B1/B2-Feldnachweise und Steam-Cachebefund](research/PHASE4_FIELDS.md).
+The cache has been checked more closely for v0.4.2: Both depot manifests belonging to the installed build have empty signature sections. They offer file hashes, but so far no independently authenticated origin. Details and IDs: [B1/B2 field evidence and Steam cache finding](research/PHASE4_FIELDS.md).
 
-## Geplante Transaktion
+## Planned transaction
 
-1. Schreibsperre pro Installation erwerben; Spielprozess und Rechte prüfen.
-2. Build, Vanilla-Nachweis, Backupzustand und fremde Änderungen prüfen.
-3. Tabellen aus Vanilla lesen, alle Module deterministisch zusammenführen und
-   überlappende widersprüchliche Änderungen mit Feld/Offset melden.
-4. Dry Run erzeugen: fachliche Änderungen und vollständige Liste der erzeugten,
-   ersetzten oder entfernten Dateien samt Ausgangs-/Zielhash und benötigtem Platz.
-5. Eigene Overlaygruppe in einem Stagingbereich erstellen; PAMT, Offsets,
-   Kompression, Prüfsummen und Rücklesen prüfen. Gruppen-ID nicht fest einbauen,
-   sondern Kollisionen und belegte IDs berücksichtigen. Auch in PAPGT registrierte
-   IDs ohne vorhandenen Ordner sind belegt (etwa optionale Sprachpakete).
-6. Journal und überprüfte Sicherung vor dem ersten Spielverzeichnis-Schreibzugriff
-   dauerhaft speichern. Erwartete Vorher-Hashes direkt vor dem Commit erneut prüfen.
-7. Nach erneuter Spielprüfung Overlaydateien auf demselben Volume vorbereiten und
-   vollständig bereitstellen; Gruppenregistrierung zuletzt ersetzen.
-8. Alle Zielhashes verifizieren, Journal abschließen und nächsten Spielstart als
-   Zeitpunkt der Wirkung anzeigen.
+1. Purchase write lock per installation; Checking the game process and rights.
+2. Check build, vanilla proof, backup status and third-party changes.
+3. Read tables from vanilla, combine all modules deterministically and
+Report overlapping conflicting changes with field/offset.
+4. Generate Dry Run: technical changes and complete list of generated,
+replaced or removed files including initial/target hash and required space.
+5. Create your own overlay group in a staging area; PAMT, offsets,
+Check compression, checksums and read-back. Do not permanently install group ID, but take into account collisions and occupied IDs. IDs registered in PAPGT without existing folders are also occupied (for example, optional language packs).
+6. Journal and reviewed backup before first game directory write access
+permanently store. Re-check expected before-hashes right before committing.
+7. After re-checking the game, prepare overlay files on the same volume and
+fully deployed; Replace group registration last.
+8. Verify all target hashes, complete journal and next game start as
+Show the time of the effect.
 
-Tempdatei plus Rename ist nur für **eine Datei** atomar. Eine Gruppe aus PAZ,
-PAMT und PAPGT ist dadurch noch keine atomare Transaktion. Crash-Recovery benötigt
-ein versioniertes Journal mit Zuständen, dauerhafte Flushes, eine klar bestimmte
-Commit-Grenze und Wiederanlauf-/Rollbacktests an jeder Schreibgrenze. Recovery
-prüft ebenfalls zuerst, ob das Spiel läuft; sie schreibt dann gegebenenfalls erst
-nach dessen Beendigung. Der genaue Windows-Mechanismus wird in Phase 4 umgesetzt.
+Temp file plus rename is atomic only for **a file**. As a result, a group of PAZ, PAMT and PAPGT is not yet a nuclear transaction. Crash Recovery requires a versioned journal with states, permanent flushes, a clearly defined commit limit, and restart/rollback tests at each writing limit. Recovery also checks first if the game is running; It may then write only after its termination. The exact Windows mechanism is implemented in phase 4.
 
-## Wiederanwendung und Restore
+## Reuse and Restore
 
-Jedes Apply baut von Vanilla plus aktuellen Einstellungen neu. Eigene bereits
-modifizierte Tabellen sind niemals die Basis eines weiteren Apply.
+Each Apply rebuilds from Vanilla plus current settings. Own already modified tables are never the basis of another Apply.
 
-Restore prüft, dass registrierte Gruppe und Registry noch unserem letzten Commit
-entsprechen, setzt die passende Registry-Sicherung zurück, entfernt ausschließlich
-unsere nachweislich eigenen Dateien und prüft alle betroffenen Ausgangshashes.
-Fremde Änderungen seit Apply führen zum Abbruch; sie werden nicht durch eine alte
-Sicherung überschrieben. Unterbrechungen müssen wiederanlaufbar sein.
+Restore checks that the registered group and registry are still compliant with our last commit, resets the appropriate registry-backup, removes only our demonstrably own files and checks all affected initial hashes. Foreign changes since Apply lead to cancellation; They are not overwritten by an old backup. Interruptions shall be restartable.
 
-Bei einem Spielupdate werden alter Snapshot und Journal aufbewahrt. Es wird nie
-blind eine alte `0.papgt` über den neuen Build kopiert. Ein unverändert gebliebenes
-Overlay ist ebenfalls nicht automatisch kompatibel. Neue Schemas und ein neuer
-Vanilla-Nachweis sind Voraussetzung für ein angebotenes erneutes Apply. Falls
-ein unbekannter Zustand nicht sicher automatisch zu bereinigen ist, bleibt B0
-gesperrt und benennt die nötige manuelle Wiederherstellung.
+A game update keeps old snapshot and journal. It never blindly copies an old `0.papgt` over the new build. An unchanged overlay is also not automatically compatible. New schemes and a new vanilla proof are a prerequisite for an offered reapply. If an unknown Zustand cannot be safely cleaned automatically, B0 remains locked and indicates the necessary manual restoration.
 
-## Ausstehender Nachweis
+## Pending proof
 
-Die Referenzimplementierung und die lokale Archivstruktur können die technische
-Machbarkeit eines Overlays begründen. Dass jede unserer Tabellen über eine eigene
-Gruppe tatsächlich Vorrang erhält und das Spiel damit startet, muss zusätzlich
-mit einem kontrollierten Test nachgewiesen werden. In Phase 0 werden dafür keine
-Spieldateien geändert. In-place-Patching bleibt bis zu einem belegten Scheitern
-des Overlays und vollständig getesteten Sicherungs-/Restorepfaden deaktiviert.
+The reference implementation and the local archive structure can justify the technical feasibility of an overlay. The fact that each of our tables actually receives priority over its own group and the game starts with it must also be proven with a controlled test. In phase 0, no game files are changed for this. In-place patching remains deactivated until a proven failure of the overlay and fully tested backup/restore paths.
 
-CDUMM stellt seine Gruppenregistrierungen vor vorhandene Einträge und beschreibt
-die Auflösung als „first match wins“. Eine höhere numerische Gruppen-ID allein
-ist daher kein belastbarer Vorrangmechanismus. Tabellen-Overlays benötigen auch
-die zugehörigen `.staticinfoheader`; bei geänderter Datensatzgröße müssen deren
-Offsets neu berechnet werden. Quellen und technische Details:
-[`research/APPLY.md`](research/APPLY.md).
+CDUMM puts its group registrations in front of existing entries and describes the resolution as “first match wins”. A higher numeric group ID alone is therefore not a robust priority mechanism. Table overlays also need the associated `.staticinfoheader`; when the data set size is changed, their offsets must be recalculated. Sources and technical details: [`research/APPLY.md`](research/APPLY.md).
 
-NattKhs `MODDING_GUIDE.md` dokumentiert zusätzlich einen älteren In-game-Fehler,
-wenn `iteminfo` und `equipslotinfo` in derselben Gruppe liegen. Der Gruppenplan
-muss deshalb mehrere eigene Gruppen unterstützen, sollte `equipslotinfo` später
-benötigt werden. Die damalige Trennung ist ein Testfall für den aktuellen Build,
-keine bereits auf dieser Installation bestätigte Eigenschaft. Ebenso sind die
-dort genannten freien IDs ab 0036 und die Sprachmaske `0x3fff` veraltet: Die
-lokale Registry enthält reservierte IDs bis 0040 und die Maske `0x7fff`.
+NattKhs `MODDING_GUIDE.md` also documents an older in-game error if `iteminfo` and `equipslotinfo` are in the same group. The group plan must therefore support several groups of its own if `equipslotinfo` is needed later. The separation at that time is a test case for the current build, not a property already confirmed on this installation. Likewise, the free IDs mentioned there are obsolete from 0036 and the voice mask `0x3fff`: The local registry contains reserved IDs up to 0040 and the mask `0x7fff`.
 
-Spielinterne Integritätswerte sind Jenkins-`hashlittle`-Checksummen und werden
-separat von den SHA-256-Hashes für Buildvergleich, Besitznachweis und Backupprüfung
-behandelt. Der geplante Tabellen-Overlaypfad benötigt keine Änderung an
-`meta/0.pathc`; Textur-Overlays sind kein Bestandteil von B0 in dieser Spec.
+In-game integrity values are Jenkins `hashlittle` checksums and are handled separately from the SHA 256 hashes for build comparison, proof of ownership, and backup verification. The scheduled table overlay path does not require a change to `meta/0.pathc`; Texture overlays are not part of B0 in this spec.

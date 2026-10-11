@@ -1,118 +1,75 @@
-# Reparatur 0.10.0 – Inventar- und Ausrüstungszugriffe für Build 2949
+# Repair 0.10.0 – Inventory and equipment accesses for build 2949
 
-Historischer Layoutnachweis. Ergänzende Ereignisprüfung:
-[Entwicklungsmodul 0.11.0](EQUIPMENT_EVENTS_2949.md).
+Historical layout proof. Additional event testing: [Development module 0.11.0](EQUIPMENT_EVENTS_2949.md).
 
-Stand 22.09.2026. Steam 25455892 / EXE 1.0.0.2949, vollständiger SHA-256:
-`a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`.
-Weiterhin Entwicklungsmodul ohne Spielhost, Loader oder installierbare Reparatur.
-Die Desktop-App bleibt v0.5.9, die Reparaturoption gesperrt.
+Status: 22.09.2026. Steam 25455892 / EXE 1.0.0.2949, full SHA-256: `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`. Further development module without game host, loader or installable repair. The desktop app remains v0.5.9, the repair option locked.
 
-## Neu implementiert und belegt
+## Newly implemented and occupied
 
-Der Leser verlangt jetzt ausdrücklich einen bekannten Build in `Frame`.
-Nicht gesetzte und unbekannte Selektoren werden vor Referenzerwerb, Sperren oder
-Speicherlesen abgewiesen. Der Host muss die vollständige EXE und Tabellen selbst
-prüfen; das Setzen eines Enumwerts ersetzt keine Buildzulassung.
+The reader now explicitly requests a known build in `Frame`. Unset and unknown selectors are rejected before reference acquisition, blocking or memory reading. The host must check the full EXE and tables itself; Setting an enum does not replace build approval.
 
-Die Feldstruktur ist für 2949 separat geprüft. Die bekannten Globaladressen
-und Feldoffsets bleiben gleich; mehrere Funktionsadressen und Hashes ändern sich.
-Es wurde keine pauschale Verschiebung oder Übernahme alter Funktionsbytes verwendet.
+The field structure is tested separately for 2949. The known global addresses and field offsets remain the same; Multiple function addresses and hashes change. No blanket shift or takeover of old function bytes was used.
 
-| Funktion / Beobachtung | RVA | Umfang |
+|Function/Observation|RVA|Umfang|
 |---|---|---|
-| Inventarslot | `0x212f4b0` | 226 Bytes, vier vollständig erhaltene pdata-/Unwindfragmente |
-| Inventarbesitzer | `0x212a100` | 127 Bytes; direkte, umgeleitete und fehlende Besitzer |
-| Aktuelle Clientauswahl | `0x8b4480` | 140 Bytes; eigener nativer Referenzbeleg, kein Registry-Lookup |
-| Haltbarkeits-Updater | `0x240d660` | 405 Bytes; Item- und Sockelfelder |
-| Besitzer-Sperrbeleg | `0x393650` | 104 Bytes; Lock-Referenz und Erwerb |
-| Ausrüstungsänderung | `0x20c90f0` | 840 Bytes; Slotwahl und ausschließlich der Zweig mit Delta 0 geprüft |
-| Prüfung unbegrenzter Haltbarkeit | `0x240d4c0` → `0xf31ffd0` | Originaler 5-Byte-Sprung und vollständiger 297-Byte-Zielkörper |
-| Zwei Clientanker-Aufrufer | `0x39b670`, `0x39ec90` | Ganze Funktionen statisch gehasht; gleicher Global-/Managerpfad |
-| Server-/Equipment-Aufrufer | `0x2a94c50` | Ganze Funktion statisch gehasht; Servermanager und Equipmentpfad |
+|Inventarslot|`0x212f4b0`|226 Bytes, four completely obtained pdata/unwind fragments|
+|Inventory owners|`0x212a100`|127 Bytes; direct, diverted and missing owners|
+|Current client selection|`0x8b4480`|140 Bytes; own native reference document, no registry lookup|
+|Durability updater|`0x240d660`|405 Bytes; Item and base panels|
+|Owner's blocking document|`0x393650`|104 Bytes; Lock reference and acquisition|
+|Change of equipment|`0x20c90f0`|840 Bytes; Slot selection and only the branch checked with delta 0|
+|Unlimited durability test|`0x240d4c0` → `0xf31ffd0`|Original 5 byte jump and complete 297 byte target|
+|Two client anchor callers|`0x39b670`, `0x39ec90`|whole functions static hashed; Same global/manager path|
+|Server/equipment callers|`0x2a94c50`|whole function static hashed; Server Manager and Equipment Path|
 
-Die vollständigen Funktionshashes stehen im Testmanifest und in
-`tests/inventory_native.inl`. Die drei Anker-Aufrufer werden nur statisch geprüft.
-Die übrigen ausgewählten Funktionen werden als private Kopien ausgeführt.
-Insgesamt umfasst das Manifest 24 Codebereiche und 20 pdata-Fragmente;
-sechs TLS-Lesestellen sind auf private Daten umgeleitet. Die originale
-WindowsRWLock-Acquire-Funktion wird jetzt auch im exklusiven Zweig ausgeführt.
+The complete functional hashes are in the test manifest and in `tests/inventory_native.inl`. The three anchor callers are only checked statically. The remaining selected functions are executed as private copies. Overall, the manifest comprises 24 code ranges and 20 pdata fragments; six TLS readers are redirected to private data. The original WindowsRWLock Acquire feature is now also running in the exclusive branch.
 
-## Bestätigte Felder
+## Confirmed fields
 
 - Clientglobal `0x6d691b0` → Kontext `+0x30` → Manager `+0x50`.
-  Zwei unabhängige Aufrufer stimmen überein. Die aktuelle Auswahl erwirbt über
-  den Actor-Slot `+0xc0` einen Referenzbeleg; Pointer ohne Gültigkeitsbyte reichen nicht.
+Two independent callers agree. The current selection acquires a reference document via the actor slot `+0xc0`; Pointers without validity bytes are not enough.
 - Serverglobal `0x6d696c0` → Kontext `+0x48`; Actor `+0x68` → Equipment `+0x38`.
-  Manager-/Actor-Kennung und Referenzlayout sind bereits separat nativ geprüft.
-- Holdergetter: Actor `+0x68`, Komponenten `+0xb8`; je Charakterdefinition
-  direkte Nutzung oder Umleitung über Actor `+0xa0` → Possessor `+0xd0`.
-  Die Reader-Rückverweisprüfung bleibt bewusst konservativ.
-- Holder `+0x18/+0x20` → Containerarray; Containertyp `+0x10`, signed Slotgrenze
-  `+0x0c`, Itemarray `+0`, Itemstride `0xc8`; Ausschlussliste `+0x20/+0x28`
-  mit 12-Byte-Einträgen. Key `+8` und positive Menge `+0x10` kennzeichnen vorhandene Items.
-- Equipment `+0x90` → Tabelle mit Array `+8` und Anzahl `+0x10`;
-  Einträge `0xd0` Bytes, Slottag `+0xc8`. Der native Pfad greift im Test tatsächlich
-  auf den zweiten passenden Slot zu; Definitionsabfragen protokollieren dessen Adresse.
-- Haupt-Haltbarkeit `+0x40`; Sockelpointer `+0x60`, Anzahl `+0x68`, Kapazität
-  `+0x70`; Sockelstride 6 Bytes, Haltbarkeit `+2`.
+Manager/Actor identifier and reference layout are already tested separately natively.
+- Holdergetter: actor `+0x68`, components `+0xb8`; Per character definition
+Direct use or redirection via Actor `+0xa0` → Possessor `+0xd0`. The reader reference check remains deliberately conservative.
+- Holder `+0x18/+0x20` → Containerarray; Containertyp `+0x10`, signed slot boundary
+`+0x0c`, Itemarray `+0`, Itemstride `0xc8`; Exclusion list `+0x20/+0x28` with 12 byte entries. Key `+8` and positive set `+0x10` identify existing items.
+- Equipment `+0x90` → Table with array `+8` and number `+0x10`;
+Entries `0xd0` Bytes, Slottag `+0xc8`. The native path actually accesses the second matching slot in the test; Definition queries log its address.
+- Main durability `+0x40`; Base pointer `+0x60`, number `+0x68`, capacity
+`+0x70`; Base stride 6 bytes, durability `+2`.
 
-## Automatisierter Nachweis
+## Automated proof
 
-**Sechs CTest-Suiten, MSVC Release `/W4 /WX`, 385 Leserbedingungen sowie
-88 native Szenarien mit 578 gezählten Aufrufen und 6.219 Prüfbedingungen bestanden.**
+**Six CTest suites, MSVC release `/W4 /WX`, 385 reader conditions and 88 native scenarios with 578 counted calls and 6,219 test conditions passed.**
 
-Zusätzlich zu den 48 bisherigen Erwerbs-/Erfassungsfällen:
+In addition to the 48 previous occupation/recording cases:
 
-- 21 Inventar-/Besitzerfälle: negative und zu große Slots, falscher Containertyp,
-  leere/verbrauchte Items, zweite Filterzeile, direkte und umgeleitete Besitzer.
-  Der eigene Leser und der originale Getter stimmen nach Presence-Normalisierung
-  überein. Ein absichtlich unzugänglicher Slot im eigenen Prozess prüft die
-  vollständige native Unwind-Kette und die saubere Ablehnung im Leser.
-- Acht Fälle der aktuellen Clientauswahl: Normal-/User-Varianten, direkter und
-  registrierter Referenzmodus, fehlende Auswahl, Zustandsmasken und Alive-Zustand.
-  Direkter nativer Besitz kann Alive=0 akzeptieren; der Leser lehnt Reparaturerfassung
-  für solche Besitzer weiterhin gesondert ab.
-- Acht Ausrüstungsfälle: tatsächliche Auswahl des zweiten Slottags, fehlender
-  Slot, leere Tabelle, leeres/verbrauchtes Item, unbegrenztes Item, Sockel und
-  verschiedene Haltbarkeit. Originaler Sperrbeleg sowie Acquire/Release halten
-  eine echte Windows-Sperre und geben Referenzzahl und Rekursion vollständig zurück.
-- Drei Updaterfälle: Delta 0 und Sentinel bleiben stabil. **Positives Delta 65
-  erhöht die Haupt-Haltbarkeit 35 → 100, setzt den beschädigten Sockel 5 aber auf 0.**
-  Dieser Originalpfad bleibt deshalb ungeeignet für unsere eigene Sockelreparatur.
-- Die erfolgreichen kombinierten Erfassungen werden zusätzlich mit den aktuellen
-  nativen Holder-/Slotgettern auf exakt denselben privaten Quellen verglichen.
+- 21 Inventory/owner cases: negative and too large slots, wrong container type,
+empty/used items, second filter line, direct and redirected owners. The own reader and the original Getter agree after Presence normalization. A deliberately inaccessible slot in your own process checks the complete native Unwind chain and the clean rejection in the reader.
+- Eight cases of current client selection: normal/user variants, direct and
+Registered reference mode, missing selection, Zustandmasks and Alive-Zustand. Direct native ownership can accept Alive=0; the reader further separately rejects repair registration for such owners.
+- Eight equipment cases: actual selection of the second slot day, missing
+Slot, empty table, empty/used item, unlimited item, base and various durability. Original lock record and Acquire/Release hold a real Windows lock and return reference number and recursion completely.
+- Three update cases: Delta 0 and Sentinel remain stable. **Positive delta 65
+increases the main durability 35 → 100, but sets the damaged base 5 to 0.** This original path therefore remains unsuitable for our own base repair.
+- The successful combined recordings are additionally combined with the current
+Native Holder/Slotgetters on exactly the same private sources.
 
-Die Aktions-, Sperrgruppen- und Quellenadapter-Suiten bestehen weiterhin mit
-1.481, 25 und 55 Bedingungen. Ohne EXE führt der native Host nur 72
-Manifestbedingungen aus; daraus wird kein nativer Erfolg abgeleitet.
+The action, block group and source adapter suites still exist with 1,481, 25 and 55 conditions. Without EXE, the native host only executes 72 manifest conditions; No native success is derived from this.
 
-## Grenzen und nächster Schritt
+## Boundaries and the next step
 
-Die bisher nur als Legacy-Fixtures eingeordneten Lesefelder besitzen jetzt eigene
-2949-Belege. **Das ist noch kein vollständig angebundener Spielhost.** Managerleben,
-aktueller Engine-Thread/TLS-Modus, Weltwechsel und echte Sitzungs-Epochen fehlen.
-Die aktuelle Clientauswahl-Funktion synchronisiert ihren Managerpointer nicht
-selbst; sie ist kein Ersatz für diese Hostpflichten.
+The reading fields, which were previously only classified as legacy fixtures, now have their own 2949 documents. **This is not yet a fully connected game host.** Manager life, current engine thread/TLS mode, world change and real session eras are missing. The current client selection function does not synchronize its manager pointer itself; it is not a substitute for these hosting obligations.
 
-Die Ausrüstungsprobe führt ausschließlich Delta 0 beziehungsweise früh abgewiesene
-Items aus. Die leere temporäre Itemkonstruktion/-destruktion und Tabellenresolver
-sind ausdrücklich Fixture-Abhängigkeiten. Nichtzero-Delta-Änderung, Itemkopie,
-Sockelentfernung, Ereignisse und abgeleitete Effekte sind damit **nicht** bewiesen.
-Threadmap und endgültige Actorbereinigung bleiben ebenfalls Testabhängigkeiten.
-Es wurden keine Spiel-/Savezugriffe oder Installationsänderungen vorgenommen.
+The equipment sample only performs delta 0 or early rejected items. The empty temporary item construction/destruction and table resolvers are expressly fixture dependencies. Non-zero delta change, item copy, base removal, events and derived effects are thus proven **not**. Threadmap and final actor cleanup also remain test dependencies. No game/save accesses or installation changes were made.
 
-Der nächste Integrationsschritt muss den eigenen Reparaturschreibweg samt
-Inventar-/Equipment-Ereignissen belegen und an einen nachgewiesenen Spielablauf
-binden. Originale Felder einfach zweimal zu überschreiben reicht dafür nicht.
+The next integration step must prove its own repair writing path along with inventory/equipment events and tie it to a proven game sequence. Simply overwriting original fields twice is not enough for this.
 
-Reproduktion:
+Reproduction:
 
 ```powershell
 ./runtime/repair/Test.ps1 -RegistryGameExe "C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert/bin64/CrimsonDesert.exe"
 ```
 
-Nachweise: `.local/repair-runtime-v10-build-test.log`, `-native-result.json`,
-`-reader-result.json`, `-validation.json` unter demselben Präfix.
-Manuelle Tests bleiben bis nach Entwicklung aller Phasen zurückgestellt:
-[Testcheckliste](../../TESTCHECKLISTE.md), [Phasenstatus](../../PHASENSTATUS.md).
+Evidence: `.local/repair-runtime-v10-build-test.log`, `-native-result.json`, `-reader-result.json`, `-validation.json` under the same prefix. Manual tests remain deferred until all phases have been developed: [Testcheckliste](../../TESTCHECKLISTE.md), [Phasenstatus](../../PHASENSTATUS.md).

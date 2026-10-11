@@ -272,14 +272,14 @@ impl Catalog {
             *categories.entry(i.category).or_default() += 1;
         }
         AdvancedInfo{records:self.records.clone(),statuses:self.statuses.clone(),categories:categories.into_iter().map(|(key,entries)|Choice{key:key.into(),name:format!("Kategorie {key}"),entries}).collect(),repair_items:self.items.values().filter(|i|i.repair_entries>0).count(),stack_safe_items:self.items.values().filter(|i|!i.stack_risk).count(),finite_endurance_items:self.items.values().filter(|i|!matches!(i.max_endurance,0|u16::MAX)).count(),limitations:vec![
-            "Steam-Builds 25381195 und 25455892. Wirkung im Spiel noch nicht abgenommen. Jede Einstellung wird aus dem Original neu aufgebaut.".into(),
-            "Spawns: bestätigte Charakterzahlen in Terrain-/Pool-Gruppen. Zwei Spawn-Patrouillen haben bearbeitbare Stage-Reset-Zeiten, 108 Fraktionsgebiete eine getrennte Wiederbesetzungswartezeit; allgemeine NPC-Respawn-Zeitgeber sind nicht freigegeben; ein Spawn-Maximum von 0 bleibt bei globaler Skalierung unverändert.".into(),
-            "Städte: Laufbeschränkung und die gemeinsame Stadtflug-Abstiegsregel werden aufgehoben; alwaysCallVehicle_dev nur im MainField aktiviert. Die Drachenoption entfernt Regionssperre 79 und dieselbe Stadtflug-Regel, die auch andere Flugreittiere betrifft. Quest-/Zwischensequenz-Abstiege und Flughöhe bleiben unverändert. Spielabnahme offen.".into(),
-            "Slots: Workbench-Grenze 1460 aus dem Standarddeckel des geprüften Inventar-Codepfads. Weitere Engine-/Save-Grenzen und Konfigurationsabweichungen bleiben ungeprüft. Stacks: 1000000 ist die Workbench-Grenze, kein bewiesenes Engine-Maximum. Verkleinerungen benötigen Spieltests.".into(),
-            "Kostenfaktoren erfassen negative Skill-/Fahrerkosten, 31 Geistverbrauchswerte zweier Eigenverbrauchs-Skills und 36 Zusatzkosten in 33 Ausrüstungs-Buffs. Ausrüstung ist separat regelbar; Skill-Kategorien folgen internen Namen. Positive Regeneration, gegnerische Drain-Buffs und andere Effekte bleiben erhalten. Keine universelle Unlimited-Zusage.".into(),
-            "Graph val0..val2 sind rohe Zahlen ohne bestätigte Einheit. Item-Buffs nur mit beobachteter ID/Level-Kombination desselben Equip-Typs. Neue Enchant-Zeilen kopieren eine Originalstufe; Upgrade-Freischaltungen und bestehende Iteminstanzen werden dadurch nicht angehoben.".into(),
-            "Kein Verschleiß: Equip-Typ-Faktoren auf 0 und endliche Item-Haltbarkeit auf den Engine-Sentinel 65535. Der gemeinsame Haltbarkeits-Updater überspringt diese Items. Kein Wiederherstellen bereits verbrauchter Items; Spielabnahme offen.".into(),
-            "Kostenfreie Reparatur ist nicht verfügbar: Es gibt noch keinen bestätigten Tabellenpfad. Die aktuellen Item-Reparaturlisten sind leer; ein Nullsetzen von Materialkosten ist auch bei vorhandenen Regeln nicht freigegeben.".into(),
+            "Steam builds 25381195 and 25455892. In-game effects not validated yet. Every setting is rebuilt from the original.".into(),
+            "Spawns: verified character counts in terrain/pool groups. Two spawn patrols have editable stage reset times; 108 faction territories have a separate reoccupation wait. General NPC respawn timers are not supported; a spawn maximum of 0 is preserved by global scaling.".into(),
+            "Cities: removes running restrictions and the shared city flight dismount rule; alwaysCallVehicle_dev enabled only in MainField. The dragon option removes region restriction 79 and the same city flight rule, which also affects other flying mounts. Quest/cutscene dismounts and flight height are preserved. In-game validation pending.".into(),
+            "Slots: Workbench limit 1460 from the default cap of the verified inventory code path. Other engine/save limits and configuration differences remain untested. Stacks: 1000000 is the Workbench limit, not a proven engine maximum. Reductions require in-game tests.".into(),
+            "Cost factors cover negative skill/rider costs, 31 spirit consumption values in two self-consumption skills and 36 additional costs in 33 equipment buffs. Equipment is adjustable separately; skill categories follow internal names. Positive regeneration, enemy drain buffs and other effects are preserved. No universal unlimited-resource guarantee.".into(),
+            "Graph val0..val2 are raw numbers without verified units. Item buffs require an observed ID/level pair of the same equipment type. New enchant rows copy an original level; upgrade unlocks and existing item instances are not raised.".into(),
+            "No wear: equipment type factors set to 0 and finite item durability to engine sentinel 65535. The shared durability updater skips these items. Already consumed items are not restored; in-game validation pending.".into(),
+            "Free repairs are unavailable: no verified table path exists. Current item repair lists are empty; setting material costs to zero is not supported even with existing rules.".into(),
         ]}
     }
     pub fn item(&self, key: u32) -> Result<ItemDetail> {
@@ -307,7 +307,7 @@ impl Catalog {
     ) -> Result<()> {
         if q.free_repair || q.items.values().any(|edit| edit.free_repair) {
             return Err(bad(
-                "Kostenfreie Reparatur ist nicht verfügbar. Bitte die Reparaturoption aus den Einstellungen oder der Item-Vorlage entfernen.",
+                "Free repairs are unavailable. Remove the repair option from settings or the item template.",
             ));
         }
         if q.spawn_percent > 10000
@@ -810,11 +810,7 @@ mod tests {
             let error = c
                 .apply(&blobs, &q, &mut replacements, &mut changes)
                 .unwrap_err();
-            assert!(
-                error
-                    .to_string()
-                    .contains("Kostenfreie Reparatur ist nicht verfügbar")
-            );
+            assert!(error.to_string().contains("Free repairs are unavailable"));
             assert!(replacements.is_empty());
             assert!(changes.is_empty());
         }

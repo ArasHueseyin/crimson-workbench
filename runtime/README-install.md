@@ -1,48 +1,27 @@
-# Optional: Live Items und Zusatzsockel
+# Optional: Live items and extra sockets
 
-Dieses separate Paket ist experimentell und nur fuer **Windows x64 / Crimson
-Desert 1.0.0.2976** mit passender EXE-Pruefsumme. Die Workbench funktioniert
-auch ohne dieses Paket. Echte Spieltests auf einem zweiten PC stehen noch aus.
-Das Paket enthaelt keine Spieldaten und keine persoenliche Sockelkonfiguration.
+This separate package is experimental and only for **Windows x64 / Crimson Desert 1.0.0.2976** with matching EXE point sum. The Workbench also works without this package. Real in-game tests on a second PC are still pending. The package does not contain any game data and no personal base configuration.
 
-1. Workbench und Spiel schliessen. Vor Verwendung eigene Spielstaende sichern.
-2. ZIP vollstaendig entpacken. PowerShell in diesem Ordner oeffnen.
-3. Den **Spiel-Hauptordner** (enthaelt `bin64`) explizit einsetzen:
+1. Workbench and close the game. Secure your own game stadiums before use.
+2. Fully unpack ZIP. Open PowerShell in this folder.
+3. Explicitly use the ** main game folder** (contains `bin64`):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-RuntimeMods.ps1 -GameDirectory 'D:\SteamLibrary\steamapps\common\Crimson Desert' -InstallLoader
 ```
 
-`-InstallLoader` installiert zusaetzlich den mitgelieferten Ultimate ASI Loader
-9.7.4 x64 als `winmm.dll`. Eine bereits vorhandene identische Loader-Datei wird
-nur verwendet und bleibt bei der Deinstallation bestehen. Andere vorhandene
-Loader oder ASI-Dateien werden nie ersetzt. Ohne den Schalter wird ein bereits
-vorhandener, genau passender Loader verlangt. Ein abweichender Loader muss
-zuerst vom Nutzer geklaert werden. Das Paket laedt bei der Installation nichts
-aus dem Internet nach.
+`-InstallLoader` additionally installs the included Ultimate ASI Loader 9.7.4 x64 as `winmm.dll`. An already existing identical loader file is only used and remains uninstalled. Other existing loaders or ASI files are never replaced. Without the switch, an already existing, exactly matching loader is required. A deviating loader must first be cleared by the user. The package does not load anything from the Internet during installation.
 
-Ist noch kein `winmm.dll` vorhanden, aber z. B. `dinput8.dll`, `version.dll`
-oder ein anderer bekannter Proxyname, bricht die Loader-Installation zur
-manuellen Kompatibilitaetspruefung ab. Entpack- und Spielordner duerfen keine
-Symlinks oder Junctions enthalten.
+If there is no `winmm.dll` yet, but e.g. `dinput8.dll`, `version.dll` or another known proxy name, cancels loader installation for manual compatibility testing. Unpacking and game folders may not contain symlinks or junctions.
 
-Eine fehlende `CrimsonExtraSockets.dat` wird als gueltige leere V2-Konfiguration
-angelegt. Eine vorhandene persoenliche Datei bleibt unveraendert. Gegenstaende
-werden spaeter in Workbench ausgewaehlt. Live Items benoetigt einen gestarteten,
-unterstuetzten Spielprozess; Aenderungen an Zusatzsockeln erfolgen bei
-geschlossenem Spiel.
+A missing `CrimsonExtraSockets.dat` is created as a valid empty V2 configuration. An existing personal file remains unchanged. Objects are selected later in Workbench. Live Items requires a launched, supported gaming process; Changes to additional sockets are made when the game is closed.
 
-Deinstallation mit dem **urspruenglichen Paket** bei geschlossenem Spiel:
+Uninstall with the **original package** when the game is closed:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Uninstall-RuntimeMods.ps1 -GameDirectory 'D:\SteamLibrary\steamapps\common\Crimson Desert'
 ```
 
-Nur selbst installierte Dateien mit unveraenderten Pruefsummen werden entfernt.
-Persoenliche `.dat`-Dateien, Logs, fremde Mods und Spielstaende bleiben erhalten.
-Eine geaenderte Datei fuehrt vor dem Entfernen zum Abbruch. Ein Spielupdate
-verhindert die Neuinstallation, aber nicht die sichere Deinstallation.
+Only self-installed files with unmodified purchase sums are removed. Personal `.dat` files, logs, foreign mods and game stadiums are preserved. A modified file leads to cancellation before removal. A game update prevents reinstalling, but not safe uninstalling.
 
-Lizenzhinweise stehen in `LICENSE`, `THIRD_PARTY_NOTICES.md` und `licenses/`.
-Downloadquellen und feste Pruefsummen stehen in `dependencies.lock.json`;
-`runtime-manifest.json` prueft die zusammen gebauten ASIs und den Loader.
+License notices are in `LICENSE`, `THIRD_PARTY_NOTICES.md` and `licenses/`. Download sources and fixed sums are in `dependencies.lock.json`; `runtime-manifest.json` checks the assembled ASIs and the loader.

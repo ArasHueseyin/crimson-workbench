@@ -1,821 +1,712 @@
-# Crimson Workbench – Was muss getestet werden?
-
-## Sockelstein-Boni in Workbench, 05.10.2026
-
-- [x] 190 eindeutige Steine aus dem lokalen, geprüften ItemInfo gelesen;
-  deutsche Namen/Beschreibungen und vollständige Stat-/Buff-Listen vorhanden.
-- [x] Zerstörung III: Angriff +3 statt Rohwert 3000, leere Nullwerte ausgeblendet.
-- [x] Sturmwind III: Angriffsgeschwindigkeit +3 Stufen; keine geratenen Prozentwerte.
-- [x] Fähigkeitsbeschreibung, Effektstufe und explizite Anzeige unbekannter Felder.
-- [x] Auswahl während des Ladens, Lesefehler/Wiederholen, Suche sowie vorhandene
-  Sperren gegen laufendes Spiel und veraltete Konfiguration geprüft.
-- [x] 17 Frontend-Tests und 10 Zusatzsockel-UI-Tests; Vorschau visuell geprüft.
-- [ ] Workbench über die Desktop-Verknüpfung öffnen → Zusatzsockel:
-  Zerstörung III, Sturmwind III und Flamme des Urteils auswählen und die
-  Vorschau rechts prüfen. Dafür darf das Spiel weiterlaufen.
-- [ ] Einen bereits bestückten Zusatzsockel wählen: Grundboni/Effekte prüfen.
-  Das Einsetzen/Leeren selbst erfordert weiterhin ein geschlossenes Spiel.
-
-
-**Update 05.10.2026:** Echter Spielstart/Laden und die korrigierten Daten auf
-Client/Server rein lesend bestätigt: 10 / 11 / 15 Plätze, Menge jeweils 1,
-identische Basissockel, Helm/Schwert Verfeinerung 10. Nachweis:
-`.local/extra-sockets-plus10-20261004/runtime-readonly-31728.json`.
-Visuelle Anzeige/Benutzung, Steinwirkung und Speicherzyklus noch bestätigen.
-
-## Zehn zusätzliche Sockel: Panzer, Helm und Mecha-Schwert, 04.10.2026
-
-**Korrektur und freie Ausrüstungswahl:** Der erste Spielstart/Ladeversuch
-funktionierte, zeigte aber beschädigte Client-Werte. Deshalb gilt XS02 noch
-nicht als bestanden. Korrigierter Runtime→InitData-Übergang ist installiert;
-keine Spielstände wurden geändert oder zurückgesetzt.
-
-- [x] 36 zusätzliche Fälle mit dem vollständigen originalen Netzwerk-Konverter:
-  Basissockel 0–5, leer/bestückt, Prefix normal/0/255; Menge, Flags, Verfeinerung,
-  Haltbarkeit und Speichergrenzen erhalten; Client-Erweiterung wiederhergestellt.
-- [x] Allgemeine Konfiguration v2 und Migration v1: neue UID, doppelte UID,
-  unzulässiger Key, maximale Anzahl und atomare Speicherung geprüft.
-- [x] 329 eigene Ausrüstungsinstanzen im neuesten Save gelesen; 326 geeignet;
-  keine Save-Schreibzugriffe. Sieben Browsertests einschließlich +10-Auswahl,
-  Doppelclick, gesperrtem Spiel, unbekanntem Format und veraltetem Save.
-- [ ] **XS05:** In Workbench eine weitere geeignete Instanz auswählen, +10
-  hinzufügen; zehn leere Zusatzplätze, vorhandene Steine und Verfeinerung
-  unverändert. Im Spiel korrekt ausrüstbar, anschließend speichern/neu laden.
-- [ ] **XS06:** Installation auf zweitem Rechner / portables Paket. Die EXE
-  allein richtet Laufzeitmods und persönliche Instanz-IDs nicht ein.
-
-Die ältere Liste unten dokumentiert die erste Installation. Aktuell insgesamt
-86 native Fälle, 22 Policy-/Dateifälle, 163 Core-Unit-Tests (vier ignoriert),
-elf Frontend-Unit-Tests und sieben Browsertests bestanden. Der globale
-`tests/live.rs`-Roundtriptest scheitert am Hash der bereits modifizierten
-`meta/0.papgt`; Browser/Katalog- und Sockel-Lesetests funktionieren. Die Registry
-wurde bei dieser Änderung nicht angefasst.
-
-- [x] Genau drei bestehende Instanzen identifiziert; zehn neue Plätze jeweils
-  zusätzlich zu 0 / 1 / 5 Basissockeln: insgesamt 10 / 11 / 15.
-- [x] 50 isolierte native Originalroutine-/Integrationsfälle: alle Sockelwerte
-  verarbeitet, dynamisch tief kopiert, fünf Basiseinträge geschrieben,
-  zusätzliche Live-Einträge beim Speichern unverändert.
-- [x] 18 Policy-/Dateifälle: Instanz-/Key-/Padding-Prüfung, Prüfsumme,
-  atomare Zusatzdatei, veraltete Schreibversuche ohne Änderung abgewiesen.
-- [x] Core-Suite 162 bestanden / 4 absichtlich ignoriert; Frontend elf Unit-
-  und vier neue Browsertests: zehnter Zusatzsockel, Doppelclick, Spiel läuft,
-  veraltete Revision, überholte Suchantwort. Produktionsbuild bestanden.
-- [x] Winmm-Weiterleitung und gemeinsames Laden aller sieben ASIs in privatem
-  Prozess; Zusatzsockel-Mod deaktiviert sich bei falscher EXE vor den Hooks.
-- [x] Bei geschlossenem Spiel/Workbench mit gehaltenem Startschutz installiert;
-  Save-Backups und Desktop-EXE-Sicherung erstellt; 13 Saves und insgesamt
-  22 geprüfte Bestandsdateien unverändert; Desktop-Verknüpfung verwendet Update.
-- [ ] **XS01:** Workbench über Desktop öffnen → Zusatzsockel: drei passende
-  Gegenstände und insgesamt 10 / 11 / 15 Plätze. Jeweils zehn neue Plätze leer.
-- [ ] **XS02:** Spiel über Steam starten, Slot 1 laden. Kein Absturz, alle
-  bisherigen Gegenstände, Steine, +10-Verfeinerung und Inventar unverändert.
-  `CrimsonExtraSockets.log` muss READY und EXTENDED für 10 / 11 / 15 melden.
-- [ ] **XS03:** Bei geschlossenem Spiel z. B. Zusatzsockel 10 des Mecha-Schwerts
-  in Workbench mit Zerstörung III bestücken, neu starten/laden; Wirkung mit
-  vorherigem Stand vergleichen. Spieloberfläche zeigt höchstens fünf Zeilen.
-- [ ] **XS04:** Im Spiel speichern, vollständig schließen und erneut laden.
-  Zusatzstein bleibt in Workbench belegt; Wirkung bleibt erhalten. Normale
-  Saves haben weiter fünf Paddingeinträge; vorhandene Sockel unverändert.
-
-Die getrennte Zusatzdatei zusammen mit den Saves sichern. Workbench-Leeren
-entfernt den dortigen Stein direkt; vorherige Belegung wird im Projekt gesichert.
-[Nachweise und Installationsbackup](.local/extra-sockets-plus10-20261004/RESULTAT.md).
-
-## Elektro-Mecha-Langschwert: fünfter Sockel, 04.10.2026
-
-- [x] Im neuesten Spielstand genau eine Instanz identifiziert: 1003664,
-  vier belegte Sockel und leerer fünfter Platz, Verfeinerung +10.
-- [x] Genau ein entschlüsseltes Datenbyte 4 → 5 geändert; sämtliche anderen
-  Felder und vier Steine erhalten. Unabhängige HMAC-/ChaCha-/LZ4-Rücklesung
-  und bytegenaue Rücknahme bestanden; sechs native Funktionsbereiche erneut gepinnt.
-- [x] Nach Schließen beider Apps den frischesten Stand erneut geprüft, Original
-  gesichert, nur `slot0/save.save` ersetzt und unabhängig zurückgelesen.
-  Zwölf andere Save-/Lobby-Dateien unverändert; kein neues ASI oder EXE-Update.
-- [ ] **MS01:** Slot 1 laden; Mecha-Schwert zeigt fünf offene Sockel und +10,
-  die vier bisherigen Steine bleiben erhalten.
-- [ ] **MS02:** Fünften Sockel bei der Hexe mit einem vorhandenen Stein belegen;
-  speichern und neu laden, anschließend Belegung und Wirkung prüfen.
-
-Die spätere Zusatzsockel-Erweiterung ist oben beschrieben; deren Spieltests
-sind noch offen.
-
-## Mecha-Schwert: mehr als fünf Sockel, private Machbarkeit, 04.10.2026
-
-- [x] Unveränderte vollständige native Sockel-Werteroutine: zehn Fälle,
-  einschließlich sechs/zehn Einträgen, Lücken, Haltbarkeit und begrenzter Freigabe.
-- [x] Unveränderte vollständige native Sockelpuffer-Kopie: zehn Fälle;
-  sechs/zehn Datensätze vollständig erhalten, unabhängige Zielpuffer.
-- [x] Native Sockel-Speicherschleife: zwölf Fälle. Original schreibt fünf;
-  Prototyp mit dynamischem Vergleich schreibt fünf/sechs/zehn korrekt.
-- [x] Private vollständige Zehn-Eintrag-Spielstandprobe unabhängig zurückgelesen;
-  alle anderen Daten erhalten, inverse Rücknahme bytegenau.
-- [ ] Vollständigen nativen Ladevorgang mit Spieleallocator anbinden und prüfen.
-- [ ] Gesamten nativen Speicherzyklus, Freigaben und Kopien unter realem
-  Objektlebenszyklus prüfen; Fixture-Callbacks ersetzen bisher externe Helfer.
-- [ ] Zusatzplätze darstellen und verwalten; Hexenbedienung/Standarditems prüfen.
-- [ ] Erst nach vollständigem Prototyp gezielte Installation und Spielabnahme:
-  tatsächliche Zusatzboni, Aus-/Anlegen, Hexe, Speichern/Neuladen.
-
-## Zusätzliche Reittierfamilien ohne eigene Vorlage, 04.10.2026
-
-Basiseintrag-Route technisch geprüft, gebaut und bei geschlossenem Spiel/Workbench installiert.
-Die Spielinitialisierung und Reitfunktion sind weiterhin unbestätigt.
-
-- [x] 24 private Save-/Lobby-Kandidaten: Raptor, Elefant, beide Leguane, Wölfe, alle 13 erwachsenen Kamelvarianten und weitere Familien. Entfernen jedes neuen Tiers ergibt exakt den ursprünglichen Savekörper.
-- [x] Keine Übernahme fremder HP, Ausrüstung, Level, Namen, aktiver Zuweisung oder Spawnposition. Neue Nummer, HMAC und Doppelsperre geprüft; unbekannte Schemas werden abgelehnt.
-- [x] Acht Reittier-UI-Tests: Basiseintrag ist auswählbar, Spielteststatus und Sicherung werden angezeigt. Suche, Bilder, Spielprozesssperre und Wiederaufnahme derselben Anfrage bleiben geprüft.
-- [x] Desktop-Update installiert und unabhängig zurückgelesen: 37 Dateien einschließlich aller 13 Saves unverändert, 23 Sicherungen geprüft; keine Tiervergabe.
-- [ ] **MT09:** Unter Reittiere neuesten Save auswählen und Neu einlesen. Im unveränderten geprüften Slot 0 stehen 288 Einträge zur Verfügung; Raptor/Elefant/Leguane/Kamele/Wölfe zeigen „Basiseintrag · Spieltest offen“.
-- [ ] **MT10:** Zunächst genau eine gewünschte exotische Variante bei geschlossenem Spiel registrieren. Diesen Save laden; Stall/Sonderreittiermenü, Sichtbarkeit, HP und Herbeirufen prüfen.
-- [ ] **MT11:** Aufsteigen, laufen, sprinten und absteigen. Anschließend speichern und neu laden; Tier muss erhalten und erneut verwendbar sein. Bestehende Pferde/Bären/Löwen und aktives Reittier prüfen.
-- [ ] **MT12:** Erst nach erfolgreicher Einzelprüfung weitere Tierarten ergänzen. Fehlermeldung und Variante melden, falls Initialisierung oder Nutzung scheitert; keine pauschalen Quest-/Wissensfreischaltungen vornehmen.
-
-Die ältere Checkliste darunter dokumentiert den vorherigen Stand mit 219
-hinzufügbaren Einträgen und ausschließlich Vorlagen derselben Tiergruppe.
-
-## Erweiterte Reittiervorlagen und Porträts, 04.10.2026
-
-Die Erweiterung ist installiert und unabhängig zurückgelesen; Spielabnahme steht aus.
-
-- [x] Private Savekopie: zugewiesener, benannter Zirkuslöwe dient als Vorlage; neue Kopie hat weder Name noch aktive Zuweisung. Originale bleiben nach vollständigem Rückvergleich unverändert.
-- [x] Fehlende HP, beschädigte Namen und unbestätigte Zuweisungstypen werden abgelehnt. Frische Tier-/Itemnummern, HMAC-Rücklesung und Doppelsperre geprüft.
-- [x] 299 Bilder dekodiert: 89 exakt zugeordnet und 210 ausdrücklich als Beispielvariante beschriftet. 23 Einträge behalten das allgemeine Symbol.
-- [x] Sieben Reittier-UI-Tests einschließlich Beispielbeschriftung in Detailansicht und Zoom; keine Registrierung durch Bildklick.
-- [x] Desktop-Update bei geschlossenem Spiel/Workbench installiert: 37 Dateien einschließlich aller 13 Saves und bestehender Mods unverändert; 23 Sicherungen und Desktop-Verknüpfung geprüft.
-- [x] Nach Installation neuesten Slot 0 rein lesend geprüft: 219 verfügbare Arten (210 Pferde, sieben Bären, zwei Löwen); keine Saveänderung oder Tiervergabe.
-- [ ] **MT06:** Neuesten Spielstand neu einlesen. Bei unverändertem geprüften Slot 1 sollten 219 Tiere verfügbar sein, darunter zwei weitere Löwen. Für andere Tiergruppen gilt inzwischen die oben dokumentierte Basiseintrag-Route.
-- [ ] **MT07:** Pferdevariante ohne eigenes Porträt auswählen: „Beispielbild der Tierart“ und Hinweis auf abweichende Farbe/Ausstattung prüfen; beim exakten Porträt erscheint dieser Hinweis nicht.
-- [ ] **MT08:** Nur falls ein neues Tier gewünscht ist: bei geschlossenem Spiel registrieren, richtigen Save laden, neues und ursprüngliches Tier samt Name, Zuweisung, Ausrüstung, Reiten und Speichern/Neuladen prüfen.
-
-## Bildvorschau, Suche, Reittiere und NPC-Pfeile, 04.10.2026
-
-Implementiert, technisch geprüft und bei geschlossenem Spiel installiert; Spielabnahme offen.
-
-- [x] Echter Katalog: Teilwortsuche, Bindestriche, Groß-/Kleinschreibung, mehrere Suchwörter, exakte IDs und optionaler Regex-Modus.
-- [x] Ungültige Regexmuster werden erklärt; nach Korrektur erscheint wieder die Ergebnisliste. Kategorien bleiben kombinierbar.
-- [x] 57 eindeutig zugeordnete echte Tierporträts aus Spielarchiven dekodiert; fehlende Bilder bleiben als allgemeines Symbol erkennbar.
-- [x] Private Savekopie: benanntes unzugewiesenes Stalltier als Vorlage; sein Name bleibt erhalten, neue Tiere haben frische Nummern und vollständigen Rückvergleich.
-- [ ] **UI01:** Itembild und Tierporträt rechts anklicken, große Vorschau ansehen und mit Esc oder × schließen. Auswahl bleibt erhalten.
-- [ ] **UI02:** Im gesamten Itemkatalog beliebige Teilwörter suchen, z. B. `holz`, `pfeil` oder `ring`. Regex optional testen, z. B. `^(Gift|Explosions).*pfeil`.
-- [ ] **MT04:** Unter Reittiere neuesten Slot auswählen und Neu einlesen. Verfügbare Anzahl prüfen; **Nur hinzufügbare Reittiere** blendet Einträge ohne Vorlage aus.
-- [ ] **MT05:** Falls ein neues Tier gewünscht ist: Spiel speichern und schließen, Tier registrieren, denselben Save laden, Stall, Reiten und erneutes Speichern/Neuladen prüfen.
-- [ ] **AM01:** Blitzpfeil 1001315, Feuerpfeil 1001316 und Kältepfeil 1001314 zeigen Monstermunitionshinweis; keine Ausgabe möglich. Pfeil 50001, Giftpfeil 50003 und Explosionspfeil 1001321 bleiben auswählbar.
-- [ ] **AM02:** Passende Pfeilvariante im Spiel ausrüsten und mit dem Aeserion-Bogen normal schießen. Nicht mit bereits vergebenen NPC-Blitzpfeilen testen; diese wurden unverändert gelassen.
-
-Die Itemausgabe bestätigt die Inventarmenge; sie bestätigt nicht automatisch,
-dass jedes interne Spielitem für den Spieler verwendbar ist.
-
-## Angelrute und Fallschutz, 03.10.2026
-
-- [x] Originale Krabbenangelrute im neuesten `slot2` ergänzt; Save vollständig verglichen.
-- [x] 999 Plätze, bestehende Items/Sockel und Questfortschritt erhalten.
-- [x] Vollständige native Fallroutine und 684 Schutzfälle für 342 Keys geprüft.
-- [x] Übrige Figuren erhalten ursprünglichen Fall-HP-Verlust; Weiterleitung unverändert.
-- [x] Neue ASI und drei bestehende ASIs gemeinsam isoliert geladen; falsche EXE abgelehnt.
-- [x] Bei geschlossenem Spiel mit Startschutz installiert, 31 bestehende Dateien unverändert.
-- [ ] Über Steam starten und neuesten **Slot 2** laden; Krabbenangelrute im Inventar prüfen.
-- [ ] Angelrute am Angelplatz ausprobieren: automatisches Einholen prüfen.
-- [ ] `bin64/CrimsonNoFall.log` auf neue READY-Zeile prüfen.
-- [ ] Sicheren mäßigen Sturz mit Kliff, Damiane und Oongka testen: kein HP-Verlust.
-- [ ] Dasselbe mit Löwe/Rokade prüfen; Schwarzstern bei Landung und Absteigen testen.
-- [ ] Normale Kampftreffer sollen weiterhin HP abziehen; danach speichern/neu laden.
-- Zehn Köder: noch nicht hinzugefügt; tatsächlicher Itemname fehlt.
-
-[Ergebnis, genaue Reichweite und Sicherungen](.local/fishing-no-fall-20261003/RESULTAT.md).
-
-## Löwe und Rokade: Tempo, Ausdauer und Löwen-HP, 03.10.2026
-
-- [x] Beide Tiere eindeutig zugeordnet, alle sechs Stufen strukturell geprüft.
-- [x] Zwölf Original-/Änderungsfälle mit den nativen Datenlesern des Spiels geprüft.
-- [x] Zwölf abgeschnittene Eingaben abgelehnt; nur 20 gewünschte Werte verändert.
-- [x] Archivgruppe `0049` bei geschlossenem Spiel mit Startschutz installiert und extrahiert.
-- [x] Ältere Mods sowie alle zwölf Save-/Lobby-Dateien unverändert geprüft.
-- [ ] Über Steam starten und Löwen sowie Rokade jeweils neu herbeirufen.
-- [ ] Länger sprinten und mehrfach springen: Ausdauer soll nicht ausgehen.
-- [ ] Tempo auf ebener Strecke vergleichen; konfigurierter Multiplikator 1,30.
-- [ ] Beim Löwen neue maximale HP 1.350 prüfen; vorhandene aktuelle HP ggf. heilen.
-- [ ] Speichern/neu laden und beide Tiere nochmals prüfen.
-
-[Ergebnis und Einschränkungen der Offlineprüfung](.local/lion-rokade-upgrades-20261003/RESULTAT.md).
-
-## Anfrage von Ben: Schlachten, 28.09.2026
-
-- [x] Aktiven Schlacht-Schritt im neuesten `slot1` identifiziert und Save gesichert.
-- [x] Zwölf Save-/Lobby-Dateien abschließend unverändert geprüft.
-- Kein modifizierter Queststand zu testen: gemäß „nur wenn sicher“ kein Eingriff.
-- [ ] Als regulären Weg bei Ben die Viehhofverwaltung öffnen, ein registriertes
-  Tier auswählen und dort schlachten; danach den Berichtsschritt prüfen.
-
-[Befund und Sicherung](.local/greymane-slaughter-20260928/RESULTAT.md).
-
-## Aktueller Auftrag: 30 Stunden Schlaf und zusätzliche Sockel, 28.09.2026
-
-- [x] 288 native Ereignis-/Kalenderfälle mit Hook und Tageswechsel geprüft.
-- [x] Fremde Zeitänderungen und kürzere Schlafdauern bleiben unverändert.
-- [x] Beide Schlaf-Plugins gemeinsam im isolierten Loader-Test geladen.
-- [x] Bei geschlossenem Spiel mit Startschutz installiert; 17 bestehende Dateien identisch.
-- [x] Neun Save-Verzeichnisdateien gesichert; Save und vorhandene Sockel unverändert.
-- [ ] Über Steam starten, `CrimsonSleepDuration.log` auf READY prüfen.
-- [ ] Die weiterhin „12 Stunden“ genannte Option wählen: ein Tag plus sechs Stunden erwarten.
-- [ ] APPLIED-Log und tatsächlichen Zeitablauf, Animation und Spielwelt prüfen.
-- [ ] Kürzere Schlafoptionen und Ein-Sekunden-Cooldown testen, speichern/neu laden.
-- Fünf zusätzliche Sockel und Befüllung: **nicht implementiert; gemäß Nutzerentscheidung vorerst belassen**, kein Ingame-Test dafür vorgesehen.
-
-[Ergebnis, technische Grenzen und Sicherung](.local/sockets-plus5-sleep30-20260928/RESULTAT.md).
-
-## Aktueller Auftrag: Schlaf-Cooldown 1 Sekunde, 27.09.2026
-
-- [x] Eigene 1.000-ms-Regel samt Grenzfällen und bestehenden Sperren geprüft.
-- [x] Beide Originalfunktionen der aktuellen EXE isoliert mit Testdaten und Hooks geprüft.
-- [x] Automatisches Laden per ASI Loader im privaten Testprozess geprüft.
-- [x] Bei geschlossenem Spiel installiert, Dateien zurückgelesen, neun Save-Verzeichnisdateien gesichert.
-- [x] EXE, bestehende Overlays/Registrierung und Save-Verzeichnisdateien unverändert.
-- [x] READY-Eintrag aus einem echten Spielstart in `bin64/CrimsonSleepCooldown.log` gefunden (28.09.); Praxistest separat offen.
-- [ ] Schlafen, mindestens eine Sekunde warten und erneut schlafen.
-- [ ] Bei bestehender Sperre nach einer Sekunde die Interaktion erneut öffnen.
-- [ ] Optional Warten am Lagerfeuer prüfen; anschließend speichern und neu laden.
-
-[Ergebnis und genaue Testanleitung](.local/sleep-cooldown-1s-20260927/RESULTAT.md).
-
-## Aktueller Auftrag: Graumähnen und kleine Knochen, 27.09.2026
-
-- [x] Zwölf Save-/Lobby-Dateien gesichert; +250 kleine Knochen eingetragen.
-- [x] Vollständiger Vergleich, inverse Prüfung, Startschutz und Rücklesen bestanden.
-- [x] Graumähnen-Queststände nur gelesen; Fortschritt unverändert.
-- [ ] Neuesten `slot1` laden und 253 kleine Knochen im Rucksack kontrollieren.
-- [ ] Regulär speichern/neu laden und Menge kontrollieren.
-- [ ] Questfreischaltung: offen, technisch noch nicht verifiziert/umgesetzt.
-
-[Questbefund und Sicherung](.local/greymane-unlock-bones-20260927/RESULTAT.md).
-
-## Aktueller Auftrag: Spendenreserve und Ringe, 27.09.2026
-
-- [x] Aktuelle Missionszustände gelesen: Holz und Waffen offen; Geld, Nahrung, Stein abgeschlossen.
-- [x] 1.616 hervorragendes Holz, 821 Elfenbein und zwei Ringe ergänzt; je 300 Materialreserve vorgesehen.
-- [x] Standardstapel, Ring-Fundstufen, vollständiger Vergleich, inverse Prüfung und geschützter Commit bestanden.
-- [ ] Neuesten `slot2` laden: 2.016 hervorragendes Holz, 992 Elfenbein,
-  Mal der Finsternis +3 und Demeniss-Siegel +0 prüfen.
-- [ ] Bei Carl Spendenwerte kontrollieren: Holz 19, Elfenbein 24 Punkte je Stück.
-- [ ] Bis zu 1.316 Holz und 521 Elfenbein für die Endziele spenden; Reserve behalten.
-- [ ] Beide Questabschlüsse, Ringverfeinerung sowie Speichern/Neuladen prüfen.
-
-[Ergebnis und Sicherung](.local/camp-donations-reserve-20260927/RESULTAT.md).
-
-## Aktueller Auftrag: Camp-Vorräte und Holz, 27.09.2026
-
-- [x] Aktive Item-IDs und Nahrungsspendenwert geprüft; alle zwölf Save-Dateien gesichert.
-- [x] Je 400 der drei Holzmaterialien und 100 Große Mahlzeit eingetragen.
-- [x] Vollständiger Vergleich, inverse Byteprüfung, Startschutz und Rücklesen bestanden.
-- [ ] Neuesten `slot1` laden: je 400 Holz und 100 Große Mahlzeit kontrollieren.
-- [ ] Bei Carl den Nahrungsspendenwert der Mahlzeiten prüfen (rechnerisch 648 je Stück).
-- [ ] Nahrung spenden und Fortschritt bei „Ein Tisch voller Überfluss“ prüfen.
-- [ ] Regulär speichern/neu laden und verbleibende Mengen sowie Fortschritt prüfen.
-
-[Ergebnis und Sicherung](.local/camp-provisions-wood-20260927/RESULTAT.md).
-
-## Aktueller Auftrag: alle III-Sockelitems und Tempo, 27.09.2026
-
-- [x] Alle 41 aktiven III-Abyss-IDs geprüft und jeweils einmal im Rucksack ergänzt.
-- [x] Eile III im ersten angelegten Stiefelsockel eingesetzt; Hingabe I zurückgegeben.
-- [x] Vollständiger Save-Vergleich, inverse Byteprüfung, Startschutz und Rücklesen bestanden.
-- [ ] Neuesten `slot2` laden; 41 Zugaben, Eile III im Stiefel und Hingabe I im Rucksack prüfen.
-- [ ] Mit aktueller Ausrüstung Statuswert **Bewegungsgeschwindigkeit 15** und Laufwirkung prüfen.
-  **30 wurde nicht eingerichtet**; 15 ist das erlaubte reguläre Ausweichziel.
-- [ ] Einen III-Stein bei der Hexe verwenden, speichern/neu laden und Fortschritt kontrollieren.
-
-[Ergebnis, alle Mengen und Sicherung](.local/abyss-iii-speed-20260927/RESULTAT.md).
-
-## Aktueller Inventarauftrag: Vorräte und Abyss-Ausrüstung, 26.09.2026
-
-- [x] Acht Item-IDs anhand der aktiven Tabelle geprüft; zwölf Save-/Lobby-Dateien gesichert.
-- [x] Je 500 der fünf Vorräte und je 10 der drei Abyss-Ausrüstungen ergänzt;
-  Standardstapel, vollständiger Vergleich, inverse Prüfung und geschützter Commit bestanden.
-- [ ] Neuesten `slot0` laden: 715 Kleine Knochen, 500 Platin, 500 reichliches
-  gegrilltes Fleisch, 505 verbesserte Kraftfaust-Kräuterpastillen, 512 Diamanten
-  sowie je 10 Zerstörung III, Verstärkung III und Sturmwind III prüfen.
-- [ ] Fleisch verwenden; Pastillen bei der nächsten benötigten Wiederbelebung prüfen.
-- [ ] Abyss-Ausrüstung bei einer Hexe einsetzen und die jeweiligen Boni prüfen.
-- [ ] Regulär speichern, neu laden und Restmengen sowie Fortschritt kontrollieren.
-
-[Ergebnis und Sicherung](.local/supplies-500-20260926/RESULTAT.md).
-
-## Aktueller Inventarauftrag: sieben Materialien, 26.09.2026
-
-- [x] Je 300 Eisenerz, Kupfererz, Azurit, Silbererz, Granat, Golderz und Epidot
-  auf den frisch gesicherten neuesten `slot0` ergänzt. Vollständiger Vergleich,
-  inverse Byteprüfung, Startschutz und Rücklesen bestanden.
-- [ ] Neuesten Stand laden: 320 Eisenerz, 433 Kupfererz, 315 Azurit, 300 Silbererz,
-  336 Granat, 300 Golderz und 311 Epidot im Rucksack prüfen.
-- [ ] Beim Schmied verwenden, speichern/neu laden und Restmengen sowie Fortschritt prüfen.
-
-[Ergebnis und Sicherung](.local/ores-300-20260926/RESULTAT.md).
-
-## Aktueller Inventarauftrag: Verfeinerungsmaterialien, 25.09.2026
-
-- [x] Aktuelle Rezept-/Itemtabellen geprüft, alle zwölf Save-/Lobby-Dateien gesichert.
-- [x] Je 200 Stück von 27 Materialarten ergänzt, insgesamt 5.400; native Stapelgrenzen,
-  eindeutige IDs, vollständiger Vergleich und inverse Byteprüfung bestanden.
-- [x] Neuester `slot1` von 21:28 Uhr bei geschlossenem Spiel ersetzt und zurückgelesen;
-  Installation, übrige Spielstände, bestehende Fähigkeiten und 999 Plätze erhalten.
-- [ ] Diesen neuesten Stand laden: z. B. 200 Eisenerz, 239 Kupfererz, 205 Blutgestein,
-  251 Skoleziterz, 204 Abyss-Artefakte und 200 Aeserions Schuppen im Rucksack prüfen.
-- [ ] Waffe und Rüstung beim Schmied verfeinern, Materialabzug prüfen;
-  Aeserions Schuppe bei Stufe 10 auf Verwendbarkeit prüfen.
-- [ ] Speichern und neu laden: Mengen, Ausrüstung, Fähigkeiten und Inventar erhalten.
-
-Aeserions Schuppen liegen gemäß ihrer nativen Stapelgrenze als 200 Einzelstücke vor.
-[Vollständige Materialliste und Sicherung](.local/refinement-materials-200-20260925/RESULTAT.md).
-
-Stand: 23.09.2026. Übersicht der Funktionen: [PHASENSTATUS](PHASENSTATUS.md).
-
-**Die allgemeinen Phasentests bleiben zurückgestellt.** Für den separat
-beauftragten Inventarfix läuft ein gezielter Spieltest. Die automatisierten Prüfungen
-führe ich während der Entwicklung aus. Unten steht die spätere Abnahme mit
-konkreten Erwartungen; noch fehlende Funktionen sind ausdrücklich markiert.
-
-## Separater Inventarauftrag vom 23.09.2026
-
-**Zusatzauftrag vom 25.09.2026, aktuell zurückgenommen:** Die Zugabe von 70
-Abyss-Gegenständen entsprach laut Nutzer nicht der gewünschten Fähigkeitenressource.
-
-- [x] Gegenstand aus aktiven Spieldaten identifiziert; zwölf Saves/Lobbys gesichert.
-- [x] Sieben neue 10er-Stapel mit eindeutigen IDs; vollständiger semantischer
-  Vergleich, inverse Byteprüfung und unabhängiger Codec geprüft.
-- [x] Live-Save und Lobby zurückgelesen; übrige zehn Dateien sowie Modinstallation
-  unverändert, 999 Inventarplätze und bestehende Gegenstände erhalten.
-- [x] Um 15:31 Uhr vollständig zurückgenommen: beide Dateien und ursprüngliche
-  Änderungszeiten bytegenau wiederhergestellt, ursprünglich fünf Exemplare erhalten.
-- [x] Nutzer benennt Abyss-Verknüpfungen und bestätigt die Zugabe für alle drei
-  Charaktere; die vorige Inventargegenstandsvergabe bleibt zurückgenommen.
-- [x] Um 15:36 Uhr je 70 zusätzliche Einheiten in alle drei Fähigkeitenkonten
-  eingetragen: 0/16/42 → 70/86/112. Vollständiger Save-Vergleich, inverse Prüfung
-  und Rücklesen bestanden; gespeicherte Fähigkeiten, Inventar, Lobby und
-  Installation im Dateivergleich unverändert.
-- **Fehlgeschlagene Spielabnahme laut Nutzer:** Der Fähigkeitenbaum wurde
-  nach der +70-Zugabe zurückgesetzt. Ursache nicht eindeutig geklärt.
-- [x] Auf Nutzerwunsch um 15:52 Uhr je **150 zusätzliche** Einheiten ergänzt:
-  70/86/112 → **220/236/262**. Sechs feste Felder ohne Datenverschiebung geändert;
-  sämtliche übrigen entpackten Save-Bytes identisch. Rückerstattungszähler anhand
-  der aktuellen EXE untersucht; Sicherung und Rücklesen abgeschlossen.
-- [ ] Slot 0 vom 25.09., 01:23 Uhr laden und Guthaben im Fähigkeitenmenü bei
-  Kliff, Damiane und Oongka prüfen. Zusätzlich prüfen, ob der Fähigkeitenbaum
-  erhalten bleibt; der vorherige Reset ist nicht als behoben nachgewiesen.
-- [ ] Verknüpfung zum Erlernen einer Fähigkeit einsetzen, speichern/neu laden
-  und Restguthaben sowie erlernte Fähigkeit prüfen.
-
-[Rücknahmebericht und Sicherungen](.local/abyss-artifacts-rollback-20260925/RESULTAT.md).
-[Aktuelle Zugabe der Abyss-Verknüpfungen](.local/abyss-links-all-150-20260925/RESULTAT.md).
-
-**Neuester Zusatzauftrag, 23:42 Uhr:** Im neuesten Stand `slot100` von 23:35 Uhr
-sind 500 Schlüssel und 100 zusätzliche Hernand-Münzen eingetragen.
-
-- [x] Frische Sicherung, vollständiger semantischer Vergleich, inverse Byteprüfung,
-  unabhängiges Entpacken, eindeutige IDs und 113.590 Objektzeiger geprüft.
-- [x] Stapeltabelle über das vorhandene Journal aktualisiert; vorherige Moddateien
-  gesichert, Update auf Projektkopie getestet, installierte Dateien zurückgelesen.
-- [x] Goldbarren und 999 Plätze erhalten; zehn andere Save-/Lobby-Dateien bytegleich.
-- [ ] Neuesten Stand laden: 500 Schlüssel im Rucksack und 103 Hernand-Münzen bei
-  den besonderen Gegenständen, jeweils ein Stapel.
-- [ ] Einen Schlüssel verwenden und eine Münze bei Turnali einsetzen;
-  anschließend speichern/neu laden und verbleibende Mengen sowie 999 Plätze prüfen.
-
-[Bericht und Sicherungen für Schlüssel/Münzen](.local/keys-hernand-2976/RESULTAT.md).
-
-**Aktueller Stand, 20:51 Uhr:** Build 25477059 / EXE 1.0.0.2976; neuester Slot 1.
-Die früheren Mengen/Slots weiter unten dokumentieren die ersten Aufträge.
-
-- [x] Aktuellen Fortschritt gesichert, 843 verbleibende Goldbarren von fünf
-  Einträgen zu einem Stapel zusammengeführt; 38.401,01 Silber und je 200 Beutel erhalten.
-- [x] Goldbarren-Stapelgrenze 1.000 und Inventarmaximum 999 im neuen Build
-  installiert, Save-Erweiterung 949. Archive und Save unabhängig zurückgelesen.
-- [x] Vollständiger Save-Vergleich, bytegenaue inverse Prüfung, Apply/Restore
-  auf Projektkopie und 22 Bibliothekstests bestanden.
-- [x] Spiel startet; neuesten Slot 1 geladen: ein Stapel mit 843 Goldbarren
-  und 999 Gesamtplätze. Nutzerbestätigung: „Ja, beides stimmt“.
-- [ ] Regulär speichern und neu laden: Menge, Stapel und Kapazität bleiben erhalten.
-- [ ] Goldbarren verwenden/verkaufen und neue Gegenstände oberhalb der früheren
-  240-Plätze-Grenze aufnehmen; danach speichern/neu laden.
-
-[Aktueller Bericht](.local/inventory-stack-2976/RESULTAT.md).
-
-- [x] Bei geschlossenem Spiel Slot 2 gesichert und um vier 100er-Beutelstapel
-  sowie 30.000 Silber ergänzt. Neuer Geldbestand: 30.231,01 Silber.
-- [x] Freie Plätze, eindeutige IDs, Lobby-Zähler, vollständiger Vergleich der
-  übrigen Daten und Integrität nach erneutem Öffnen geprüft. Acht andere Dateien unverändert.
-- [ ] Beim nächsten gewünschten Spieltest den geänderten Slot laden: insgesamt
-  200 leichte/200 schwere Kupferbeutel und den Geldbestand kontrollieren.
-- [ ] Je einen Beutel verwenden; anschließend regulär speichern und erneut
-  laden. Verbleibende Mengen, Guthaben und übriges Inventar müssen erhalten sein.
-
-Das Spiel wurde dafür nicht gestartet. [Bericht und Originalsicherung](.local/inventory-currency/RESULTAT.md).
-
-**Anschließender Auftrag:** Der neueste Slot 0 enthält die vorherigen Beutel und
-das Guthaben nach einem weiteren regulären Speichervorgang. Dort wurden zusätzlich
-1.000 Goldbarren eingetragen; neue Sicherung und erneute Integritätsprüfung bestanden.
-
-- [ ] Beim späteren Spieltest Slot 0 laden: 1.000 Goldbarren sowie weiterhin
-  200 leichte/200 schwere Kupferbeutel und 30.231,01 Silber prüfen.
-- [ ] Goldbarren verwenden/verkaufen, regulär speichern und erneut laden;
-  verbleibende Mengen und korrekt verändertes Guthaben prüfen.
-- [x] 999 Rucksackplätze eingerichtet: Tabellenmaximum 999 installiert,
-  Save-Erweiterung auf 949 gesetzt (50 + 949). Sicherungen, vollständiger
-  Bytevergleich, unabhängiges Entpacken und Integrität nach erneutem Öffnen geprüft.
-  Gegenstände und Geld sowie die neun anderen Save-/Lobby-Dateien unverändert.
-- [ ] Slot 0 laden: Anzeige von 999 Gesamtplätzen prüfen. Gegenstände oberhalb
-  der bisherigen 109 Plätze aufnehmen und sortieren, später auch oberhalb
-  der ursprünglichen Tabellenobergrenze 240. Regulär speichern und neu laden;
-  Kapazität, Gegenstände und Mengen müssen erhalten bleiben.
-
-Die Tabellenänderung besteht zwei Apply-/Restore-Zyklen auf einer Projektkopie
-und ist inzwischen installiert; dies ist kein Spieltest.
-[Abschlussbericht und Sicherung](.local/inventory-999-save/RESULTAT.md).
-
-## Aktuelle Voraussetzung: Das Spiel wurde aktualisiert
-
-Installiert ist inzwischen **Steam-Build 25477059 / EXE 1.0.0.2976**. Die vier
-Tabellen für den aktuellen Inventarfix sind geprüft; die vollständige allgemeine
-App-Unterstützung muss separat aktualisiert werden. Folgende Nachweise gelten
-für den vorherigen Build **25455892 / EXE 1.0.0.2949**:
-**Workbench v0.5.9 unterstützt dessen Tabellen und weiterhin den bisherigen
-Build 25381195 / EXE 1.0.0.2944.** Von 38 erfassten EXE-/Metadatendateien sind 24
-verändert. Das ist keine vollständige Inhaltsprüfung der Installation.
-
-61 verwendete Tabellen-, Icon- und Sprachdateien sind verglichen; alle 14
-indizierten Tabellenpaare bestehen den bytegleichen Roundtrip. Beim Modvergleich
-bleiben alle ungewählten Stages einschließlich der zwei neuen Einträge erhalten.
-Die vollständige native Reparatur ist weiterhin nicht freigegeben. Der historische
-Testhost verweigert alte Funktionskopien aus dieser EXE; die neue Probe besitzt
-eigene, getrennte Funktions- und Layoutnachweise.
-Ein alter Prüfbericht oder ein altes Backup ist keine Grundlage für Apply/Restore
-über den neuen Zustand der Installation. [Buildnachweis](docs/BUILD_SUPPORT.md).
-
-## Bereits automatisch geprüft
-
-- [x] App-Prüfung für v0.5.9: 181 Rust-Tests, sieben Frontend-Unit-Tests und
-  61 UI-Flows; zusätzlich der gesonderte Vergleich der bisherigen Advanced-Tabellen.
-  Die Integrationstests lesen den neuen Build 1.0.0.2949.
-- [x] Gebaute Desktop-App v0.5.9: Vorschau mit 3.359 Änderungen über 13 Tabellen,
-  zwei Apply-/Restore-Zyklen an einer Projektkopie, keine Seitenfehler.
-  Spiel-Metadaten und ursprünglicher Prüfbericht bleiben unverändert.
-- [x] Beide Build-Identitäten bleiben getrennt. Sicherungsberichte mit gemischten
-  Metadaten, falscher Build-ID, fehlenden Dateien oder falschen Größen werden abgewiesen.
-- [x] 52.082 Stages und 1.098 Quests bleiben vollständig lesbar. Modänderungen
-  betreffen nur die beiden gewählten Patrouillen; Questdateien bleiben außerhalb des Overlays.
-- [x] Aktuelles Reparatur-Entwicklungsmodul 0.23.0: neun CTest-Suiten,
-  MSVC Release mit Warnungen als Fehler.
-- [x] 1.529 Aktionsbedingungen, 519 Leser-/Referenzbedingungen,
-  25 Sperrgruppenbedingungen und 55 neue Registry-Adapterbedingungen.
-- [x] Fehlerhafter Erwerb, alte/vollständige Kennung, ungültige Bindung,
-  teilweise erworbene Referenzen und Freigabe in umgekehrter Reihenfolge.
-- [x] Jede Quelle verwendet ihre eigene Freigabemethode; keine globale
-  Methodenbindung, die durch einen anderen Kontext überschrieben werden kann.
-- [x] Native Erwerbs-/Sperr-/Inventar-/Ereignis-/Speicherobjektprobe auf 1.0.0.2949: 454 Szenarien,
-  4.812 native Aufrufe und 206.786 Bedingungen, einschließlich wiederholter Byte-/Tabellenprüfungen. Echte Windows-Sperren halten die
-  Referenzsuche während eines Schreibzugriffs an; danach entfernte Einträge werden abgewiesen.
-- [x] Fehler beim zweiten Besitzer geben die erste Referenz zurück. Ungültige
-  Belege gelten trotz enthaltenem Pointer nicht als Besitz. Normal-/User-Varianten,
-  alte Generationskennung, fehlende Einträge und verzögerte Freigabe sind geprüft.
-- [x] Der Leser nutzt nur gehaltene Besitzer und liest keine ungeschützte Registry
-  oder unbesessene Ersatzauswahl. Bei blockierter Besitzersperre werden keine Items
-  gelesen; Fehler geben alle Sperren vor den Referenzen zurück.
-- [x] Gemeinsame Erfassung von Inventar, Ausrüstung und Sockeln unter echten
-  Besitzersperren; Wechsel von Clientauswahl, Kennung, Daten und Sperrbindung
-  werden geprüft. Die verwendeten Lesefelder besitzen inzwischen eigene 2949-Belege.
-- [x] Originale Inventar-/Besitzergetter des neuen Builds stimmen auf identischen
-  privaten Quellen mit dem Leser überein. Vier native Unwindfragmente geprüft.
-- [x] Aktuelle Clientauswahl und Ausrüstungs-Slotwahl nativ geprüft; der
-  Ausrüstungstest verwendet Delta 0 und beweist noch keine Reparaturereignisse.
-- [x] Unbekannte/nicht angegebene Leser-Builds werden vor Erwerb und Lesen abgewiesen.
-- [x] Original-Updater reproduziert auch im neuen Build den schädlichen positiven
-  Sockel-Reparaturfall; er wird nicht als eigene Reparaturfunktion verwendet.
-- [x] Ereignisvorbereitung behält den vorherigen Broken-Zustand und berücksichtigt
-  No-Wear; mitgeführte Items dürfen den Ausrüstungsweg nicht verwenden.
-- [x] Originaler Server-Notifier und Client-Ack auf privaten reparierten Items:
-  richtige Effekt-/UI-Aufrufe, No-Wear, Sockelerhalt und vollständige Nachherwerte.
-  Transport, Effektverarbeitung und UI-Empfänger sind künstliche Testabhängigkeiten.
-- [x] Fehlende/falsche/doppelte Rückmeldung, falscher Clientslot, Teiländerung,
-  fehlender Ereignisbeleg und Sitzungswechsel erzeugen keinen Reparaturerfolg.
-- [x] Native Itemkopien besitzen eigene Sockel-/Zusatzdaten. Wiederholte Zuweisung,
-  Selbstzuweisung, leere Daten und beide Allokationswege erhalten die Quelle und
-  geben alle Kopierpuffer frei. Zusätzliche 29 Bedingungen prüfen den Besitzervertrag.
-- [x] Ausrüstungsereignisse verwenden jetzt diese echten nativen Nachherkopien:
-  Kopieren unter Besitzersperren, Benachrichtigung nach Entsperren, Freigabe danach.
-- [x] Originale Markierung geänderter Ausrüstungsslots: Duplikate, Kollisionen,
-  Wachstum und beide Allokationswege. Die Ereignisprobe markiert vor dem Entsperren;
-  Verbraucher und native Tabellenbereinigung sind inzwischen ebenfalls integriert.
-- [x] Gehaltene Erfassung: Besitzer und Sperren bleiben für Planung/Vorprüfung
-  erhalten. Refresh, fremder Thread, veralteter Batch und geänderte Sitzung geprüft;
-  Fehler geben alle Sperren vor den Referenzen frei.
-- [x] Feldschreiber: 35 Szenarien und 202 Bedingungen. Gesamter Batch vorab geprüft;
-  anschließend nur geänderte Haltbarkeitswörter in beiden Zustandskopien geschrieben.
-  Veraltete/überlappende/unbeschreibbare Quellen, Teilfehler, leere Slots und
-  Metadaten geprüft; acht native Integrationsfälle verwenden echte eigene Speicherblöcke.
-- [x] Gemeinsamer Ablauf: 43 Szenarien und 273 Bedingungen. Beide Nachherkopien
-  jedes Items entstehen vor dem ersten Store; alle Meldungswege müssen vorhanden
-  sein. Kopier-, Schreib-, Markierungs- und Meldefehler erzeugen keinen Erfolg.
-- [x] Die 18 nativen Ausrüstungsfälle verwenden diesen Adapter einschließlich
-  Originalkopien, Schreiber, Slot-Markierung und Server-/Client-Ereignisweg.
-  Bestätigung liest anschließend unter neu erworbenen Besitzern; falsche Slots
-  oder widersprüchliche Zustandskopien werden abgewiesen.
-- [x] Batchabschluss nach allen Meldungen: fehlende Bindung verhindert das
-  Schreiben; spätere Abschlussfehler oder Sitzungswechsel ergeben keinen Erfolg.
-- [x] 24 native Fälle für die Verarbeitung markierter Ausrüstungsslots. Exakte
-  UID-/Haupt-Haltbarkeitspaare, 64 Slots, Clear/Wiederverwendung/Freigabe und
-  Fehler nach bereits geleerter Liste geprüft. Die Persistenzschnittstelle bleibt
-  ein Testempfänger; tatsächliche Speicherbestätigung ist damit nicht nachgewiesen.
-- [x] Leere und teilweise gespeicherte Sockelplätze geprüft: Es werden nur
-  vorhandene Datensätze gelesen, auch wenn mehr Sockelplätze möglich sind.
-  Falsche Zusatzdaten und übergroße Allokationen werden vor dem Kopieren abgewiesen.
-- [x] 36 native Inventarereignisfälle: originaler Client-Ack mit absoluten
-  Hauptwerten, ungültigen/leeren Slots und exaktem UI-Aufruf. Acht Fälle verbinden
-  den Ack mit Kopien und Feldschreiber; UID-Wechsel, fehlende/doppelte Zustellung
-  und Abschlussfehler verhindern Erfolg. Server, UI und Persistenz bleiben Testempfänger.
-- [x] 36 zusätzliche Fälle für originalen Inventar-Paketserializer und Streamauswahl:
-  exakte zehn Nutzbytes, keine UID-/Sockel-/Auftragsdaten, fehlende Empfänger/Puffer,
-  unpassende Kanäle und fehlgeschlagener Poolbezug. Zehn Transaktionen verbinden
-  den Sender mit dem Client-Ack; Fehler, ausbleibende/doppelte Zustellung, UID- oder
-  Actor-Abweichung zählen nicht als Erfolg. Reale Transport-/Speicherbindung offen.
-- [x] Neue EXE wird vom alten nativen Testhost vor Funktionsausführung abgelehnt.
-- [x] 19 native Fälle mit vollständiger SQL-Ausführungsfunktion und originalem
-  Request-Erwerb: Umgehungszweig, alte Fehler, Diagnosefristen, Nullzeiger und
-  Integration mit dem Slot-Verbraucher. Erfolg ist ohne Lesen oder Speichern des
-  Requests möglich; diese Rückgabe zählt ausdrücklich nicht als Speicherbestätigung.
-- [x] 38 native Fälle für Item → Speicherobjekt → Item: Hauptwerte 0/beschädigt/voll/
-  Sentinel/über Maximum, No-Wear, freie und teilweise belegte Sockel. 14 Fälle
-  verwenden tatsächliche Reparaturpläne und native Nachherkopien. Färbedaten,
-  Zurücksetzen/Wiederverwenden, Quellenerhalt und vollständige Freigabe geprüft.
-  Beide privaten Allokationsmodi bestehen. Kein Nachweis eines Schreibens auf Datenträger.
-- [x] 39 native Speicherablauffälle: alle Skip-/Dirty-/Statuskombinationen, vier
-  Fehlerstufen, Wiederholung, fehlendes Backend, Steam-Zulassungsprüfung und
-  Wachstum dreier Warteschlangen. Originaldispatcher und Marker laufen auf
-  privaten Daten; Datei-/Plattformempfänger bleiben künstlich. [Grenzen](runtime/repair/SAVE_BACKEND_2949.md).
-- [x] Datenlesen wählt das neue Leseschema; der Suchindex führt die passende
-  Schema-ID. Das erteilt keine Vanilla-Zulassung oder Live-Apply-Freigabe.
-
-Der historische vollständige native Host am **alten** Build hatte 203 Aufrufe
-und 3.859 Bedingungen (Modul 0.6.0). Die aktuelle Probe ergänzt eigene Nachweise
-für Inventar-/Ausrüstungszugriffe und Teile der Ereignisfolge; sie ist weiterhin
-kein Nachweis einer vollständigen Reparatur im Spiel.
-[Aktuelle Testgrenzen](runtime/repair/INVENTORY_EVENTS_2949.md).
-Die Engine-Threadmap und endgültige Objektbereinigung bleiben Testabhängigkeiten.
-Details: [TESTING](docs/TESTING.md).
-
-## Noch von mir technisch zu prüfen
-
-- [x] Neue Tabellen-/Sprachdateien, Parser-Roundtrips, geänderte Datensätze und
-  Mod-Diffs zuordnen. [Vergleich](docs/BUILD_SUPPORT.md).
-- [x] Versionsauswahl vor der Prüfung einer Mod-Sicherung: Der unterstützte neue
-  Build lädt seine Originaltabellen; ein eigener Testbestand mit unbekannter
-  PE-Version wird vorher mit dem Versionsfehler abgewiesen.
-- [x] Geschützte Client-/Server-Suche mit tatsächlichen Referenzmethoden und
-  Freigabe auf dem neuen Build gemeinsam isoliert ausführen.
-- [x] Gehaltene Referenzen direkt für die Inventarerfassung nutzen; keine zweite
-  ungeschützte Suche. Erwerb, Besitzersperren und Leser gemeinsam auf privaten Daten prüfen.
-- [x] Native Funktionsgrenzen und Leselayouts für Inventar, Besitzer, aktuelle
-  Auswahl, Ausrüstung und Sockel auf dem neuen Build belegen.
-- [x] Ausrüstungsereignisse korrekt vorbereiten und die Server-/Client-Aufrufwege
-  mit privaten Transport-, Effekt- und UI-Empfängern prüfen.
-- [x] Originale Itemkonstruktion, tiefe Kopie und Destruktion mit eigenen
-  Allokationen prüfen und in die Ereignisprobe integrieren.
-- [x] Originale Slot-Markierung in die Ausrüstungsprobe integrieren und eine
-  durchgehend geschützte Erfassung für die Reparaturvorprüfung implementieren.
-- [x] Vollständigen Haltbarkeits-Feldschritt für mitgeführte und ausgerüstete Items
-  mit Vor-/Nachprüfung und Behandlung unklarer Teilfehler implementieren.
-- [x] Feldschreiber mit vorab vollständig vorbereiteten nativen Nachherkopien
-  und bereichsabhängigen Meldungsadaptern verbinden; Ausrüstungsweg nativ isoliert prüfen.
-- [x] Originalen Inventar-Client-Ack mit dem privaten gemeinsamen Ablauf verbinden;
-  UID-Wechsel und unvollständige Rückmeldungen separat abweisen.
-- [ ] Serverseitige Inventarmeldungen, gemischte Aufträge und vollständige echte
-  Effekt-/UI-/Rückmeldewege prüfen. Der Client-Ack allein bestätigt keine Speicherung.
-- [x] Verbraucher der Slot-Meldungen und native Bereinigung im privaten
-  Ausrüstungsablauf anbinden; leere Liste allein gilt nicht als Erfolgsbestätigung.
-- [ ] Tatsächliche Persistenz und ergänzenden Sockelweg anbinden. Der belegte
-  Ausrüstungsverbraucher übergibt nur UID und Haupt-Haltbarkeit. Der untersuchte
-  Socket-SQL-Helper überträgt die Itemkennung. Der getrennte ItemSaveData-Weg
-  übernimmt Haupt- und Sockelwerte auch in der nativen Probe; der tatsächliche Save-Vorgang fehlt.
-- [x] Originale Item-/Speicherobjekt-Umwandlungen auf privaten Quellen ausführen:
-  Hauptwerte, Sentinel, mehrere Sockel, freie Plätze, Identität und Färbedaten;
-  reparierte Kopien und Wiederverwendung einbeziehen.
-- [ ] Weitere optionale Itemdaten und die tatsächlichen Engine-Einstellungen
-  zur Sockelanzahl prüfen. Die Probe bindet diese Einstellungen selbst; der Lader
-  erzeugt fünf Datensätze, auch wenn die logische Grenze kleiner ist.
-- [ ] Reguläre Erzeugung/Serialisierung und Abschluss der Speicherobjekte anbinden;
-  die Umwandlung im Arbeitsspeicher allein bestätigt noch keinen gespeicherten Auftrag.
-- [x] Dateihelfer mit privaten Puffer-/Handle-Empfängern prüfen: 34 native Fälle
-  für Vorbereitungs-/Öffnungs-/Schreib-/Flush-/Closefehler, leere Ausgabe und
-  Lebensdauer in beiden Allokationsmodi. [Nachweis](runtime/repair/SAVE_FILE_2949.md).
-- [x] Native Pufferaufbereitung, Allokation und LZ4-Kompression mit Größen bis
-  131.072 Byte prüfen; Fehler, Ausgabe-Wiederverwendung und erneut aufgerufene
-  Einträge einbeziehen. 66 Fälle bestanden. [Nachweis](runtime/repair/SAVE_ENCODING_2949.md).
-- [ ] Nachgelagerte Verarbeitung einschließlich Integrität/Verschlüsselung, den
-  Queue-/Backup-/Umbenennungsweg und belastbaren Abschlussbeleg anbinden.
-  Nach fehlgeschlagenem Öffnen müssen neue Versuche frische Rohdaten verwenden. Flush-/Closefehler können im Originalcode trotzdem
-  Erfolg und geleerte Puffer erzeugen. Eine interne Erfolgsmeldung genügt nicht.
-- [ ] Reparaturänderungen und vollständige Ereignis-/Effektpfade auf dem neuen Build belegen.
-- [ ] Aktuellen Spieler und Manager auf einem belegten Engine-Thread auflösen;
-  Welt-/Charakterwechsel, Wiederverwendung von Kennungen und TLS-Moduswechsel
-  dürfen keine fremden oder veralteten Besitzer akzeptieren.
-- [ ] Vollständige Reparaturtransaktion samt Inventar-/Ausrüstungsereignissen,
-  abgeleiteten Effekten und eindeutiger Rückmeldung entwickeln und prüfen.
-- [ ] Neue Module gegen Fehler, Teilabbrüche, Wiederanwendung, Rücknahme und
-  Updates prüfen. Die Testdaten liegen außerhalb der Spielinstallation.
-- [ ] Phasen 6–8 nach ihrer Implementierung automatisiert prüfen.
-
-## Spätere Testreihenfolge für dich
-
-Erst nach Unterstützung des dann installierten Builds und Abschluss der
-Entwicklung: zunächst App bedienen, dann B0 mit einer kleinen Änderung prüfen,
-danach jedes Modul einzeln und zuletzt Kombinationen. Für Installationsänderungen
-Spiel schließen; Wirkung nach dem nächsten Start prüfen. Rücknahme ebenfalls
-bei geschlossenem Spiel. Die Workbench schreibt keine Saves.
-
-Für einen Vergleich dieselbe Ausgangssituation verwenden und Vorher-/Nachherwerte
-notieren. Ein einzelner Zufallsdrop belegt keinen Multiplikator. Bei Problemen
-Fall-ID, App-/Spielversion, Einstellungen, Ist-Ergebnis und gegebenenfalls einen
-Screenshot festhalten.
-
-### Phasen 0–3: Daten und Bedienung
-
-| ID | Test | Erwartetes Ergebnis |
+# Crimson Workbench – What needs to be tested?
+
+## v0.6.3 language changes (11 October 2026)
+
+- [x] English interface, installer text and Markdown documentation.
+- [x] Automatic catalog language follows the selected installation's Steam manifest and is resolved again on reload.
+- [x] Missing, malformed, unrelated, oversized and unsupported language settings fall back to English.
+- [x] All 15 supported Steam language codes map to catalog languages.
+- [x] Existing manual preferences remain usable; Automatic and manual choices persist through restart.
+- [x] Read-only detection leaves the Steam manifest unchanged.
+- [x] 17 frontend unit tests, 92 browser tests and 214 Rust library tests passed locally; five fixture-dependent Rust tests skipped. Clippy passed.
+- [ ] Confirm the detected language on another user's installation; use manual selection for a separate in-game override or an unsupported launcher.
+
+## Basestone bonuses in Workbench, 05.10.2026
+
+- [x] 190 unique stones read from the local, verified ItemInfo;
+German names/descriptions and complete Stat/Buff lists are available.
+- [x] Destruction III: Attack +3 instead of raw value 3000, blank zero values hidden.
+- [x] Stormwind III: attack speed +3 levels; No guessed percentages.
+- [x] Ability description, effect level and explicit display of unknown fields.
+- [x] Selection during loading, reading errors/repetitions, searches and existing
+Locks against running game and outdated configuration checked.
+- [x] 17 front-end tests and 10 extra sockets UI tests; Preview visually checked.
+- [ ] Workbench Open via the desktop link → extra sockets:
+Select Destruction III, Stormwind III and Flame of Judgment and check the preview right. For this, the game can continue.
+- [ ] Select an already equipped extra sockets: Check basic bonuses/effects.
+The insertion/emptiness itself still requires a closed play.
+
+
+**Update 05.10.2026:** Real game start/loading and the corrected data on client/server pure reading confirmed: 10 / 11 / 15 places, amount each 1, identical base socket, helmet/sword refinement 10. Detection: `.local/extra-sockets-plus10-20261004/runtime-readonly-31728.json`. Visual display/use, stone effect and memory cycle still confirm.
+
+## Ten additional bases: tank, helmet and mecha sword, 04.10.2026
+
+**Correction and free choice of equipment:** The first game start/load attempt worked, but showed corrupted client values. Therefore, XS02 is not yet considered to have existed. Corrected Runtime→InitData transition is installed; No saved games has been changed or reset.
+
+- [x] 36 additional cases with the full original network converter:
+base socket 0–5, empty/stocked, prefix normal/0/255; quantity, flags, refinement, durability and storage limits obtained; Client extension restored.
+- [x] General configuration v2 and migration v1: new UID, double UID,
+inadmissible key, maximum number and atomic storage checked.
+- [x] 329 read own equipment instances in the latest save; 326 suitable;
+No save-write operations. Seven browser tests including +10 selection, double click, locked game, unknown format and outdated save.
+- [ ] **XS05:** Select another suitable instance in Workbench, +10
+add; ten empty additional places, existing stones and refinement unchanged. Equipable correctly in the game, then save/reload.
+- [ ] **XS06:** Installation on second computer / portable package. The EXE
+By itself, runtime mods and personal instance IDs are not set up.
+
+The older list below documents the first installation. Currently total 86 native cases, 22 policy/file cases, 163 core unit tests (four ignored), eleven frontend unit tests and seven browser tests passed. The global `tests/live.rs` roundtrip test fails due to the hash of the already modified `meta/0.papgt`; Browser/catalogue and socket reading tests work. The registry was not touched in this change.
+
+- [x] Exactly three existing instances identified; 10 new places each
+in addition to 0 / 1 / 5 Base sockets: total 10 / 11 / 15.
+- [x] 50 isolated original native routine/integration cases: all base values
+Processed, dynamically copied deep, five basic entries written, additional live entries unchanged when stored.
+- [x] 18 Policy/file cases: instance/key/padding check, checksum,
+atomic additional file, obsolete write attempts without change rejected.
+- [x] Core suite 162 passed / 4 intentionally ignored; Frontend eleven unit-
+and four new browser tests: tenth extra sockets, double click, game running, outdated revision, outdated search response. There was a production build.
+- [x] Winmm forwarding and joint loading of all seven ASIs in private
+process; extra sockets-Mod deactivates in case of wrong EXE before the hooks.
+- [x] When the game is closed/Workbench with kept launch protection installed;
+Save backups and desktop EXE-backup created; 13 saves and total 22 checked inventory files unchanged; Desktop shortcut uses Update.
+- [ ] **XS01:** Workbench Open on desktop → extra sockets: three matching
+Items and total 10 / 11 / 15 places. Ten new seats each empty.
+- [ ] **XS02:** Start game over Steam, load slot 1. No crash, all
+previous items, stones, +10 refinement and inventory unchanged. `CrimsonExtraSockets.log` must report READY and EXTENDED for 10 / 11 / 15.
+- [ ] **XS03:** When the game is closed e.g. extra sockets 10 of the mecha sword
+equip in Workbench with destruction III, restart/load; Compare effect with previous status. The game surface shows a maximum of five lines.
+- [ ] **XS04:** Save in-game, close completely and reload.
+Additional stone remains occupied in Workbench; The effect is retained. Normal saves have another five padding entries; existing bases unchanged.
+
+Secure the separate additional file together with the saves. Workbench emptiness directly removes the stone there; Prior assignment is secured in the project. [Evidence and installation backup](.local/extra-sockets-plus10-20261004/RESULTAT.md).
+
+## Electric Mecha Long Sword: fifth base, 04.10.2026
+
+- [x] In the latest save, exactly one instance is identified: 1003664,
+four occupied bases and empty fifth place, refinement +10.
+- [x] Exactly one decrypted data byte 4 → 5 changed; all other
+fields and four stones. Passed independent HMAC/ChaCha/LZ4 read-back and byte-accurate take-back; Six native functional areas are pinned again.
+- [x] After closing both apps, the freshest status checked again, original
+backed up, only `slot0/save.save` replaced and independently read back. Twelve other save/lobby files unchanged; No new ASI or EXE update.
+- [ ] **MS01:** Slot 1 loading; Mecha sword shows five open bases and +10,
+The four previous stones are preserved.
+- [ ] **MS02:** Place fifth socket on the witch with an existing stone;
+save and reload, then check occupancy and effect.
+
+The later extra sockets extension is described above; Their in-game tests is still open.
+
+## Mecha sword: more than five bases, private feasibility, 04.10.2026
+
+- [x] Unchanged complete native base value routine: ten cases,
+including six/ten entries, gaps, shelf life and limited release.
+- [x] Unchanged full native base buffer copy: 10 cases;
+six/ten data sets fully obtained, independent target buffer.
+- [x] Native base-storage loop: twelve cases. Original writes five;
+Prototype with dynamic comparison spells five/six/ten correctly.
+- [x] Private complete 10-entry game test independently retrieved;
+all other data received, inverse withdrawal byteaccurately.
+- [ ] Connect and check full native loading with Game Allocator.
+- [ ] Entire native memory cycle, shares and copies under real
+Examine the object life cycle; Fixture callbacks have so far replaced external helpers.
+- [ ] create and manage additional seats; Check witch operation/standard items.
+- [ ] Only after full prototype targeted installation and in-game validation:
+actual bonuses, unloading/creating, witch, saving/reloading.
+
+## Additional mount families without their own template, 04.10.2026
+
+Basic entry route technically tested, built and installed when the game/Workbench is closed. The game initialization and riding function are still unconfirmed.
+
+- [x] 24 private save/lobby candidates: Raptor, elephant, both iguanas, wolves, all 13 adult camel variants and other families. Removing each new animal gives exactly the original Savebody.
+- [x] No assumption of third-party HP, equipment, level, name, active assignment or spawn position. New number, HMAC and double lock checked; Unknown schemes are rejected.
+- [x] Eight mount UI tests: base entry is selectable, game test status and backup are displayed. Search, images, game process lock and resumption of the same request remain checked.
+- [x] Desktop update installed and independently read back: 37 files including all 13 saves unchanged, 23 backups checked; no animal allocation.
+- [ ] **MT09:** Underneath mounts Select the latest save and re-read it in the unchanged tested slot 0 standing 288 Entries available; Raptor/Elephant/Leguan/Camels/Wolves show “basic entry” · in-game test open.
+- [ ] **MT10:** First register exactly one desired exotic variant when the game is closed. Load this save; Check stall/special mount menu, visibility, HP and recalls.
+- [ ] **MT11:** Ascend, run, sprint and descend. Subsequently store and reload; Animals must be preserved and reusable. Existing horses/bears/lions and active mount check.
+- [ ] **MT12:** Only after successful individual testing can additional animal species be added. Report error message and variant if initialization or use fails; Do not perform blanket quest/knowledge unlocks.
+
+The older checklist below documents the previous status with 219 addable entries and only templates of the same animal group.
+
+## Extended mount templates and portraits, 04.10.2026
+
+The extension is installed and independently read back; in-game validation is pending.
+
+- [x] Private Savecopy: assigned, named circus lion serves as a template; The new copy has neither name nor active assignment. Originals remain unchanged after complete back-testing.
+- [x] Missing HP, damaged names and unconfirmed assignment types will be rejected. Fresh animal/item numbers, HMAC readback and double lock checked.
+- [x] 299 Images decoded: 89 assigned exactly and 210 explicitly labeled as an example variant. 23 Entries keep the general icon.
+- [x] Seven mount UI tests including detailed and zoom sample captions; No registration by clicking on the image.
+- [x] Closed game/Workbench installed desktop update: 37 files including all 13 saves and existing mods unchanged; 23 Backups and desktop link tested.
+- [x] After installation newest slot 0 pure reading checked: 219 available species (210 horses, seven bears, two lions); no change of name or assignment of animals.
+- [ ] **MT06:**Read the latest save. With unchanged tested slot 1, 219 animals should be available, including two other lions. For other animal groups, the basic entry route documented above now applies.
+- [ ] **MT07:** Select horse variant without own portrait: ‘Example of species’ and check for different colour/equipment; in the exact portrait this note does not appear.
+- [ ] **MT08:** Only if a new animal is desired: register when the game is closed, load real save, check new and original animal including name, assignment, equipment, riding and saving/reloading.
+
+## Image Preview, Search, mounts and NPC Arrows, 04.10.2026
+
+Implemented, technically tested and installed when the game is closed; in-game validation open.
+
+- [x] Real catalogue: subword search, hyphens, capital/case, multiple search words, exact IDs and optional regex mode.
+- [x] Invalid regex patterns are declared; After correction, the list of results appears again. Categories remain combinable.
+- [x] 57 uniquely assigned real animal portraits decoded from game archives; Missing images remain recognizable as a general symbol.
+- [x] Private Savecopy: named unassigned stable animal as a template; his name is preserved, new animals have fresh numbers and complete back-testing.
+- [ ] **UI01:** Click item image and animal portrait on the right, view large preview and close with Esc or x. Selection is retained.
+- [ ] **UI02:** Search for any partial words in the entire item catalog, e.g. `holz`, `pfeil` or `ring`. Regex optional testing, e.g. `^(Gift|Explosions).*pfeil`.
+- [ ] **MT04:** Under mounts Select the latest slot and re-read it. Check the available number; **Only addable mounts** hides entries without a template.
+- [ ] **MT05:** If a new animal is desired: save and close game, register animal, load the same save, check stable, ride and resave/reload.
+- [ ] **AM01:** Lightning arrow 1001315, Fire arrow 1001316 and Cold arrow 1001314 show monster ammunition indication; No output possible. Arrow 50001, Poison Arrow 50003 and Explosion Arrow 1001321 remain selectable.
+- [ ] **AM02:** Equip matching arrow variant in the game and shoot normally with the Aeserion arc. Do not test with already assigned NPC flash arrows; These were left unchanged.
+
+The item output confirms the inventory quantity; it does not automatically confirm that each internal game item is usable for the player.
+
+## Fishing rod and fall protection, 03.10.2026
+
+- [x] Original crab fishing rod in the latest `slot2` supplemented; Save completely compared.
+- [x] 999 Places, existing items/sockets and quest progress.
+- [x] Full native case routine and 684 protection cases checked for 342 keys.
+- [x] Remaining figures get original fall HP loss; Forwarding unchanged.
+- [x] New ASIs and three existing ASIs loaded together in isolation; The wrong exe is rejected.
+- [x] When the game is closed with launch protection installed, 31 existing files unchanged.
+- [ ] Start over Steam and load the latest **slot 2**; Check crab fishing rod in inventory.
+- [ ] Try fishing rod at the fishing place: check automatic catching.
+- [ ] `bin64/CrimsonNoFall.log` check for new READY line.
+- [ ] Safe moderate fall with cliff, Damiane and Oongka test: no HP loss.
+- [ ] Check the same with Leo/Rokade; Test black star on landing and descent.
+- [ ] Normal combat hits should continue to pull off HP; then save/reload.
+- Ten baits: not yet added; The actual item name is missing.
+
+[Result, precise range and fuses](.local/fishing-no-fall-20261003/RESULTAT.md).
+
+## Lion and Rokade: Pace, Endurance and Lion HP, 03.10.2026
+
+- [x] Both animals are uniquely assigned, all six stages are structurally tested.
+- [x] Twelve original/change cases checked with the game’s native data readers.
+- [x] Twelve cut-off entries rejected; only 20 desired values changed.
+- [x] Archive group `0049` installed and extracted when the game is closed with launch protection.
+- [x] Older mods as well as all twelve save/lobby files checked unchanged.
+- [ ] Start over Steam and re-call Lions and Rokade.
+- [ ] Sprint longer and jump several times: Endurance should not run out.
+- [ ] Compare speed on a level track; Configured multiplier 1,30.
+- [ ] Check new maximum HP 1,350 at Leo; Existing current HP, if any. healing.
+- [ ] Save/reload and re-check both animals.
+
+[Outcome and limitations of offline testing](.local/lion-rokade-upgrades-20261003/RESULTAT.md).
+
+## Request from Ben: Battles, 28.09.2026
+
+- [x] Active battle step in the latest `slot1` identified and saved save.
+- [x] Twelve save/lobby files finally checked unchanged.
+- No modified quest to test: according to “only when safe” no intervention.
+- [ ] As a regular way at Ben open the cattle farm administration, a registered
+selecting animals and slaughtering them; then check the reporting step.
+
+[Result and backup](.local/greymane-slaughter-20260928/RESULTAT.md).
+
+## Current order: 30 hours of sleep and additional base, 28.09.2026
+
+- [x] 288 native event/calendar cases with hook and day change checked.
+- [x] Stranger time changes and shorter sleep durations remain unchanged.
+- [x] Both sleep plugins are loaded together in the isolated loader test.
+- [x] When the game is closed with launch protection installed; 17 Existing files identical.
+- [x] Nine Save directory files backed up; Save and existing base unchanged.
+- [ ] Start over Steam, check `CrimsonSleepDuration.log` for READY.
+- [ ] Select the option still called “12 hours”: expect one day plus six hours.
+- [ ] Check APPLIED log and actual timeline, animation and game world.
+- [ ] Shorter sleep options and one-second cooldown test, save/reload.
+- Five additional sockets and filling: **not implemented; according to user decision for the time being leave**, no in-game test is provided for this.
+
+[Result, technical limits and backup](.local/sockets-plus5-sleep30-20260928/RESULTAT.md).
+
+## Current job: Sleep cooldown 1 second, 27.09.2026
+
+- [x] Own 1,000-ms-rule including border cases and existing locks tested.
+- [x] Both original functions of the current EXE are tested in isolation with test data and hooks.
+- [x] Automatic charging via ASI Loader is tested in the private test process.
+- [x] When the game is closed, installed, files read back, nine save directory files backed up.
+- [x] EXE, existing overlays/registration and save directory files unchanged.
+- [x] READY entry from a real game start found in `bin64/CrimsonSleepCooldown.log` (28.09.); Practical test separately open.
+- [ ] Sleep, wait at least a second and sleep again.
+- [ ] If the lock is in place, reopen the interaction after one second.
+- [ ] Optionally check waiting at the campfire; then save and reload.
+
+[Result and exact test manual](.local/sleep-cooldown-1s-20260927/RESULTAT.md).
+
+## Current order: Grey mowing and small bones, 27.09.2026
+
+- [x] Twelve save/lobby files backed up; +250 small bones.
+- [x] Complete comparison, inverse examination, launch protection and reading back passed.
+- [x] Gray-mowed quenching stands only read; Progress unchanged.
+- [ ] Latest `slot1` load and 253 check small bones in the backpack.
+- [ ] Regularly store/reload and control quantity.
+- [ ] Quest unlock: open, not yet technically verified/implemented.
+
+[Quest Finding and backup](.local/greymane-unlock-bones-20260927/RESULTAT.md).
+
+## Current order: donation reserve and rings, 27.09.2026
+
+- [x] Current mission states read: Wood and weapons open; Money, food, stone completed.
+- [x] 1,616 excellent wood, 821 ivory and two rings complemented; for each 300 material reserve.
+- [x] Passed standard stacks, ring root stages, complete comparison, inverse testing and protected commit.
+- [ ] Latest `slot2` load: 2,016 excellent wood, 992 ivory,
+Check the darkness +3 and Demeniss seal +0.
+- [ ] Check donation values at Carl: wood 19, ivory 24 points per piece.
+- [ ] Donate up to 1,316 wood and 521 ivory for the final destinations; Keep the reserve.
+- [ ] Check both quest completions, ring refinement and save/reload.
+
+[Result and backup](.local/camp-donations-reserve-20260927/RESULTAT.md).
+
+## Current order: Camp stocks and wood, 27.09.2026
+
+- [x] Active item IDs and food donation value checked; backed up all twelve save files.
+- [x] Each 400 of the three wooden materials and 100 Large meal is entered.
+- [x] Complete comparison, inverse byte testing, launch protection and reading back passed.
+- [ ] Latest `slot1` load: check each 400 wood and 100 large meal.
+- [ ] At Carl, check the food donation value of the meals (calculated 648 per piece).
+- [ ] Donate food and check progress at “A table full of plenty”.
+- [ ] Regularly store/reload and check remaining quantities and progress.
+
+[Result and backup](.local/camp-provisions-wood-20260927/RESULTAT.md).
+
+## Current order: all III socket items and tempo, 27.09.2026
+
+- [x] All 41 active III-Abyss-IDs checked and supplemented once in the backpack.
+- [x] Rush III inserted in the first worn boot base; Devotion I returned.
+- [x] Complete save comparison, inverse byte checking, launch protection and reading back.
+- [ ] Load the latest `slot2`; 41 Add, rush III in the boot and surrender I in the backpack check.
+- [ ] With current equipment, check status value **Motion speed 15** and running efficiency.
+**30 was not set up**; 15 is the allowed regular avoidance target.
+- [ ] Use a III stone in the witch, save/reload and control progress.
+
+[Result, all quantities and backup](.local/abyss-iii-speed-20260927/RESULTAT.md).
+
+## Current inventory order: inventories and Abyss equipment, 26.09.2026
+
+- [x] Eight item IDs checked against the active table; 12 save/lobby files backed up.
+- [x] Each 500 of the five stocks and each 10 of the three Abyss equipment is supplemented;
+Passed standard stack, complete comparison, inverse testing, and protected commit.
+- [ ] Latest `slot0` load: 715 Small bones, 500 platinum, 500 plentiful
+barbecued meat, 505 improved Kraftfist herbal pastilles, 512 diamonds as well as each 10 Destruction III, Reinforcement III and Stormwind III test.
+- [ ] use meat; Test pastilles at the next required resuscitation.
+- [ ] Use Abyss equipment on a witch and check the respective bonuses.
+- [ ] Regularly store, reload and control residual quantities as well as progress.
+
+[Result and backup](.local/supplies-500-20260926/RESULTAT.md).
+
+## Current inventory order: seven materials, 26.09.2026
+
+- [x] Je 300 Iron ore, copper ore, azurite, silver ore, garnet, gold ore and epidote
+Added to the freshly backed latest `slot0`. Complete comparison, inverse byte testing, launch protection and reading back passed.
+- [ ] Latest state load: 320 iron ore, 433 copper ore, 315 azurite, 300 silver ore,
+Check 336 garnet, 300 gold ore and 311 epidote in your backpack.
+- [ ] Use, store/reload and check residual quantities and progress when forging.
+
+[Result and backup](.local/ores-300-20260926/RESULTAT.md).
+
+## Current inventory order: Refining materials, 25.09.2026
+
+- [x] Current recipe/item tables checked, all twelve save/lobby files backed up.
+- [x] Each 200 piece of 27 material types supplemented, total 5,400; native stack boundaries,
+passed unique IDs, complete comparison and inverse byte testing.
+- [x] Newest `slot1` from 21:28 watch replaced with closed game and read back;
+Installation, remaining saved games, existing abilities and 999 places are obtained.
+- [ ] Loading this latest state: e.g. 200 iron ore, 239 copper ore, 205 blood rocks,
+251 Skoleziterz, 204 Abyss artifacts and 200 Check Aeserion's scale in the backpack.
+- [ ] Refining the weapon and armor at the blacksmith, testing material extraction;
+Check Aeserion's scale for usability at level 10.
+- [ ] Save and reload: Received quantities, equipment, skills and inventory.
+
+According to their native stacking boundary, Aeserion's scales are present as 200 individual pieces. [Full list of materials and backup](.local/refinement-materials-200-20260925/RESULTAT.md).
+
+Status: 23.09.2026. Overview of functions: [PHASENSTATUS](PHASENSTATUS.md).
+
+**The general phase tests remain set back.** For the separately commissioned inventory fix, a targeted in-game test runs. I carry out the automated checks during development. Below is the later acceptance with concrete expectations; still missing functions are expressly marked.
+
+## Separate inventory order from 23.09.2026
+
+**Additional order from 25.09.2026, currently withdrawn:** The addition of 70 Abyss items did not correspond to the desired skill resource according to the user.
+
+- [x] Object identified from active game data; Twelve saves/lobbies.
+- [x] Seven new stacks of 10 with unique IDs; complete semantic
+Comparison, inverse byte testing and independent codec testing.
+- [x] Live save and lobby read back; other ten files and mod installation
+Unchanged, 999 Inventory locations and existing items are preserved.
+- [x] At 15:31 clock completely withdrawn: both files and original
+Change times byte accurately restored, originally received five copies.
+- [x] User names Abyss links and confirms the addition for all three
+Characters; the previous allocation of inventory items remains withdrawn.
+- [x] At 15:36 clock each 70 additional units in all three abilities accounts
+Entered: 0/16/42 → 70/86/112. Complete save comparison, inverse examination and reading back passed; stored capabilities, inventory, lobby and installation unchanged in the file comparison.
+- **Misplaced in-game validation according to users:** The ability tree has been
+reset after the +70 addition. Cause not clearly clarified.
+- [x] On user request at 15:52 clock each **150 additional** units added:
+70/86/112 → **220/236/262**. Six fixed fields with no data shift changed; all other unpacked save bytes are identical. refund counters examined against the current EXE; backup and read back completed.
+- [ ] Slot 0 from 25.09., 01:23Clock loading and credits in the abilities menu
+Kliff, Damiane and Oongka. In addition, check whether the skill tree is preserved; The previous reset is not proven to have been resolved.
+- [ ] Link to learn to use, save/reload a skill
+and check remaining balances as well as learned ability.
+
+[Take-back report and collateralisation](.local/abyss-artifacts-rollback-20260925/RESULTAT.md). [Current addition of Abyss links](.local/abyss-links-all-150-20260925/RESULTAT.md).
+
+**Latest Additional Order, 23:42Clock:** In the latest version `slot100` from 23:35Clock, 500 keys and 100 additional Hernand coins are entered.
+
+- [x] Freshness backup, complete semantic comparison, inverse byte testing,
+independent unpacking, unique IDs and 113,590 object pointers checked.
+- [x] stacking table updated via the existing journal; Previous mod files
+backed up, updated to project copy tested, installed files read back.
+- [x] Gold bars and 999 places received; 10 other save/lobby files byte-identical.
+- [ ] Latest stand loading: 500 keys in the backpack and 103 Hernand coins at
+the special objects, one stack each.
+- [ ] Use a key and insert a coin at Turnali;
+then save/reload and check remaining quantities as well as 999 places.
+
+[Report and fuses for key/coins](.local/keys-hernand-2976/RESULTAT.md).
+
+**Current status, 20:51Clock:**Build 25477059 / EXE 1.0.0.2976; The newest slot 1. The earlier quantities/slots below document the first orders.
+
+- [x] Current progress secured, 843 remaining gold bars of five
+merging entries into a stack; 38,401,01 Silver and each 200 bag.
+- [x] Gold bar stacking limit 1,000 and inventory maximum 999 in the new build
+Installed, save extension 949. Archive and Save independently read back.
+- [x] Complete save comparison, byte-accurate inverse testing, Apply/Restore
+insisted on project copy and 22 library tests.
+- [x] starts the game; latest slot 1 loaded: a stack with 843 gold bars
+and 999 total places. User confirmation: “Yes, both are true”.
+- [ ] Regularly store and reload: quantity, stack and capacity are retained.
+- [ ] Gold bars use/sell and new items above the former
+240 place limit; then save/reload.
+
+[Current report](.local/inventory-stack-2976/RESULTAT.md).
+
+- [x] When the game slot 2 is closed and secured by four stacks of 100 bags
+and 30,000 silver. New money stock: 30,231,01 silver.
+- [x] Free seats, unique IDs, lobby counters, complete comparison of
+other data and integrity checked after reopening. Eight other files unchanged.
+- [ ] Load the modified slot at the next desired in-game test: total
+200 light/200 heavy copper bags and control the money stock.
+- [ ] Use one bag each; then store regularly and again
+loading. Remaining quantities, balances and remaining inventory must be retained.
+
+The game was not started for this. [Report and original assurance](.local/inventory-currency/RESULTAT.md).
+
+**Consequent order:** The latest slot 0 contains the previous bags and the balance after another regular saving process. There were additionally 1,000 gold bars entered; Pass new backup and re-integrity check.
+
+- [ ] At the later in-game test Slot 0 load: 1,000 Gold bars and continue
+Check 200 light/200 heavy copper bags and 30,231,01 silver.
+- [ ] use/sell, regularly store and reload gold bullion;
+Check remaining amounts and correctly changed credits.
+- [x] 999 Backpacking set up: table maximum 999 installed,
+Save extension set to 949 (50 + 949). Fuses, complete byte comparison, independent unpacking and integrity checked after reopening. Items and money as well as the nine other save/lobby files remain unchanged.
+- [ ] Slot 0 Load: Check display of 999 total seats. Articles above
+of the previous 109 places and sort, later also above the original table upper limit 240. Regularly store and reload; Capacity, items and quantities must be maintained.
+
+The table change consists of two Apply/Restore cycles on a project copy and is now installed; This is not a in-game test. [Final report and backup](.local/inventory-999-save/RESULTAT.md).
+
+## Current requirement: The game has been updated
+
+Installed is now **Steam-Build 25477059 / EXE 1.0.0.2976**. The four tables for the current inventory fix have been tested; Full general app support must be updated separately. The following proofs apply to the previous build **25455892 / EXE 1.0.0.2949**: **Workbench v0.5.9 supports its tables and still the previous build 25381195 / EXE 1.0.0.2944.** EXE/metadata files captured by 38 are changed 24. This is not a complete content check of the installation.
+
+61 table, icon and language files used are compared; all 14 indexed table pairs consist of the byte-like round trip. During the mod comparison, all unselected stages including the two new entries are retained. The complete native repair is still not released. The historical test host refuses old functional copies from this EXE; The new sample has its own separate functional and layout proofs. An old test report or backup is not a basis for Apply/Restore over the new Zustand installation. [Proof of build](docs/BUILD_SUPPORT.md).
+
+## Already checked automatically
+
+- [x] App testing for v0.5.9: 181 Rust tests, seven front-end unit tests and
+61 UI flows; In addition, the separate comparison of the previous Advanced tables. The integration tests read the new build 1.0.0.2949.
+- [x] Built desktop app v0.5.9: preview with 3,359 changes over 13 tables,
+Two apply/restore cycles on one project copy, no page errors. Game metadata and original test report remain unchanged.
+- [x] Both build identities remain separate. Mixed backup reports
+Metadata, incorrect build ID, missing files or incorrect sizes are rejected.
+- [x] 52,082 Stages and 1,098 Quests remain fully readable. Modifications
+concern only the two chosen patrols; Quest files remain outside the overlay.
+- [x] Current repair development module 0.23.0: nine CTest suites,
+MSVC release with warnings as errors.
+- [x] 1,529 Action Conditions, 519 Reader/Reference Conditions,
+25 Lock group conditions and 55 new registry adapter conditions.
+- [x] Incorrect acquisition, old/full identifier, invalid bonding,
+partially acquired references and release in reverse order.
+- [x] Each source uses its own release method; No global
+Method binding, which can be overwritten by another context.
+- [x] Native acquisition/locking/inventory/event/storage object sample on 1.0.0.2949: 454 scenarios,
+4,812 native calls and 206,786 conditions, including repeated byte/table checks. True Windows locks stop reference search during a write access; Subsequently removed entries are rejected.
+- [x] Error with the second owner returns the first reference. Invalidity
+Proofs are not considered possession despite the included pointer. Normal/user variants, old generation identifier, missing entries and delayed release are checked.
+- [x] The reader uses only held owners and does not read an unprotected registry
+or unobsessed replacement selection. If the owner lock is blocked, no items are read; Errors return all locks before the references.
+- [x] Inventory, equipment and sockets shared under real-world control
+owner locks; Changes of client selection, identifier, data and block binding are checked. The reading fields used now have their own 2949 documents.
+- [x] Original inventory/owner getters of the new build match on identical
+private sources agree with the reader. Four native wind fragments tested.
+- [x] Current client selection and equipment slot selection natively checked; the
+Equipment testing uses Delta 0 and does not yet prove any repair events.
+- [x] Unknown/unspecified reader builds are rejected before purchase and reading.
+- [x] Original Updater also reproduces the harmful positive in the new build
+base repair case; it is not used as its own repair function.
+- [x] Event preparation keeps the previous Broken-Zustand and takes into account
+No-wear; Items carried must not use the equipment path.
+- [x] Original Server Notifier and Client Ack on private repaired items:
+Proper effect/UI calls, no-wear, socket maintenance, and complete after-values. Transport, effect processing and UI receiver are artificial test dependencies.
+- [x] Missing/false/double feedback, wrong client slot, partial change,
+Missing event documentation and changing sessions do not produce repair success.
+- [x] Native item copies have their own socket/additional data. repeated assignment,
+Self-assignment, empty data and both allocation paths receive the source and release all copy buffers. Additional 29 conditions check the owner contract.
+- [x] Equipment events now use these real native aftercopies:
+Copy under owner locks, notification after unlock, release thereafter.
+- [x] Original marking of modified equipment slots: duplicates, collisions,
+Growth and both allocation paths. The event sample shall be marked before unlocking; Consumers and native spreadsheet cleanup are now also integrated.
+- [x] Category held: owner and locks remain for planning/pre-examination
+obtained. Refresh, foreign thread, outdated batch and modified session checked; Errors release all locks before the references.
+- [x] Field recorder: 35 Scenarios and 202 Conditions. Total batch pre-tested;
+then only changed durability words are written in both Zustandcopies. Obsolete/overlapping/unwritable sources, partial errors, empty slots and metadata checked; Eight native integration cases use real memory blocks of their own.
+- [x] Common flow: 43 Scenarios and 273 Conditions. Both subsequent copies
+Each item is created before the first store; all means of reporting shall be available. Copying, writing, marking and reporting errors do not produce success.
+- [x] The 18 native equipment cases use this adapter including
+Original copies, scribes, slot marking and server/client event path. Confirmation reads subsequently under newly acquired owners; false slots or conflicting Zustandcopies are rejected.
+- [x] Batch completion after all messages: lack of binding prevents
+letters; Subsequent closing errors or session changes will not be successful.
+- [x] 24 native cases for processing marked equipment slots. Exact
+UID/main durability pairs, 64 slots, clear/reuse/release and error checked after already emptied list. The persistence interface remains a test receiver; The actual memory confirmation is thus not proven.
+- [x] Empty and partially stored base spaces are checked: only
+existing data sets are read, even if more base spaces are possible. Incorrect additional data and oversized allocations are rejected before copying.
+- [x] 36 native inventory event cases: original client ax with absolute
+Main values, invalid/empty slots and exact UI call. Eight cases link the Ack with copies and field writers; UID change, missing/double delivery and completion errors prevent success. Server, UI and persistence remain test recipients.
+- [x] 36 additional cases for original inventory package serializer and stream selection:
+Exactly ten useful bytes, no UID/socket/order data, missing receiver/buffer, inappropriate channels and failed pool reference. Ten transactions connect the sender to the client-ack; Errors, missing/double delivery, UID or Actor deviation do not count as success. Real transport/storage binding open.
+- [x] New EXE is rejected by the old native test host before function execution.
+- [x] 19 native cases with full SQL execution function and original
+Request Acquisition: bypass, old errors, diagnostic deadlines, zero hands and integration with the slot consumer. Success is possible without reading or saving the request; This return is expressly not counted as a storage confirmation.
+- [x] 38 native cases for Item → Memory Object → Item: Main values 0/damaged/full/
+Sentinel/above Maximum, No-Wear, free and partially occupied sockets. 14 Cases use actual repair plans and native post-copies. dye data, reset/reuse, source conservation and full release checked. Both private allocation modes exist. This does not demonstrate a write to disk.
+- [x] 39 native memory outflow cases: all skip/dirty/status combinations, four
+Error levels, repetition, missing backend, Steam approval check and growth of three queues. Original dispatchers and markers run on private data; File/platform recipients remain artificial. [Boundaries](runtime/repair/SAVE_BACKEND_2949.md).
+- [x] Data reading selects the new reading schema; The search index leads to the appropriate
+Scheme ID. This does not grant vanilla approval or live apply approval.
+
+The historical full native host on the **old** build had 203 views and 3,859 conditions (module 0.6.0). The current sample complements own evidence of inventory/equipment access and parts of the sequence of events; it is still not proof of a complete repair in the game. [Current test limits](runtime/repair/INVENTORY_EVENTS_2949.md). The engine threadmap and final object cleanup remain test dependencies. Details: [TESTING](docs/TESTING.md).
+
+## Still to be technically tested by me
+
+- [x] New table/language files, parser round trips, changed records, and
+Assign mod diffs. [Comparison](docs/BUILD_SUPPORT.md).
+- [x] Version selection before testing a modbackup: The supported new
+Build loads its original tables; a test stock with an unknown PE version is rejected beforehand with the version error.
+- [x] Protected client/server search with actual reference methods and
+Share on the new build in isolation.
+- [x] Use references contained directly for inventory collection; Not a second
+unprotected search. Acquisition, owner locks and readers check for private data together.
+- [x] Native functional limits and read layouts for inventory, owners, current
+Select, occupy equipment and base on the new build.
+- [x] Equipment events are properly prepared and the server/client call paths
+with private transport, effect and UI receivers.
+- [x] Original item construction, deep copy and destruction with own
+Check allocations and integrate them into the event sample.
+- [x] Integrate original slot marking into the equipment sample and create a
+Implement continuous protected capture for repair pre-testing.
+- [x] Complete durability field step for items carried and equipped
+Implement with preliminary/review and treatment of unclear partial errors.
+- [x] Field recorders with pre-prepared native post-copies
+and to connect range-dependent message adapters; Test the equipment path natively isolated.
+- [x] Connect the original inventory client to the private common flow;
+Separately reject UID change and incomplete feedback.
+- [ ] Server-side inventory messages, mixed orders and complete real
+Check effect/UI/reporting pathways. The client-ack alone does not confirm any storage.
+- [x] Consumers of slot messages and native cleanup in private
+tethering equipment sequence; Empty list alone is not considered a confirmation of success.
+- [ ] Connect actual persistence and complementary base path. The evidenced
+Equipment consumer passes only UID and main durability. The examined socket SQL helper transmits the item identifier. The separate ItemSaveData path also adopts main and base values in the native sample; the actual save process is missing.
+- [x] Run original item/storage object conversions on private sources:
+Principal values, sentinels, multiple plinths, vacant places, identity and staining dates; Repaired copies and reuse.
+- [ ] Additional optional item data and actual engine settings
+Test for the number of caps. The sample itself binds these settings; The loader generates five data sets, even if the logical limit is smaller.
+- [ ] Connect regular generation/serialization and termination of storage objects;
+the conversion in the main memory alone does not yet confirm a stored task.
+- [x] Check file helpers with private buffer/handle receivers: 34 native cases
+for preparation/opening/write/flush/close error, empty output and lifetime in both allocation modes. [Evidence](runtime/repair/SAVE_FILE_2949.md).
+- [x] Native buffer preparation, allocation and LZ4 compression with sizes up to
+131,072 Check byte; Include errors, output reuse and retrieved entries. 66 Cases existed. [Evidence](runtime/repair/SAVE_ENCODING_2949.md).
+- [ ] downstream processing, including integrity/encryption, which:
+Connect queue/backup/renaming path and robust terminating document. After opening fails, new attempts must use fresh raw data. Flush/close errors can still generate success and emptied buffers in the original code. An internal report of success is not enough.
+- [ ] Identify repair changes and complete event/effect paths on the new build.
+- [ ] Resolve current players and managers on a busy engine thread;
+World/character change, reuse of identifiers and TLS mode change must not accept foreign or obsolete owners.
+- [ ] Complete repair transaction including inventory/equipment events,
+Develop and test derived effects and unambiguous feedback.
+- [ ] New modules against errors, partial cancellations, reapplication, take-back and
+Check for updates. The test data is outside the game installation.
+- [ ] Check phases 6–8 automatically after their implementation.
+
+## Later test order for you
+
+Only after support of the then installed build and completion of the development: first use app, then check B0 with a small change, then each module individually and last combinations. Close game for installation changes; Check the effect after the next start. Take back also when the game is closed. The Workbench does not write saves.
+
+For a comparison, use the same initial situation and record before/after values. A single random drop occupies no multiplier. In case of problems, case ID, app/game version, settings, actual result and, if necessary, capture a screenshot.
+
+### Phases 0–3: Data and operation
+
+|ID|Test|Expected result|
 |---|---|---|
-| A01 | Unterstützte Installation auswählen; anschließend einen unbekannten Build prüfen | Passende Daten laden; unbekannter Build wird klar abgelehnt, keine scheinbar gültigen Daten oder Änderungen |
-| A02 | Deutsches Item suchen, Filter kombinieren, blättern, Details und Icon öffnen | Richtiger Datensatz, keine vertauschten/veralteten Details, Bedienung bleibt flüssig |
-| A03 | Sprache wechseln und Suche wiederholen | Namen/Details passen zur Sprache; fehlende Übersetzungen und rohe Felder bleiben erkennbar |
-| A04 | Verfügbare Item-/Rezeptlinks und JSON-Export benutzen | Richtige Ziele und Werte; Export landet im Projekt, keine Änderung am Spiel |
-| A05 | Bekanntes Rezept mit einer und mehreren Zielmengen berechnen | Materialbaum und Gesamtbedarf stimmen; Chargenrundung ist nachvollziehbar |
-| A06 | Vorräte, Rezeptalternativen und gemeinsam benötigte Materialien ändern | Vorräte werden insgesamt nur einmal abgezogen; keine negativen Mengen oder doppelt gezählten Restbedarfe |
-| A07 | Nach einem unterstützten Spielupdate die Daten erneut öffnen | Daten und Suchindex gehören zum neuen Build; alte Sicherungsberichte erhalten keine automatische Schreibfreigabe für die neue Installation |
+|A01|Select supported installation; Then check an unknown build|loading appropriate data; Unknown build is clearly rejected, no seemingly valid data or changes|
+|A02|Search for German item, combine filters, browse, open details and icon|Correct data set, no reversed/outdated details, operation remains fluid|
+|A03|Changing Language and Repeating Search|Names/details match the language; Missing translations and raw fields remain visible|
+|A04|Use available item/recipe links and JSON export|Proper goals and values; Export lands in the project, no change to the game|
+|A05|Calculate well-known recipe with one and more target amounts|The material tree and the overall requirements are correct; Batch rounding is traceable|
+|A06|Change inventories, recipe alternatives and shared materials|Inventories are deducted only once in total; No negative quantities or double counted residual requirements|
+|A07|After a supported game update, reopen the data|Data and search index are part of the new build; old backup reports do not receive an automatic write authorization for the new installation|
 
-Unbekannte Händler-/Fundortzuordnungen müssen als unbekannt erscheinen und sind
-kein bestandener Quellenvergleich. Der vollständige Ausbau dieser Verknüpfungen fehlt noch.
+Unknown merchant/found location allocations must appear as unknown and are not a successful source comparison. The complete development of these links is still lacking.
 
-### Phase 4: Apply, Shops, Drops und Vertrauen
+### Phase 4: Apply, Shops, Drops and Trust
 
-| ID | Test | Erwartetes Ergebnis |
+|ID|Test|Expected result|
 |---|---|---|
-| B01 | Kleine Änderung in der Vorschau prüfen | Nur gewähltes Feld/Modul und zugehörige Dateien ändern sich; Vorschau schreibt nichts ins Spiel |
-| B02 | Apply/Restore bei laufendem Spiel versuchen | Vor jeder Änderung gesperrt; Spiel läuft unverändert weiter |
-| B03 | Bei geschlossenem Spiel kleine Änderung anwenden, starten, Wirkung prüfen, schließen und zurücknehmen | Gewählte Wirkung vorhanden; Rücknahme bestätigt die zum aktuellen Build gehörende Basis |
-| B04 | Gleiche Einstellung erneut anwenden, danach einen anderen Faktor und schließlich das Modul deaktivieren | Keine aufeinander gestapelten Multiplikatoren; deaktivierte Wirkung verschwindet |
-| B05 | Ein unterstützter Händler: kleines Sortiment, Bestand, Kauf, Tageswechsel, Ausnahmen | Richtige kaufbare Artikel und Auffüllung; einmalige Angebote bleiben einmalig, keine Duplikate |
-| B06 | Dropchance und Menge erst getrennt, dann gemeinsam prüfen | Mengen passen; Chancen über ausreichend viele gleiche Versuche vergleichen. Manuelle Garantie gilt nur für das gewählte unterstützte Set |
-| B07 | Dieselbe Vertrauensaktion beim selben NPC vergleichen | Positiver Zuwachs passt zum Faktor; negative Strafen bleiben unverändert |
+|B01|Check Small Change in Preview|Only selected field/module and related files change; Preview does not write anything into the game|
+|B02|Try Apply/Restore while playing|blocked before any change; The game continues unchanged|
+|B03|When the game is closed, apply small change, start, check effect, close and withdraw|The selected effect is present; Takeback confirms the basis of the current build|
+|B04|Reapply the same setting, then use another factor and finally deactivate the module|No multipliers stacked on top of each other; Deactivated effect disappears|
+|B05|A supported dealer: small range, stock, purchase, change of day, exceptions|Proper purchaseable items and replenishment; Unique offers remain unique, no duplicates|
+|B06|Drop chance and quantity first separately, then check together|fitting quantities; Compare chances over a sufficient number of equal attempts. Manual warranty only applies to the selected supported set|
+|B07|Compare the same confidence action with the same NPC|Positive growth matches the factor; Negative penalties remain unchanged|
 
-Update-, Stromausfall- und Crashfälle werden zuerst in isolierten Installationen
-automatisiert geprüft. Du sollst dafür keinen Absturz oder Stromausfall provozieren.
-Alle Artikel bei allen Händlern und eine automatische Bosszuordnung sind nicht freigegeben.
+Update, power failure and crash cases are first checked automatically in isolated installations. You should not provoke a crash or power outage. All items at all dealers and an automatic boss assignment are not released.
 
-### Phase 5: Erweiterte Module
+### Phase 5: Extended modules
 
-| ID | Test | Erwartetes Ergebnis |
+|ID|Test|Expected result|
 |---|---|---|
-| C01 | Eine ausgewählte Spawn-Gruppe und eine Ausnahme vergleichen | Belegte Spawnzahlen/-limits passen; ausgeschlossene Gruppen bleiben unverändert |
-| C02 | Unterstützte Patrouillen-/Wiederbesetzungsregel auslösen | Gewählte Regel verändert sich nachvollziehbar; dies ist kein Test eines allgemeinen NPC-Respawn-Timers, der noch fehlt |
-| C03 | Reittier in Stadt, mehrere Regionen, Auf-/Absteigen, Interaktion und Questübergang | Belegte Freigaben/Dauern wirken; kein festhängender Zustand oder unerwarteter Verlust von Interaktionen |
-| C04 | Blackstar rufen, erneut rufen, Ridedauer und Regionsgrenzen prüfen | Cooldown/Dauer wie eingestellt; allgemeine Grenzen und Sonderzonen getrennt dokumentieren |
-| C05 | Inventar und jeden verwendeten Lagerbereich mit einer moderaten Platzänderung prüfen | Kaufen, Aufheben, Verschieben, Sortieren und Neuladen funktionieren; keine verschwundenen Gegenstände |
-| C06 | Materialien/Konsumgüter stapeln, teilen, kaufen, lagern und neuladen | Mengen bleiben exakt erhalten und Stapelgrenzen stimmen |
-| C07 | Experimentelle Instanzitems erst gesondert prüfen | Haltbarkeit, Verzauberungen, Sockel und Identität bleiben pro Exemplar erhalten; keine Vermischung |
-| C08 | Waffen/Werkzeuge/Sockel belasten und tatsächliche Haltbarkeit vergleichen | Bei No-Wear kein tatsächlicher Wertverlust; eine größere Maximalanzeige allein reicht nicht |
-| C09 | Sprinten, Klettern, Fliegen und verschiedene Skills mit Kostenfaktor 1, 0,5 und 0 vergleichen | Verbrauch der unterstützten Kategorie passt; Regeneration bleibt erhalten; unbekannte Kosten separat festhalten |
-| C10 | Einen Skill und globalen Cooldown ändern, dann eine Ausnahme setzen | Gewählte Priorität wirkt; andere Skills bleiben entsprechend ihrer Einstellung unverändert |
-| C11 | Ein Item mit bestätigtem Stat/Buff/Enchant ändern, ausrüsten und neuladen | Anzeige und tatsächlicher Effekt passen; keine Endlosschleife, verlorenen Eigenschaften oder unbeabsichtigten Änderungen |
+|C01|Compare a selected spawn group and an exception|Acceptance of spawn numbers/limits; Excluded groups remain unchanged|
+|C02|Initiate supported patrol/re-establishment rule|The chosen rule changes in a traceable manner; This is not a test of a general NPC respawn timer that is still missing|
+|C03|mount in city, multiple regions, ascents, interaction and quest transition|Documented releases/durations are effective; No stuck Zustand or unexpected loss of interactions|
+|C04|Call Blackstar, call again, check ride duration and region boundaries|Cooldown/Duration as set; separately documenting general borders and special zones|
+|C05|Check inventory and any storage area used with a moderate change of space|Purchasing, picking up, moving, sorting and reloading work; No disappeared objects|
+|C06|Stack, share, purchase, store and reload materials/consumer goods|Quantities are maintained exactly and stack boundaries are correct|
+|C07|Examine experimental instance items separately|Durability, enchantments, plinth and identity are preserved per specimen; No mixing|
+|C08|Weapons/tools/sockets load and compare actual durability|In the case of no-wear, no actual loss in value; A larger maximum display alone is not enough|
+|C09|Compare sprinting, climbing, flying and various skills with cost factor 1, 0,5 and 0|Consumption fits the supported category; regeneration is maintained; Keeping unknown costs separately|
+|C10|Changing a skill and global cooldown, then setting an exception|The selected priority is effective; other skills remain unchanged according to their attitude|
+|C11|Change, equip and reload an item with confirmed Stat/Buff/Enchant|The display and actual effect fit; No endless loop, lost properties or unintended changes|
 
-Größenlimits, Spezialcontainer und Instanzitems sind noch nicht universell
-abgenommen. Keine sofortigen Maximalwerte als ersten Test verwenden.
+Size limits, special containers and instance items have not yet been universally accepted. Do not use immediate maximum values as a first test.
 
-### Kostenlose Reparatur: erst nach fertiger Spielanbindung
+### Free repair: only after complete play connection
 
-Die Reparatur ist aktuell gesperrt und noch nicht manuell testbar.
+The repair is currently locked and not yet manually testable.
 
-- [ ] **R01:** Vorhandenes beschädigtes Einzelitem reparieren: korrekter Zielwert,
-  kein Geld-/Materialverbrauch; Menge, UID, Verzauberung und Sockelbelegung bleiben erhalten.
-- [ ] **R02:** Mitgeführte und ausgerüstete Items getrennt sowie zusammen reparieren;
-  Hauptitem und beschädigte Sockeleinsätze jeweils unabhängig prüfen.
-- [ ] **R03:** Unbeschädigte Items, Items ohne Haltbarkeit und leere Slots ergeben
-  keine unnötigen Änderungen; verbrauchte/zerstörte Exemplare werden nicht neu erzeugt.
-- [ ] **R04:** Mit aktiviertem No-Wear kombinieren; Werte, Darstellung und spätere
-  Benutzung müssen dem definierten Reparaturziel entsprechen.
-- [ ] **R05:** Schnell wiederholt auslösen sowie Ausrüstungs-/Charakterwechsel und
-  Laden/Regionswechsel prüfen: keine Doppelreparatur, falsche Besitzer oder hängenbleibenden Aufträge.
-- [ ] **R06:** Reparaturerfolg muss in Inventar, Ausrüstung, abgeleiteten Effekten
-  und nach regulärem Speichern/Neuladen durch das Spiel übereinstimmen. Zusätzlich
-  das Spiel normal beenden, neu starten und Hauptitem sowie jeden Sockel vergleichen.
-  Eine Erfolgsmeldung oder sofort korrekte Anzeige allein genügt nicht. Vorher-/
-  Nachherwerte und Werte nach dem Neustart für dasselbe Exemplar festhalten.
-- [ ] **R07:** Bei abgewiesenem Auftrag keine Änderung; bei unklarem Ergebnis
-  klare Meldung und keine automatische Wiederholung. Technische Fehler werden
-  zuerst von mir im Testhost simuliert.
-- [ ] **R08:** Jeden steuerbaren Protagonisten einzeln prüfen, danach mit
-  anwesenden Begleitern und beim Reiten: Reparatur betrifft ausschließlich den
-  ausgewählten Spielerbereich, keine Begleiter-, NPC-, Händler- oder Lageritems.
-- [ ] **R09:** Nach regulärem Neuladen neu auslösen: Ein alter Auftrag darf nicht
-  in die neue Sitzung gelangen, auch wenn Charakter und Gegenstände gleich aussehen.
-- [ ] **R10:** Ein noch vorhandenes Item mit Haltbarkeit 0 reparieren und mit einem
-  nur teilweise beschädigten Item vergleichen: Ausrüstungswerte und Buffs müssen
-  direkt passen, ohne Aus-/Anziehen oder erneutes Öffnen des Inventars. Dasselbe
-  mit reiner Sockelreparatur und aktiviertem No-Wear prüfen; keine doppelten Effekte.
-- [ ] **R11:** Zwei Exemplare desselben Items mit unterschiedlichen Sockeln und
-  Eigenschaften besitzen: zuerst eines gezielt, später beide reparieren. Jede
-  Identität und ihre Eigenschaften müssen erhalten bleiben; keine Übertragung
-  zwischen Exemplaren. Anschließend regulär neuladen und erneut vergleichen.
-- [ ] **R12:** Mehrere beschädigte Ausrüstungsslots in einem Auftrag reparieren,
-  danach unmittelbar Werte/Effekte prüfen und erneut auslösen. Jeder gewählte Slot
-  aktualisiert sich genau einmal; bereits volle Items bleiben unverändert. Auch
-  nach Aus-/Anziehen, Regionswechsel und regulärem Neuladen stimmen die Werte.
-- [ ] **R13:** Ein Item mit verfügbaren, aber unbelegten Sockelplätzen und eines
-  mit nur teilweise belegten Plätzen reparieren. Hauptwert und vorhandene Einsätze
-  stimmen; freie Plätze bleiben frei. Keine neuen Sockel oder Gegenstände entstehen.
-  Danach normal speichern/neuladen und Belegung sowie Eigenschaften vergleichen.
-- [ ] **R14:** Ein gefärbtes Item mit mehreren unterschiedlichen Färbungen reparieren,
-  regulär speichern und neu laden. Alle Farben/Eigenschaften bleiben beim richtigen
-  Exemplar; ein anschließend repariertes anderes Item übernimmt keine alten Daten.
+- [ ] **R01:**Repair existing damaged individual item: correct target value,
+no consumption of money/materials; Quantity, UID, enchantment and base occupancy are preserved.
+- [ ] **R02:** Separately and together repair items carried and equipped;
+Test the main item and damaged base inserts independently.
+- [ ] **R03:** Undamaged items, items without durability and empty slots result
+no unnecessary changes; Consumed/destroyed specimens are not newly produced.
+- [ ] **R04:** Combine with activated No-Wear; Values, representation and later
+Use must correspond to the defined repair objective.
+- [ ] **R05:** Repetitively trigger quickly as well as equipment/character changes and
+Check shop/region change: no double repair, wrong owners or hanging orders.
+- [ ] **R06:** Repair success must be in inventory, equipment, derived effects
+and after regular saving/reloading through the game. Additionally, close the game normally, restart and compare main item as well as each socket. A success message or immediately correct display alone is not enough. Record before/after values and values after restart for the same copy.
+- [ ] **R07:** If rejected, no change; If the result is unclear
+clear message and no automatic repetition. Technical errors are first simulated by me in the test host.
+- [ ] **R08:** Check each controllable protagonist individually, then with
+present companions and when riding: Repair only affects the selected player area, no companion, NPC, dealer or warehouse items.
+- [ ] **R09:** Retrieve after regular reloading: An old order must not be
+enter the new session, even if character and objects look the same.
+- [ ] **R10:**Repair a still existing item with durability 0 and with a
+Compare only partially damaged items: Equipment values and buffs must fit directly, without unplugging or reopening the inventory. Test the same with pure base repair and no-wear activated; No duplicate effects.
+- [ ] **R11:** Two copies of the same item with different bases and
+Possessing properties: first targeting one, later repairing both. Each identity and its characteristics must be preserved; no transfer between specimens. Then regularly reload and compare again.
+- [ ] **R12:** Repair multiple damaged equipment slots in one order,
+then immediately check values/effects and trigger them again. Each selected slot updates exactly once; Already full items remain unchanged. Even after moving out / dressing, region change and regular reloading, the values are correct.
+- [ ] **R13:** An item with available but unoccupied base slots and a
+Repair with only partially occupied seats. Main value and existing bets are right; Free places remain free. No new bases or objects are created. After that, store/reload normally and compare occupancy and properties.
+- [ ] **R14:**Repair a colored item with several different colors,
+Regularly store and reload. All colors/properties remain with the correct specimen; a subsequently repaired other item does not take over old data.
 
-Für R02/R06/R10 die Ausgangslagen einzeln verwenden:
+For R02/R06/R10, use the baseline individually:
 
-| Ausgangslage | Nach Reparatur prüfen |
+|Starting position|Check after repair|
 |---|---|
-| Hauptitem beschädigt, Sockel intakt | Hauptwert voll; Sockel, Menge und Eigenschaften unverändert |
-| Hauptitem noch vorhanden, Haltbarkeit 0 | Hauptwert voll; zuvor deaktivierte Ausrüstungseffekte wieder wirksam |
-| Hauptitem intakt, Sockel beschädigt | Sockel voll; kein Sockel verschwunden, keine zusätzlichen Hauptitem-Effekte |
-| Hauptitem und Sockel beschädigt | Beide unabhängig voll; Anzeige und tatsächliche Wirkung stimmen |
-| No-Wear aktiv | Definiertes Reparaturziel erreicht; keine falsche oder doppelte Effektaktivierung |
+|Main item damaged, base intact|principal value full; Base, quantity and characteristics unchanged|
+|Main item still present, durability 0|principal value full; Equipment effects previously deactivated are effective again|
+|Main item intact, base damaged|full bases; no base disappeared, no additional main item effects|
+|Main item and base damaged|Both independently fully; Display and actual effect are correct|
+|No-Wear aktiv|Achieved a defined repair goal; No incorrect or double effect activation|
 
-### Phasen 6–8: nach deren Implementierung
+### Phases 6–8: after their implementation
 
-| ID | Test | Erwartetes Ergebnis |
+|ID|Test|Expected result|
 |---|---|---|
-| D01 | Profile anlegen, exportieren/importieren und Normal ↔ Farm wechseln | Alle Einstellungen vollständig; Drops ×10/Spawns ×3 anpassbar; kein Wechsel während laufendem Spiel |
-| D02 | Ein fehlerhaftes Profil importieren | Verständliche Ablehnung; bestehende Profile bleiben erhalten |
-| E01 | Save auswählen, bekannten Questfortschritt vergleichen und im Spiel weiterspielen/speichern | Richtige Zustände und Aktualisierung; keine Schreibzugriffe oder Blockierung des Spiels durch den Leser |
-| E02 | Nicht unterstützten/beschädigten/gerade unvollständig geschriebenen Save lesen | Keine erfundenen 0 %; Fehler erkennbar, letzter gültiger Stand bleibt erhalten |
-| F01 | Kartenpunkte an mehreren bekannten Orten vergleichen | Positionen auch außerhalb der Kalibrierpunkte korrekt; Suche, Ebenen und Details passen |
-| F02 | Sammelzustand vergleichen, sofern vom Saveformat unterstützt | Erledigte Marker stimmen; fehlende Daten werden als unbekannt geführt |
+|D01|Create profiles, export/import and change normal ↔ farm|All settings complete; Drops ×10/Spawns ×3 adjustable; No change during the current game|
+|D02|Importing a faulty profile|understandable refusal; Existing profiles are maintained|
+|E01|Select Save, compare known quest progress and continue playing/saving in the game|Proper status and updating; no write operations or blocking of the game by the reader|
+|E02|Unsupported/damaged/just incompletely written save read|No invented 0 %; Error detectable, last valid status is maintained|
+|F01|Compare Card Points in Multiple Known Places|correct positions also outside calibration points; Search, levels and details fit|
+|F02|Compare collection status if supported by Saveformat|Completed markers agree; Missing data is kept as unknown|
 
-Der optionale Farm-Hotkey ist ein eigenes späteres Thema und gehört noch nicht
-zu dieser Abnahme.
+The optional farm hotkey is its own later topic and is not yet part of this acceptance.
 
-## Einfaches Ergebnisprotokoll
+## Simple results protocol
 
-| Datum | Fall-ID | App-/Spielversion | Einstellung / Vorherwert | Erwartet | Beobachtet | Bestanden / Fehler / offen |
+|Datum|Fall-ID|App-/Spielversion|Setting/Preliminary value|Expected|Observed|Passed / Error / Open|
 |---|---|---|---|---|---|---|
 | | | | | | | |
 
-Ausführliche Entwicklernachweise: [docs/TESTING.md](docs/TESTING.md).
+Extensive developer credentials: [docs/TESTING.md](docs/TESTING.md).
 
-## Zusatzauftrag Schwarzstern – installiert am 01.10.2026
+## Additional order Black Star – installed on 01.10.2026
 
-- [ ] **BS01:** Spiel über Steam starten, neuesten Save laden; normaler Start ohne Absturz. Aktuelle READY-Zeile mit `early summon action support` und `14 hooks` prüfen; ältere Zeilen nicht als Nachweis verwenden.
-- [ ] **BS02:** Schwarzstern entlassen und erneut rufen; etwa eine Sekunde Cooldown, keine doppelte Instanz. Nach Speichern/Neuladen wiederholen.
-- [ ] **BS03:** Mehrere Minuten Flug, Beschleunigung und Feueratem; Ausdauer geht praktisch nicht aus, Lebenspunkte bleiben normal.
-- [ ] **BS04:** In zuvor gesperrtem freiem Außenbereich beschwören; an Haus, Höhle und Innenraumgrenze Ablehnung prüfen.
-- [ ] **BS05:** Andere Reittiere und vorhandene Schlaf-/Inventarmods funktionieren unverändert.
-- [ ] **BS06:** Bei anhaltendem Flug bleibt Schwarzstern länger als zehn Minuten beschworen. Die neue Grunddauer und der vorhandene Resttimer in Slot 1 wurden auf 1.000 Minuten gesetzt; Speichern/Neuladen und erneutes Beschwören ebenfalls prüfen. Vollständiger 1.000-Minuten-Spieltest bisher nicht durchgeführt.
-- [ ] **BS07:** In eines der roten Gebiete aus dem Screenshot hineinfliegen und in einer Stadt abseits von Straßen tief fliegen; kein Abwerfen durch die bisherigen Gebiets-/Stadtprüfungen.
-- [ ] **BS08:** Schwarzstern an genau der zuletzt gesperrten Außenstelle im roten Gebiet beschwören. Der Nutzer meldete mit der vorherigen Version weiter ungefähr „Reittiere können hier nicht gerufen werden“; diese Abnahme ist bisher fehlgeschlagen. Bei erneuter Ablehnung Standort und Meldung festhalten, danach speichern und Spiel vollständig schließen. Neue `GAME_ERROR`-/`ATTEMPT`-/`REFUSED`-Zeilen aus `bin64/CrimsonBlackstar.log` auswerten. Die aktuelle Version erfasst frühere Aktionen; ein universeller Erfolg ist weiterhin unbestätigt.
-- [ ] **BS09:** Über die bisherige Höhenbegrenzung fliegen; kein Abwerfen durch die Höhenprüfung. Andere Reittiere behalten ihre bisherigen Regeln.
-- [ ] **BS10:** Außenfläche auf einem bisher gesperrten Gimmick/Podest testen; Innenräume, fehlender Platz und ungültige Spawnpositionen weiterhin abweisen. Keine doppelte Schwarzstern-Instanz.
+- [ ] **BS01:** Start the game over Steam, load the latest save; normal take-off without crash. Check current READY line with `early summon action support` and `14 hooks`; Do not use older lines as proof.
+- [ ] **BS02:** Black Star released and called again; It's about a second cooldown, not a double instance. Repeat after storing/recharging.
+- [ ] **BS03:** Several minutes of flight, acceleration and fire breath; Endurance practically does not run out, life points remain normal.
+- [ ] **BS04:** Summon in previously locked free outdoor area; Examine rejection at home, cave and interior border.
+- [ ] **BS05:** Other mounts and existing sleep/inventory mods work unchanged.
+- [ ] **BS06:** With sustained flight, Black Star remains summoned for more than ten minutes. The new base duration and the existing residual timer in slot 1 were set to 1,000 minutes; Save/reload and reconvoke also check. Full 1,000-minutes-in-game test has not been performed yet.
+- [ ] **BS07:** Fly into one of the red areas from the screenshot and fly low in a city away from roads; no dropping by the previous area/city examinations.
+- [ ] **BS08:** Black Star at exactly the last blocked outpost in the red area. The user reported with the previous version further approximately "mounts can not be called here"; This reduction has so far failed. If rejected again, hold location and message, then save and close the game completely. Evaluate new `GAME_ERROR`-/`ATTEMPT`-/`REFUSED` lines from `bin64/CrimsonBlackstar.log` The current version captures previous actions; Universal success is still unconfirmed.
+- [ ] **BS09:** Fly over the previous altitude limit; No dropping by the height test. Other mounts keep their previous rules.
+- [ ] **BS10:** Test outer surface on a previously locked gimmick/socket; Interiors, lack of space and invalid spawn positions continue to be rejected. No double black star instance.
 
-Die Beschwörungsdauer beträgt 1.000 Minuten. Stadt-, Regions- und Höhenprüfungen sind für Schwarzstern freigegeben; andere Gründe für Wegfliegen oder eine Ablehnung durch Ablauf-/Platzierungsprüfungen sind weiterhin möglich. Die neue Version ist technisch geprüft, die Spielabnahme bleibt offen.
-Details und technische Nachweise: [Schwarzstern](docs/BLACKSTAR.md).
+The summoning time is 1,000 minutes. urban, regional and elevation tests are approved for black stars; other reasons for flying away or refusal by expiration/placement checks are still possible. The new version is technically tested, the in-game validation remains open. Details and technical evidence: [Black stars](docs/BLACKSTAR.md).
 
-Für den nächsten gezielten Diagnoseschritt reichen **BS01 und ein BS08-Versuch** an derselben Außenstelle. Die weiteren Fälle bleiben Teil der späteren vollständigen Abnahme.
-## Item-Auswahl / Live-Spawner, 03.10.2026
+For the next targeted diagnostic step **BS01 and a BS08 attempt** at the same location are sufficient. The further cases remain part of the later complete decrease.
+## Item selection / Live spawner, 03.10.2026
 
-- [x] Echter Katalog mit 6.816 Items, Icon, Gruppen, kombinierter Suche und exakter numerischer ID geprüft.
-- [x] Grundwerte und Verfeinerungsstufen abrufbar; Benutzeroberfläche und Desktop-Build geprüft.
-- [x] Acht Browser-Tests für Katalog/Auswahl bestanden; Core-Tests bestanden.
-- [x] Lesende Probe und gemeinsamer Loader mit den vier bestehenden Mods geprüft; fremde EXE abgewiesen.
-- [x] Probe hat einen Spieler-Inventarkontext auf Realm 1 beobachtet. Kein Schreibnachweis.
-- [x] Neue Runtime: 13 Argumente/Originalergebnis, konkurrierende Warteschlange, UUID-Schutz, falsche Spielinstanz, Abbruch, Verfall und Fehler-Sperre geprüft.
-- [x] Zwölf Tests mit tatsächlichem Build-2976-Konstruktor/Konverter/Destruktor im eigenen Prozess; Menge 1/1.000 und 0–5 Sockel. Definitionen/Allocator sind Testdaten.
-- [x] Echte Windows-Pipe Rust/C++ im eigenen Testprozess geprüft; keine Spielverbindung.
-- [x] Elf Browser-Tests, darunter Mengenprüfung, einmaliges Senden, Abbruch und wiederhergestellte Anfrage-ID bei verlorener Antwort.
-- [x] Neue ASI und Desktop-Version bei geschlossenem Spiel installiert und zurückgelesen; Desktop-Verknüpfung aktualisiert. 33 bestehende Dateien unverändert, 19 Dateien frisch gesichert.
-- [x] Automatische Ausgabe: tatsächlicher nativer Taskdispatcher/Wrapper mit MinHook im eigenen Prozess, Referenzlebensdauer, Originalaufruf, verschachtelte Aufgaben und Doppelvergabe-Schutz geprüft. Native Registry-/Inventarabhängigkeiten sind Testdaten.
-- [x] Protokoll 2, fehlender/falscher Kontext, Ladeabbruch, Charakterkennung und Pause/Alt-Tab geprüft; Produktionsbuild und sechs ASIs im gemeinsamen Loader bestanden.
-- [x] Automatische ASI und Desktop-Version bei geschlossenem Spiel/Workbench ersetzt und zurückgelesen; 36 bestehende Dateien einschließlich 13 Saves unverändert, 23 Backups erstellt.
-- [ ] Spielstand laden und kurz normal spielen: Verbindung wird automatisch bereit. Kein Aufheben erforderlich. Neue `ARMED`- und `CONTEXT`-Zeilen in `CrimsonLiveItems.log` bestätigen den Einstieg.
-- [ ] Erst **ein Eisenerz** per Button geben, **ohne etwas aufzuheben**. Falls es wartet, ins normale Spiel zurückkehren. Menge sehen, normal speichern, Spiel beenden und denselben Spielstand neu laden. Menge muss erhalten bleiben.
-- [ ] Danach Stapel/volles Inventar/Pause/Alt-Tab/Charakterwechsel prüfen, wartende Anfrage abbrechen und bei pausiertem Spiel 30 Sekunden verfallen lassen.
-- [ ] Während einer wartenden Anfrage den Charakter wechseln oder einen anderen Save laden: Auftrag wird abgewiesen, keine Vergabe an eine andere Figur. Nach fehlendem Kontext muss die Verbindung erneut bereit werden.
-- [ ] Höhere Mengen und weitere Itemarten erst nach diesem Nachweis prüfen.
+- [x] Real catalog with 6,816 items, icon, groups, combined search and exact numeric ID checked.
+- [x] retrievable basic values and refinement levels; User interface and desktop build checked.
+- [x] Passed eight browser tests for catalogue/selection; Passed core tests.
+- [x] Reading sample and common loader tested with the four existing mods; Foreign EXE rejected.
+- [x] Probe observed a player inventory context on Realm 1. No proof of writing.
+- [x] New Runtime: 13 Arguments/original result, competing queue, UUID protection, incorrect play instance, cancellation, expiration and error lock checked.
+- [x] Twelve tests with actual build-2976 constructor/converter/destructor in your own process; Quantity 1/1,000 and 0–5 caps. Definitions/Allocator are test data.
+- [x] Real Windows Pipe Rust/C++ tested in its own test process; no play connection.
+- [x] Eleven browser tests, including quantity checking, one-time sending, cancellation, and restored request ID in case of lost response.
+- [x] New ASI and desktop version installed and read back when the game is closed; Desktop shortcut updated. 33 existing files unchanged, 19 files freshly backed up.
+- [x] Automatic output: actual native task dispatcher/wrapper tested with MinHook in its own process, reference lifetime, original call, nested tasks and double-assignment protection. Native registry/inventory dependencies are test data.
+- [x] protocol 2, missing/wrong context, load cancellation, character identifier and pause/alt tab checked; Production build and six ASIs passed in the common loader.
+- [x] Automatic ASI and desktop version with closed game/Workbench replaced and read back; 36 existing files including 13 saves unchanged, 23 backups created.
+- [ ] save load and play normally for short: connection is automatically ready. No cancellation required. New `ARMED` and `CONTEXT` lines in `CrimsonLiveItems.log` confirm the entry.
+- [ ] First enter **an iron ore** by button, **without canceling anything**. If it waits, return to normal play. See crowd, save normally, finish game and reload the same save. Quantity must be preserved.
+- [ ] Then check stack/full inventory/pause/alt-tab/character change, cancel waiting request and let it expire for paused game 30 seconds.
+- [ ] During a waiting request to change the character or load another save: order is rejected, no allocation to another character. After missing context, the connection must be ready again.
+- [ ] Test higher quantities and other types of items only after this detection.
 
-Die neue Anbindung ist installiert und wird beim nächsten normalen Spielstart geladen; der echte Inventar-/Speichern-/Neuladen-Test steht noch aus. Details: [LIVE-ITEMS.md](docs/LIVE-ITEMS.md).
+The new connection is installed and loaded at the next normal game start; The real inventory/store/reload test is still pending. Details: [LIVE-ITEMS.md](docs/LIVE-ITEMS.md).
 
-## Erweiterung Tasche/Pfeile/Reittiere/Wissen/Menge, 03.10.2026
+## Extension bag/arrow/mounts/knowledge/quantity, 03.10.2026
 
-Technische Prüfungen bestanden; neue Version am 04.10.2026 bei geschlossenem
-Spiel/Workbench installiert und zurückgelesen. Spielabnahmen bleiben offen:
+Passed technical examinations; new version installed on 04.10.2026 with closed game/Workbench and read back. Match acceptances remain open:
 
-- [ ] **LI01:** Extragroße Tasche 6003, Menge 1 geben. Kein alter allgemeiner Fehler; Tasche sichtbar, speichern und denselben Slot neu laden.
-- [ ] **LI02:** Blitzpfeil 1001315, Menge 100 geben. Mengenänderung bestätigen, speichern/neuladen. Bei unklarem oder teilweisem Ergebnis keine neue Anfrage auf Verdacht.
-- [ ] **LI03:** Mengenfeld leeren, 100 tippen, markieren/ersetzen und einfügen. Bei tatsächlichem Stapellimit 10 und genügend Platz: insgesamt +100 Stück in maximal zehn neuen Stapeln; vorhandene können aufgefüllt werden. Moddefinition kann vom Katalog abweichen.
-- [ ] **LI04:** Gelesene und ungelesene Schrift mit Wissensbelohnung vergleichen. Richtigen Slot wählen; nach Lesen/Speichern „Wissen neu einlesen“. Status wechselt; Dokument ohne eindeutige Zuordnung zeigt unbekannt.
-- [ ] **MT01:** Bei geschlossenem Spiel einen geeigneten gewöhnlichen Reittiertyp registrieren. Richtigen Slot laden, Stall und neues Tier prüfen; vorhandene Tiere, Ausrüstung, Fähigkeiten und Quests unverändert.
-- [ ] **MT02:** Neues Tier reiten, speichern und neu laden. Gleiche Tierart danach als vorhanden markiert und nicht doppelt vergeben.
-- [ ] **MT03:** Laufendes Spiel oder fehlende Vorlage sperren Registrierung. Bei verlorener Antwort dieselbe Anfrage prüfen; keine Doppelvergabe durch Wiederholung.
+- [ ] **LI01:** Give extra large bag 6003, amount 1. No old general error; Pocket visible, save and reload the same slot.
+- [ ] **LI02:** Flash arrow 1001315, set 100. Confirm quantity change, store/reload. In case of unclear or partial result, no new request for suspicion.
+- [ ] **LI03:** Empty set field, 100 type, mark/replace and paste. With actual stacking limit 10 and enough space: total +100 pieces in a maximum of ten new stacks; Existing ones can be filled. Moddefinition may differ from the catalogue.
+- [ ] **LI04:** Compare read and unread writing with knowledge reward. Choose the right slot; after reading/storing “Re-read in knowledge”. status changes; Document without clear assignment shows unknown.
+- [ ] **MT01:** Register a suitable ordinary mount type when the game is closed. Loading proper slot, checking stable and new animal; existing animals, equipment, abilities and quests unchanged.
+- [ ] **MT02:** Riding, saving and reloading new animal. Same species then marked as present and not doubled.
+- [ ] **MT03:** Ongoing game or missing template block registration. If the answer is lost, check the same request; no double award by repetition.
 
-Sicherung und Grenzen: [Reittiere](docs/REITTIERE.md). Die Installation allein
-fügt keine Tiere oder Items hinzu.
+backup and limits: [mounts](docs/REITTIERE.md). The installation alone does not add animals or items.
+
+## Complete ability trees, 10.10.2026
+
+Entered directly in the latest save for all three characters; Passed technical examinations and reading back. in-game validation open:
+
+- [x] 140 uniquely assigned different abilities from 142 main tree entries;
+all at the intended maximum level.
+- [x] Full comparison of all memory blocks, position references,
+pass independent HMAC/decompression test and byte-accurate reversal test.
+- [x] Get free points, inventory, equipment and quests. When the game is over
+with launch protection installed; Originals backed up and final file read back.
+- [ ] **SK01:** Start the game and select **Continue**. Loading works;
+Current equipment, inventory and quest progress.
+- [ ] **SK02:** Open skills tree of Kliff, Oongka and Damiane. Skills
+and stages fully learned; Examine health, endurance and mental maximum.
+- [ ] **SK03:** For each character, a previously missing fighting ability and a
+use mobility capability; Behavior and effects are right.
+- [ ] **SK04:** Regularly save, close game and repeat the same status
+loading. Unlocks and free points are retained.
+
+Details and backup: [Capability unlocking](docs/FAEHIGKEITEN-FREISCHALTUNG.md).

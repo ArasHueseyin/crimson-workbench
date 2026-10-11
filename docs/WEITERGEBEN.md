@@ -1,51 +1,26 @@
-# Crimson Workbench weitergeben
+# Distributing Crimson Workbench
 
-Seit Version **0.6.2 Preview** gibt es einen Windows-x64-Installer, ein portables
-ZIP und zusätzlich ein separates Paket für portable Nutzer. Der Installer enthält
-bereits die Live-Mods. Die Releases enthalten
-MIT-Lizenz und Fremdlizenztexte, keine Spielarchive, Saves, persönlichen Backups,
-`.env` oder Einstellungen des Entwicklers.
+Since **v0.6.2 Preview**, releases provide a Windows x64 installer, a portable ZIP and a separate optional runtime-mod package. The installer already includes the live modules. Packages include the MIT license and third-party license texts, but no game archives, saves, personal backups, `.env` or developer settings.
 
-Für Freunde: [Installation und Voraussetzungen](INSTALLATION.md).
-Die Downloads stehen im öffentlichen
-[GitHub-Repository](https://github.com/ArasHueseyin/crimson-workbench/releases).
-Zum Herunterladen ist keine Einladung und kein GitHub-Konto erforderlich.
+For friends, use the [installation guide](INSTALLATION.md) and public [GitHub releases](https://github.com/ArasHueseyin/crimson-workbench/releases). Downloads require neither an invitation nor a GitHub account.
 
-## Was das Setup erledigt
+## What setup does
 
-Das NSIS-Setup installiert die Workbench für das eigene Windows-Benutzerkonto,
-legt einen Startmenüeintrag an und lädt fehlendes WebView2 bei Bedarf von Microsoft.
-Die Workbench verwendet `%LOCALAPPDATA%\CrimsonWorkbench` für ihre Daten und
-speichert Spiel-/Savepfade und Sprache. Ein `--project`-Ordner kann diesen
-Standard überschreiben. Der Projektcheckout ist für normale Nutzer nicht nötig.
+The NSIS setup installs Workbench for the current Windows user, creates a Start menu shortcut and downloads WebView2 from Microsoft if needed. The app stores data under `%LOCALAPPDATA%\CrimsonWorkbench`, including game/save paths and the catalog language preference. A `--project` argument overrides that data folder. The source checkout is not needed by normal users.
 
-Die beiden optionalen Laufzeitmods werden direkt im selben Setup eingerichtet.
-Eine Setup-Seite erkennt den Steam-Spielordner oder erlaubt dessen Auswahl; die
-Module sind vorausgewählt und können abgewählt werden. Das Setup prüft die eigene
-EXE, die Paket-Hashes und vorhandene Dateien. Nötige Administratorrechte fordert
-Windows an. Nutzer müssen keine Befehle ausführen oder weitere ZIPs entpacken.
-Unbeaufsichtigtes `/S` installiert weiterhin nur die App; `/INSTALLMODS` zusammen
-mit `/GAMEDIR="..."` aktiviert die Module explizit für automatisierte Verteilung.
-Persönliche Sockelkonfigurationen anderer Personen sind keine gültige Vorlage.
-Ein neuer Nutzer beginnt mit einer leeren Version-2-Konfiguration.
+The same installer sets up both optional runtime modules. Its game-folder page detects Steam installations or accepts a folder containing `bin64`. Modules are selected by default and can be deselected. Setup checks the game EXE, package hashes and existing files, and requests administrator permission when necessary. Users do not need to run commands or extract another ZIP. Unattended `/S` installs only the app; `/INSTALLMODS` together with `/GAMEDIR="..."` explicitly enables modules for automated deployment. A new user receives an empty version 2 configuration, never another user's personal socket configuration.
 
-## Release selbst bauen
+## Build a release
 
-Benötigt werden Windows x64, Node 22.22+, Rust 1.95+, Visual Studio 2022 mit
-C++-Werkzeugen/Windows SDK und CMake. Im Repository:
+Requirements: Windows x64, Node 22.22+, Rust 1.95+, Visual Studio 2022 C++ tools, the Windows SDK and CMake. From the repository root:
 
 ```powershell
 .\scripts\build-release.ps1
 ```
 
-Das Skript lädt SHA-256-gepinnte native Abhängigkeiten, baut zuerst LiveItems und
-anschließend das dazu passende Zusatzsockel-Modul. Dessen Hash wird beim
-anschließenden Rust-Build eingebettet. Es führt Codeprüfungen aus und erstellt
-unter `.local/release/0.6.2/assets` Setup, portables ZIP, optionales Mod-ZIP und
-`SHA256SUMS.txt`. Für einen weiteren Durchlauf einen frischen
-`-OutputDirectory` angeben; vorhandene Release-Artefakte werden nicht überschrieben.
+The script downloads native dependencies pinned by SHA-256, builds LiveItems and then the matching Extra Sockets module, and embeds the module hash in the Rust build. It runs checks and creates the installer, portable ZIP, runtime-mod ZIP and `SHA256SUMS.txt` under `.local/release/0.6.3/assets`. Use a fresh `-OutputDirectory` for a subsequent run; existing release artifacts are not overwritten.
 
-Der separate normale Desktop-Build bleibt verfügbar:
+The ordinary desktop build remains available:
 
 ```powershell
 Set-Location app
@@ -53,33 +28,16 @@ npm ci
 npm run desktop:build
 ```
 
-Dieser enthält die bisherige native Hashfreigabe, aber keine neu gebauten Mods.
-Für die gemeinsame Verteilung immer `build-release.ps1` verwenden.
+It uses the existing approved native hash and does not rebuild the native modules. Use `build-release.ps1` for a complete distribution.
 
-## GitHub-Pipeline und Prüfung
+## GitHub pipeline and testing
 
-`.github/workflows/release.yml` läuft manuell oder bei einem `v*`-Tag. Ein frischer
-Windows-2022-Runner baut und prüft die Pakete. Der Pakettest installiert das Setup,
-prüft die echte gepackte WebView-Oberfläche in einem isolierten Benutzer-Datenordner
-und deinstalliert die Testinstallation. Erst nach erfolgreicher Prüfung werden
-bei einem passenden Versionstag die Assets als öffentliches Preview-Release
-bereitgestellt. Bei manuellen Workflow-Läufen bleiben sie als Build-Artefakte
-verfügbar. Tag, npm-, Tauri- und Cargo-Version müssen übereinstimmen.
+`.github/workflows/release.yml` runs manually or for a `v*` tag. A fresh Windows 2022 runner builds and checks the packages. The package test installs setup, checks the actual packaged WebView interface with an isolated user-data folder, and uninstalls the test app. Assets are published as a preview release only after successful checks for a matching version tag. Manual workflow runs retain build artifacts. The tag, npm, Tauri and Cargo versions must agree.
 
-Die native Loader-Prüfung läuft ausschließlich in einem eigenen Testprozess.
-Sie prüft auch, dass die Module eine fremde EXE ablehnen. Sie ist kein Ersatz für
-die noch ausstehende Spielabnahme der Live-Items-/Zusatzsockel-Funktionen.
-Der Pakettest auf GitHub ersetzt keinen Test mit der konkreten Installation eines
-Freundes. Entsprechend wird das erste Paket als **Preview** verteilt.
+The native loader test runs only in its own test process and verifies that the modules reject an unrelated EXE. It does not replace pending in-game validation of Live Items and Extra Sockets, or testing on a friend's particular installation. Releases therefore remain marked **Preview**.
 
-## Lizenz und Grenzen
+## Licensing and requirements
 
-Die [MIT-Lizenz](../LICENSE) gilt für den eigenen Projektcode. Sie muss nicht
-gekauft oder beantragt werden; die standardisierte Lizenz wird dem Projekt mit
-Copyright-Hinweis beigelegt. Die eigenen Copyright- und Lizenzhinweise bleiben
-beim Weitergeben erhalten. Fremdkomponenten behalten ihre separaten Lizenztexte
-unter `licenses/` und in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
+The [MIT license](../LICENSE) covers the original project code. It does not need to be purchased or applied for: include the standard license text with the copyright notice. Redistributors must retain those notices. Dependencies keep their separate licenses in `licenses/` and [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
 
-Unterstützte Spielstände, notwendige WebView2-Laufzeit und die engere EXE-Bindung
-der optionalen Mods stehen in der [Installationsanleitung](INSTALLATION.md).
-Die Setup-Datei ist derzeit nicht code-signiert.
+The [installation guide](INSTALLATION.md) describes supported game builds, WebView2, the English interface, automatic item language, and the stricter EXE requirement of the optional modules. The installer is currently unsigned.

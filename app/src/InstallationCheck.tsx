@@ -6,10 +6,10 @@ import type { InstallationInventory } from './mod-types';
 import { ContentAudit } from './ContentAudit';
 
 const states: Record<string, string> = {
-  workbench_registry: 'Registry mit eigenem Mod', workbench_owned: 'Workbench-Datei',
-  size_matches: 'Größe passt · Inhalt ungeprüft', missing: 'Fehlt', additional: 'Zusätzlich',
-  size_mismatch: 'Größe abweichend', type_mismatch: 'Dateityp abweichend',
-  unsupported_entry: 'Verknüpfung / Sondertyp', uncompared: 'Kein Depotvergleich',
+  workbench_registry: 'Registry with own mod', workbench_owned: 'Workbench file',
+  size_matches: 'Size matches · Content unchecked', missing: 'Missing', additional: 'Additional',
+  size_mismatch: 'Size mismatch', type_mismatch: 'File type mismatch',
+  unsupported_entry: 'Link / special type', uncompared: 'No depot comparison',
 };
 export function InstallationCheck({ session }: { session: number }) {
   const [report, setReport] = useState<InstallationInventory | null>(null);
@@ -23,23 +23,23 @@ export function InstallationCheck({ session }: { session: number }) {
     finally { if (id === generation.current) setBusy(false); }
   }
   const anomalies = report?.files.filter(f => f.state !== 'size_matches' && f.state !== 'uncompared' && f.state !== 'workbench_registry') ?? [];
-  return <section className="installation-check" aria-label="Installationsprüfung">
-    <div className="mod-result-heading"><div><small>B0 · SPIELBASIS</small><h2>Installation prüfen</h2></div>
-      <button type="button" className="secondary" disabled={busy} onClick={() => void check()}>{busy ? <LoaderCircle size={16} className="spin" /> : <ScanSearch size={16} />}{busy ? 'Prüfung läuft …' : 'Dateiliste prüfen'}</button></div>
-    <p>Vergleicht Dateien, Größen und Startprogramme mit lokalen Steam-Depotlisten. Auch während des Spielens möglich; liest keine Archivinhalte und verändert keine Spieldateien.</p>
-    {busy && <p role="status">Verzeichnisse und Steam-Metadaten werden gelesen …</p>}
+  return <section className="installation-check" aria-label="Installation check">
+    <div className="mod-result-heading"><div><small>B0 · GAME BASELINE</small><h2>Check installation</h2></div>
+      <button type="button" className="secondary" disabled={busy} onClick={() => void check()}>{busy ? <LoaderCircle size={16} className="spin" /> : <ScanSearch size={16} />}{busy ? 'Checking …' : 'Check file list'}</button></div>
+    <p>Compares files, sizes and launchers with local Steam depot lists. Available while playing; does not read archive contents or change game files.</p>
+    {busy && <p role="status">Reading directories and Steam metadata …</p>}
     {error && <p role="alert" className="craft-error">{error}</p>}
     {report && <div className="installation-report">
-      <p role="status"><strong>{report.directory_scan_complete && report.depot_comparison_available ? 'Dateiliste geprüft' : 'Prüfung unvollständig'}</strong> · {count(report.actual_files)} Dateien gefunden / {report.depot_comparison_available ? `${count(report.expected_files)} laut Steam-Cache` : 'Depotvergleich nicht verfügbar'}.<br />Dateiliste ohne Inhaltsnachweis · Vanilla unbestätigt. Die Live-Prüfung erfolgt separat.</p>
-      <p>Stand: {new Date(report.observed_at * 1000).toLocaleString('de-DE')} · Build {report.build_id ?? 'unbekannt'} · {report.game_running === null ? 'Spielstatus unbekannt' : report.game_running ? 'Spiel läuft' : 'Spiel beendet'}.</p>
+      <p role="status"><strong>{report.directory_scan_complete && report.depot_comparison_available ? 'File list checked' : 'Check incomplete'}</strong> · {count(report.actual_files)} files found / {report.depot_comparison_available ? `${count(report.expected_files)} according to Steam cache` : 'Depot comparison unavailable'}.<br />File list without content verification · Vanilla unconfirmed. Live validation is separate.</p>
+      <p>As of: {new Date(report.observed_at * 1000).toLocaleString('en-US')} · Build {report.build_id ?? 'unknown'} · {report.game_running === null ? 'Game status unknown' : report.game_running ? 'Game running' : 'Game closed'}.</p>
       {report.issues.length > 0 && <ul className="installation-issues">{report.issues.map((issue, i) => <li key={i}>{issue.path && <code>{issue.path}: </code>}{issue.message}</li>)}</ul>}
-      <details><summary>Startprogramme ({report.executables.length})</summary><ul>{report.executables.map(path => <li key={path}><code>{path}</code></li>)}</ul><p>EXE-Funde innerhalb der Installation, einschließlich fehlender Depotdateien. Noch keine Freigabe des Startschutzes am echten Spiel.</p></details>
-      <details><summary>Zusätzliche oder abweichende Einträge ({anomalies.length})</summary><p>Zusätzliche Dateien können auch Logs oder andere reguläre Laufzeitdateien sein. Sie sind allein kein Beweis für Fremdmods.</p><ul>{anomalies.map(f => <li key={f.path}><code>{f.path}</code> · {states[f.state] ?? f.state}</li>)}</ul></details>
-      {(report.managed_files?.length??0)>0&&<details><summary>Eigene Workbench-Einträge ({report.managed_files!.length})</summary><p>Dateien und Ordner aus der eigenen Historie. Die Dateien sind in der Gesamtzahl enthalten; Inhalte hier nicht erneut gehasht.</p><ul>{report.managed_files!.map(f=><li key={f.path}><code>{f.path}</code></li>)}</ul></details>}
-      {(report.foreign_files?.length??0)>0&&<details><summary>Bestätigte fremde Zusätze ({report.foreign_files!.length})</summary><p>Ausdrücklich zum Beibehalten bestätigt. Inhalte hier nicht erneut geprüft; diese Dateien gehören nicht zum Vanilla-Nachweis.</p><ul>{report.foreign_files!.map(f=><li key={f.path}><code>{f.path}</code></li>)}</ul></details>}
-      {report.managed_registry&&<p>Die Registry enthält den eigenen Mod. Vor einem neuen Inhaltsbericht Originalzustand wiederherstellen; nach einem Spielupdate den Basiswechsel prüfen.</p>}
-      <details><summary>Depotlisten und Archivgruppen</summary><ul>{report.depots.map(d => <li key={d.id}>Depot {d.id} · {d.files} Dateien · Manifest <code>{d.manifest_id}</code> · Herkunft unbestätigt</li>)}</ul><p>{report.groups.filter(g => g.installed).length} registrierte Gruppen installiert, {report.groups.filter(g => g.optional && !g.installed).length} optionale Gruppen fehlen. Registry: {report.registry_matches_observed_build === null ? 'nicht verglichen' : report.registry_matches_observed_build ? 'entspricht dem beobachteten Build' : 'weicht vom beobachteten Build ab'}.</p></details>
-      <details><summary>Umfang und nächste Schritte</summary><ul>{report.limitations.map(item => <li key={item}>{item}</li>)}</ul></details>
+      <details><summary>Launchers ({report.executables.length})</summary><ul>{report.executables.map(path => <li key={path}><code>{path}</code></li>)}</ul><p>EXE files found in the installation, including missing depot files. Launch protection has not yet been validated against the real game.</p></details>
+      <details><summary>Additional or differing entries ({anomalies.length})</summary><p>Additional files may also be logs or other normal runtime files. Their presence alone does not prove third-party mods are installed.</p><ul>{anomalies.map(f => <li key={f.path}><code>{f.path}</code> · {states[f.state] ?? f.state}</li>)}</ul></details>
+      {(report.managed_files?.length??0)>0&&<details><summary>Workbench entries ({report.managed_files!.length})</summary><p>Files and folders from Workbench history. Files are included in the total count; their contents are not hashed again here.</p><ul>{report.managed_files!.map(f=><li key={f.path}><code>{f.path}</code></li>)}</ul></details>}
+      {(report.foreign_files?.length??0)>0&&<details><summary>Approved third-party additions ({report.foreign_files!.length})</summary><p>Explicitly approved for keeping. Contents are not checked again here; these files are not part of vanilla verification.</p><ul>{report.foreign_files!.map(f=><li key={f.path}><code>{f.path}</code></li>)}</ul></details>}
+      {report.managed_registry&&<p>The registry contains a Workbench mod. Restore the original state before creating a new content report; after a game update, review the baseline change.</p>}
+      <details><summary>Depot lists and archive groups</summary><ul>{report.depots.map(d => <li key={d.id}>Depot {d.id} · {d.files} files · Manifest <code>{d.manifest_id}</code> · Origin unconfirmed</li>)}</ul><p>{report.groups.filter(g => g.installed).length} registered groups installed, {report.groups.filter(g => g.optional && !g.installed).length} optional groups missing. Registry: {report.registry_matches_observed_build === null ? 'not compared' : report.registry_matches_observed_build ? 'matches the observed build' : 'differs from the observed build'}.</p></details>
+      <details><summary>Scope and next steps</summary><ul>{report.limitations.map(item => <li key={item}>{item}</li>)}</ul></details>
     </div>}
     <ContentAudit session={session} inventory={report}/>
   </section>;

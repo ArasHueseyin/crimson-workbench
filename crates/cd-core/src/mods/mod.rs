@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use store::Store;
 
-pub const CREDITS: &str = "Crimson Workbench: eigene Implementierung. Formatrecherche: GildyBoye – Crimson Desert Shop Editor (https://github.com/GildyBoye/CrimsonDesertShopEditor); NattKh – Crimson Desert Editor; CDUMM – faisalkindi. Archivformat/Krypto: crimson-rs – Tommy Tran (MIT). Keine Ausgabe dieser Referenzprogramme.";
+pub const CREDITS: &str = "Crimson Workbench: original implementation. Format research: GildyBoye – Crimson Desert Shop Editor (https://github.com/GildyBoye/CrimsonDesertShopEditor); NattKh – Crimson Desert Editor; CDUMM – faisalkindi. Archive format/cryptography: crimson-rs – Tommy Tran (MIT). Not a release of these reference programs.";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
@@ -261,7 +261,7 @@ impl ModCatalog {
             dropsets: self.drops.values().filter(|d| quantity_eligible(d)).map(|d| Choice { key: d.key, name: String::from_utf8_lossy(&d.name).into_owned(), entries: d.drops.len() }).collect(),
             store_rows: self.store_rows, stock_rows: self.stores.values().map(|s| s.stocks.len()).sum(), opaque_stores: self.store_rows-self.stores.len(), opaque_dropsets: self.drop_rows-self.drops.len()-self.trust.len(), trust_rows: self.trust.len(),
             quantity_excluded: self.drops.values().filter(|d| !quantity_eligible(d)).count(),
-            limitations: vec!["Zusätzliche Artikel nur bei Händlern mit gewöhnlicher, bedingungsfreier Angebotsvorlage und eindeutigen Save-Indizes. Bestehende Angebote bleiben erhalten; neue übernehmen die Preisfaktoren der Vorlage. Beliebige Itemtypen und große Sortimente sind noch nicht im Spiel abgenommen.".into(), "Täglicher Refresh ändert belegte 3-/7-Tage-Intervalle auf 1; dauerhafte und unbekannte Intervalle sowie einmalige Artikel bleiben unverändert.".into(), "Chancen skalieren ausschließlich unbedingte Item-Dropsets mit unabhängigem Rolltyp 0, gedeckelt bei 100 %. Begrenzte/gewichtete Rolltypen bleiben unverändert; Bosssets müssen manuell zugeordnet werden.".into(), "Mengen und globale Chancen betreffen auch freigegebene Rezept- und Questbelohnungen. Eine Garantie gilt nur für den einzelnen Eintrag beim Auslösen des Sets; vorgelagerte Ereignisse werden nicht verändert.".into(), "Trust skaliert nur positive Friendly-Mengen; Strafen bleiben erhalten. In-game-Wirkung noch ungeprüft.".into()],
+            limitations: vec!["Additional items only for vendors with a normal, unconditional offer template and unique save indexes. Existing offers are preserved; new ones copy template price factors. Arbitrary item types and large inventories have not been validated in game.".into(), "Daily refresh changes verified 3-/7-day intervals to 1; permanent and unknown intervals and one-time items are preserved.".into(), "Chance scaling applies only to unconditional item drop sets with independent roll type 0, capped at 100%. Limited/weighted roll types are preserved; boss sets must be assigned manually.".into(), "Quantities and global chances also affect supported recipe and quest rewards. A guarantee applies only to each entry when its set is triggered; preceding events are not changed.".into(), "Trust scales only positive Friendly amounts; penalties are preserved. In-game effect untested.".into()],
         }
     }
     pub fn build(&self, request: ModRequest) -> Result<BuiltMod> {
@@ -274,7 +274,7 @@ impl ModCatalog {
             || request.vendor_overrides.values().any(|v| *v > 1_000_000)
         {
             return Err(bad(
-                "Workbench-Prüfgrenze: Multiplikatoren 0..1000, Shopbestand 0..1000000 (keine behaupteten Engine-Maxima)",
+                "Workbench validation limits: multipliers 0..1000, shop stock 0..1000000 (not claimed engine maxima)",
             ));
         }
         for key in request
@@ -284,9 +284,7 @@ impl ModCatalog {
             .chain(request.vendor_options.keys())
         {
             if !self.stores.contains_key(key) {
-                return Err(bad(format!(
-                    "Händler {key} hat kein freigegebenes Stockschema"
-                )));
+                return Err(bad(format!("Vendor {key} has no supported stock schema")));
             }
         }
         for key in request
@@ -296,7 +294,7 @@ impl ModCatalog {
         {
             if !self.drops.get(key).is_some_and(quantity_eligible) {
                 return Err(bad(format!(
-                    "Dropset {key} hat kein freigegebenes Mengenschema"
+                    "Drop set {key} has no supported quantity schema"
                 )));
             }
         }
@@ -310,12 +308,12 @@ impl ModCatalog {
                 .filter_map(|v| v.items.as_ref())
                 .any(|items| !items.is_subset(&item_keys))
         {
-            return Err(bad("Artikelauswahl enthält unbekannte Item-IDs"));
+            return Err(bad("Item selection contains unknown item IDs"));
         }
         for key in request.chance_overrides.keys() {
             if !self.drops.get(key).is_some_and(chance::eligible) {
                 return Err(bad(format!(
-                    "Dropset {key} hat kein freigegebenes unabhängiges Chancenschema"
+                    "Drop set {key} has no supported independent chance schema"
                 )));
             }
         }
@@ -326,13 +324,13 @@ impl ModCatalog {
                 .any(|k| !self.drops.get(k).is_some_and(chance::eligible))
         {
             return Err(bad(
-                "Die Dropsetauswahl enthält begrenzte, gewichtete oder bedingte Sets ohne freigegebene Prozentchance",
+                "Drop set selection contains limited, weighted or conditional sets without a supported percentage chance",
             ));
         }
         for key in &request.guaranteed_dropsets {
             if !self.drops.get(key).is_some_and(chance::guarantee_eligible) {
                 return Err(bad(format!(
-                    "Dropset {key} kann nicht garantiert werden: Rolltyp, Bedingung oder Nullmenge"
+                    "Drop set {key} cannot be guaranteed: roll type, condition or zero quantity"
                 )));
             }
             let multiplier = request.quantity_overrides.get(key).copied().unwrap_or(
@@ -344,7 +342,7 @@ impl ModCatalog {
             );
             if multiplier == 0 {
                 return Err(bad(format!(
-                    "Dropset {key}: Eine Garantie ist mit Mengenmultiplikator 0 nicht möglich"
+                    "Drop set {key}: guarantee impossible with quantity multiplier 0"
                 )));
             }
         }
@@ -361,7 +359,7 @@ impl ModCatalog {
                 } else if options.is_some_and(|v| v.items.is_some()) || !request.vendors.is_empty()
                 {
                     return Err(bad(format!(
-                        "Händler {} hat kein freigegebenes Einfügeschema",
+                        "Vendor {} has no supported insertion schema",
                         store.key
                     )));
                 } else {
@@ -374,18 +372,18 @@ impl ModCatalog {
                     || !request.vendors.is_empty())
             {
                 return Err(bad(format!(
-                    "Händler {} hat ein dauerhaftes oder unbekanntes Refresh-Intervall",
+                    "Vendor {} has a permanent or unknown refresh interval",
                     store.key
                 )));
             }
         }
         if combinations > 100_000 {
             return Err(bad(
-                "Vorschaugrenze: höchstens 100.000 zusätzliche Positionen pro Plan; Händler- oder Artikelauswahl eingrenzen (kein behauptetes Engine-Limit)",
+                "Preview limit: at most 100,000 additional entries per plan; narrow the vendor or item selection (not a claimed engine limit)",
             ));
         }
         if skipped > 0 {
-            feature_warnings.push(format!("Zusätzliche Artikel: {skipped} Händler ohne freigegebenes Einfügeschema bleiben beim bisherigen Sortiment."));
+            feature_warnings.push(format!("Additional items: {skipped} vendors without a supported insertion schema keep their existing offers."));
         }
         let mut replacements: BTreeMap<&str, BTreeMap<u32, Vec<u8>>> = BTreeMap::new();
         for store in self.stores.values() {
@@ -440,7 +438,7 @@ impl ModCatalog {
                         key: store.key,
                         name: store.name.clone(),
                         field: format!("stocks[{}].item", before + i),
-                        before: "nicht vorhanden".into(),
+                        before: "absent".into(),
                         after: format!("{item} (Bestand {})", stock.unwrap_or(999)),
                     });
                 }
@@ -460,9 +458,7 @@ impl ModCatalog {
                 continue;
             }
             if Store::parse(&edited.serialize())?.is_none() {
-                return Err(bad(
-                    "Geänderter Händler lässt sich nicht vollständig zurücklesen",
-                ));
+                return Err(bad("Modified vendor cannot be read back completely"));
             }
             replacements
                 .entry("storeinfo")
@@ -536,7 +532,7 @@ impl ModCatalog {
             for (i, drop) in edited.drops.iter_mut().enumerate() {
                 if drop.min > drop.max || drop.max > i64::MAX as u64 {
                     return Err(bad(format!(
-                        "Dropset {key}: Menge/Sentinel nicht freigegeben"
+                        "Drop set {key}: quantity/sentinel not supported"
                     )));
                 }
                 for (field, value) in [("min", &mut drop.min), ("max", &mut drop.max)] {
@@ -634,7 +630,7 @@ impl ModCatalog {
             };
             if archive.serialize_registry()? != self.registry {
                 return Err(bad(
-                    "Installation seit dem Einlesen geändert; Datenquelle neu einlesen",
+                    "Installation changed since reading; reload data source",
                 ));
             }
             let group = (1..=9999)
@@ -680,7 +676,7 @@ impl ModCatalog {
         ))?);
         let mut warnings = self.info().limitations;
         warnings.extend(feature_warnings);
-        warnings.push(format!("Unverändert: {} opake Händler, {} Sonder-Dropsets, {} leere oder Sentinel-Item-Dropsets.", self.info().opaque_stores, self.info().opaque_dropsets, self.info().quantity_excluded));
+        warnings.push(format!("Unchanged: {} opaque vendors, {} special drop sets, {} empty or sentinel item drop sets.", self.info().opaque_stores, self.info().opaque_dropsets, self.info().quantity_excluded));
         let gates = crate::apply::status(&self.game);
         Ok(BuiltMod {
             preview: Preview {

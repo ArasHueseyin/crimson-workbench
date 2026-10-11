@@ -30,18 +30,18 @@ try {
   const scripts = await page.locator('script[src]').evaluateAll(nodes => nodes.map(node => node.getAttribute('src')));
   if (!scripts.some(src => /^\/assets\/[^/]+\.js$/.test(src ?? '')) || scripts.some(src => src?.includes('@vite')))
     throw new Error('Workbench did not load the bundled production frontend');
-  await page.getByRole('button', { name: 'Datenquellen', exact: true }).click();
-  await expect(page.getByRole('heading', { name: /^Datenquellen/ })).toBeVisible();
-  await expect(page.getByLabel('Installationsordner', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('Spielstandordner', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Einstellungen speichern', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Data sources', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /^Data sources/ })).toBeVisible();
+  await expect(page.getByLabel('Installation folder', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Save folder', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeEnabled();
   await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'false');
-  await expect(page.getByLabel('Itemsprache', { exact: true })).toHaveValue('eng');
+  await expect(page.getByLabel('Item language', { exact: true })).toHaveValue('eng');
   // A genuine settings write is safe: only null paths in our private project.
-  await page.getByLabel('Installationsordner', { exact: true }).fill('');
-  await page.getByLabel('Spielstandordner', { exact: true }).fill('');
-  await page.getByRole('button', { name: 'Einstellungen speichern', exact: true }).click();
-  await expect(page.getByText(/^Einstellungen gespeichert\./)).toBeVisible({ timeout: 15000 });
+  await page.getByLabel('Installation folder', { exact: true }).fill('');
+  await page.getByLabel('Save folder', { exact: true }).fill('');
+  await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+  await expect(page.getByText(/^Settings saved\./)).toBeVisible({ timeout: 15000 });
   const settings = JSON.parse(await readFile(resolve(project, 'settings.json'), 'utf8'));
   if (settings.version !== 1 || settings.game_dir != null || settings.save_dir != null || settings.language !== 'eng')
     throw new Error('Packaged settings persistence did not preserve the expected isolated values');

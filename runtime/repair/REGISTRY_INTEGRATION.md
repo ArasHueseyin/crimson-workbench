@@ -1,86 +1,45 @@
-# Registry-Adapter 0.7.0 und erkannter Spielbuildwechsel
+# Registry adapter 0.7.0 and detected game build change
 
-Stand 22.09.2026, Entwicklungsnachweis für Modul 0.7.0. Kein installierbarer
-Reparaturmod. Nachtrag: App v0.5.9 unterstützt inzwischen die Tabellen des neuen
-Builds; die unten beschriebenen nativen Grenzen bleiben bestehen.
-[Tabellenfreigabe](../../docs/BUILD_SUPPORT.md).
-Weiterentwicklung: [gemeinsame native Registry-/Referenzprobe 0.8.0](REGISTRY_NATIVE_INTEGRATION.md).
-Die folgenden Ergebnisse beschreiben den früheren Stand 0.7.0.
+Status 22.09.2026, proof of development for module 0.7.0. Not an installable repair mod. Addendum: App v0.5.9 now supports the tables of the new build; The native boundaries described below remain in place. [Table release](../../docs/BUILD_SUPPORT.md). Further development: [common native registry/reference sample 0.8.0](REGISTRY_NATIVE_INTEGRATION.md). The following results describe the previous status 0.7.0.
 
-## Implementierter Adapter
+## Implemented adapter
 
-`crimson_repair_registry.lib` verbindet einen vom Host bereitgestellten Manager
-und dessen native Lookup-/PaPtr-Freigabemethode mit `reference::Pair`.
-Der Lookup erhält die vollständige Charakterkennung und den 32-Byte-Ausgabebeleg.
-Der Adapter verwendet keine vorab gelesene Actoradresse als Erwerbsquelle.
+`crimson_repair_registry.lib` connects a host-provided manager and its native lookup/PaPtr sharing method to `reference::Pair`. The lookup receives the full character identifier and the 32 byte output document. The adapter does not use a pre-read actor address as a source of purchase.
 
-Jede Quelle behält ihre eigene Methodenbindung. Dafür erhält der Release-Callback
-jetzt denselben Kontext wie der Acquire-Callback. Es gibt keine globale
-Freigabefunktion, die ein zweiter Host/Manager ersetzen könnte. Ungültige
-Manager-/Methodenbindungen und Kennung 0 liefern keine verwendbare Quelle.
-Der Quellenadapter ist nicht kopierbar oder verschiebbar und muss seine daraus
-erworbenen Referenzen überleben.
+Each source retains its own method binding. For this, the release callback now receives the same context as the Acquire callback. There is no global sharing feature that could replace a second host/manager. Invalid manager/method bindings and 0 identifier do not provide a usable source. The source adapter is not copyable or displaceable and must survive its acquired references.
 
-Der native Lookup ist für die Registry-Sperre und den Erwerb vor Freigabe dieser
-Sperre zuständig. Diese Aufrufe können warten; sie gehören ausschließlich auf
-den noch zu belegenden Engine-Dispatch-Thread. Das ist eine andere Voraussetzung
-als der nicht wartende Inventarsperrversuch aus 0.5.0.
+The native lookup is responsible for the registry lock and the acquisition before the release of this lock. These calls can wait; they belong exclusively to the engine dispatch thread still to be used. This is a different requirement than the non-waiting inventory lockdown attempt from 0.5.0.
 
-## Aktuelle Prüfung
+## Current audit
 
-Fünf CTest-Suiten, MSVC Release `/W4 /WX`, 55 Registry-Adapterbedingungen,
-249 Leser-/Referenzbedingungen, 25 Sperrgruppenbedingungen und 1.481
-Aktionsbedingungen bestanden. Die neuen Tests verwenden ausdrücklich künstliche
-Registry-Callbacks. Geprüft sind vollständige Kennung, Fehler beider Quellen,
-gleiche Actoradresse in beiden Rollen, fehlende Methoden/Manager, kein Aufruf bei
-ungültigen Bindungen, genau eine Freigabe je Ergebnis und umgekehrte Reihenfolge.
-Zwei unterschiedliche Freigabefunktionen belegen die Bindung je Quelle.
+Five CTest suites, MSVC Release `/W4 /WX`, 55 Registry Adapter Conditions, 249 Reader/Reference Conditions, 25 Lock Group Conditions and 1,481 Action Conditions passed. The new tests explicitly use artificial registry callbacks. Complete identifier, errors of both sources, same actor address in both roles, missing methods/managers, no call for invalid bindings, exactly one release per result and reverse order are checked. Two different release functions occupy the binding per source.
 
-## Wesentliche neue Grenze: Spielupdate
+## Significant new frontier: game update
 
-Während dieses Arbeitsschritts wurde die installierte EXE als neue Version erkannt:
+During this work step, the installed EXE was recognized as a new version:
 
-| Merkmal | Bisher nachgewiesen | Jetzt installiert |
+|Characteristic|So far proven|Now installed|
 |---|---|---|
-| Steam-Build | 25381195 | 25455892 |
-| EXE-Version | 1.0.0.2944 | 1.0.0.2949 |
-| EXE-Bytes | 397.242.776 | 385.363.864 |
-| SHA-256 | `6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7` | `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a` |
+|Steam-Build|25381195|25455892|
+|EXE-Version|1.0.0.2944|1.0.0.2949|
+|EXE-Bytes|397,242,776|385,363,864|
+|SHA-256|`6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`|`a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`|
 
-24 der 38 bislang erfassten EXE-/Metadatendateien unterscheiden sich vom alten
-Beobachtungsstand. Der neue [Beobachtungsbericht](../../docs/builds/steam-25455892.observed.json)
-war zunächst keine Schemafreigabe. Die spätere Tabellenfreigabe in v0.5.9 ist
-getrennt dokumentiert; weiterhin keine Vanilla-Zertifizierung, native Freigabe
-oder vollständige Installationsinventur. Der ursprüngliche Build bleibt erhalten.
+24 of the 38 previously recorded EXE/metadata files differ from the old observation status. The new [Observation report](../../docs/builds/steam-25455892.observed.json) was not a schema release at first. The later table release in v0.5.9 is documented separately; Still no vanilla certification, native clearance or full installation inventory. The original build is preserved.
 
-Der bisherige native Testhost lehnt die neue EXE vor Funktionsausführung ab.
-Beim Entwicklungsstand v0.5.8 meldete die lesende CLI-Builddiagnose `metadata_matches=false` und
-`read_schema_supported=false`. Der zusätzliche CLI-Tabellenaufruf scheitert
-vorher an einer fehlenden Projektprobensicherung; dieser Aufruf zählt deshalb
-nicht als Nachweis der passenden Build-Fehlermeldung. Die Fingerprint-Diagnose
-liefert den eigenständigen Versionsnachweis.
+The previous native test host rejects the new EXE before function execution. At the development level v0.5.8, the read CLI build diagnosis reported `metadata_matches=false` and `read_schema_supported=false`. The additional CLI table call fails beforehand due to a lack of project sample backup; This call therefore does not count as proof of the matching build error message. The fingerprint diagnosis provides the independent version proof.
 
-Die 203 nativen Aufrufe aus 0.6.0 bleiben ein historischer Nachweis für 1.0.0.2944.
-Für 0.7.0 wird **kein neuer nativer Erfolgsnachweis** behauptet. Die zunächst
-gefundenen Client-Registry-Funktionen sind Forschungsbefunde, noch keine freigegebene
-Methodenbindung für den neuen Build. Adressen, Unwind-Grenzen, Abhängigkeiten und
-Tabellen müssen gemeinsam neu geprüft werden; bloß den EXE-Hash zu ersetzen
-wäre falsch.
+The 203 native calls from 0.6.0 remain a historical proof for 1.0.0.2944. For 0.7.0, **is not claimed a new native proof of success**. The initially found client registry functions are research findings, not yet a released method binding for the new build. Addresses, wind limits, dependencies and tables must be re-checked together; Just replacing the EXE hash would be wrong.
 
-## Noch fehlend
+## Still missing
 
-- Vollständige Unterstützung und isolierter nativer Nachweis des neuen Builds.
-- Aktueller Spieler/Manager, gesicherte Managerlebensdauer und belegte
-  Engine-Thread-/TLS-Bindung. Der Adapter löst diese Hostvoraussetzungen nicht selbst.
-- Zusammengeführter Nachweis echter Client-/Server-Registry-Lookups samt
-  Referenzerwerb und späterer Freigabe.
-- Vollständige Reparaturtransaktion, Ereigniszuordnung, Eingabe, Loader und B0-Einbau.
+- Full support and isolated native proof of the new build.
+- Current player/manager, secured manager lifetime and occupied
+Engine thread/TLS binding. The adapter does not solve these host requirements itself.
+- Combined proof of real client/server registry lookups and
+Acquisition of reference and subsequent release.
+- Complete repair transaction, event allocation, input, loader and B0 installation.
 
-Keine Spieldateien oder Saves geschrieben; kein Spielprozesszugriff.
-Manuelle Tests sind weiter zurückgestellt. Die nutzerlesbare Abnahmeliste steht
-in [TESTCHECKLISTE.md](../../TESTCHECKLISTE.md).
+No game files or saves written; No gaming process access. Manual tests are further deferred. The user-readable acceptance list is in [TESTCHECKLISTE.md](../../TESTCHECKLISTE.md).
 
-Nachweise: `.local/repair-runtime-v7-build-test.log`,
-`.local/repair-runtime-v7-build-refusals.json`,
-`.local/repair-runtime-v7-current-fingerprint.json`,
-`.local/repair-runtime-v7-validation.json`.
+Evidence: `.local/repair-runtime-v7-build-test.log`, `.local/repair-runtime-v7-build-refusals.json`, `.local/repair-runtime-v7-current-fingerprint.json`, `.local/repair-runtime-v7-validation.json`.

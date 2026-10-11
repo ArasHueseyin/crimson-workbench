@@ -84,14 +84,14 @@ fn name(s: &str) -> Result<()> {
         || s == "."
         || s == ".."
     {
-        return Err(bad("Ungültiger Projektdateiname").into());
+        return Err(bad("Invalid workspace filename").into());
     }
     Ok(())
 }
 fn report_name(s: &str) -> Result<()> {
     name(s)?;
     if !s.starts_with("installation-audit-") || !s.ends_with(".json") {
-        return Err(bad("Nur exportierte Inhaltsprüfberichte werden akzeptiert").into());
+        return Err(bad("Only exported content audit reports are accepted").into());
     }
     Ok(())
 }
@@ -102,7 +102,7 @@ fn read(policy: &PathPolicy, path: &Path, limit: usize) -> Result<Vec<u8>> {
         .take(limit as u64 + 1)
         .read_to_end(&mut bytes)?;
     if bytes.len() > limit {
-        return Err(bad("Projektdatei überschreitet das Größenlimit").into());
+        return Err(bad("Workspace file exceeds the size limit").into());
     }
     Ok(bytes)
 }
@@ -128,7 +128,7 @@ fn validate(report: &audit::Report) -> Result<()> {
         || !report.build_id.bytes().all(|b| b.is_ascii_digit())
     {
         return Err(bad(
-            "Kein vollständiger, konsistenter Inhaltsprüfbericht ohne Schreibfreigabe",
+            "Not a complete, consistent content audit report without write authorization",
         )
         .into());
     }
@@ -142,27 +142,25 @@ fn validate(report: &audit::Report) -> Result<()> {
             || !valid_digest(&file.sha1, 40)
             || !valid_digest(&file.sha256, 64)
         {
-            return Err(
-                bad("Ungültiger oder widersprüchlicher Dateieintrag im Prüfbericht").into(),
-            );
+            return Err(bad("Invalid or conflicting file entry in audit report").into());
         }
         let bytes = file
             .bytes
             .parse::<u64>()
-            .map_err(|_| bad("Ungültige Dateigröße im Prüfbericht"))?;
+            .map_err(|_| bad("Invalid file size in audit report"))?;
         if bytes.to_string() != file.bytes {
-            return Err(bad("Nicht kanonische Dateigröße").into());
+            return Err(bad("Noncanonical file size").into());
         }
         total = total
             .checked_add(bytes)
-            .ok_or_else(|| bad("Gesamtgröße läuft über"))?;
+            .ok_or_else(|| bad("Total size overflow"))?;
     }
     let manifests: BTreeSet<_> = report.manifest_sha256.iter().collect();
     if manifests.len() != report.manifest_sha256.len()
         || manifests.iter().any(|s| !valid_digest(s, 64))
         || !report.files.iter().any(|f| f.path == REGISTRY)
     {
-        return Err(bad("Depotidentität oder Registry im Prüfbericht fehlt").into());
+        return Err(bad("Depot identity or registry missing in audit report").into());
     }
     Ok(())
 }
@@ -172,10 +170,9 @@ fn compare(report: &audit::Report, inventory: &Inventory) -> Result<()> {
         || Some(&report.build_id) != inventory.build_id.as_ref()
         || report.files.len() != inventory.files.len()
     {
-        return Err(bad(
-            "Prüfbericht gehört nicht zur aktuellen Installation oder zum aktuellen Build",
-        )
-        .into());
+        return Err(
+            bad("Audit report does not belong to the current installation or build").into(),
+        );
     }
     let mut manifest_hashes: Vec<_> = inventory
         .depots
@@ -186,23 +183,23 @@ fn compare(report: &audit::Report, inventory: &Inventory) -> Result<()> {
     manifest_hashes.sort();
     expected.sort();
     if manifest_hashes != expected {
-        return Err(bad("Steam-Depotlisten seit dem Prüfbericht geändert").into());
+        return Err(bad("Steam depot lists changed since the audit report").into());
     }
     let by_path: std::collections::BTreeMap<_, _> =
         report.files.iter().map(|f| (f.path.as_str(), f)).collect();
     for file in &inventory.files {
         let previous = by_path
             .get(file.path.as_str())
-            .ok_or_else(|| bad("Dateibestand seit dem Prüfbericht geändert"))?;
+            .ok_or_else(|| bad("File inventory changed since the audit report"))?;
         if file.expected_bytes.as_ref() != Some(&previous.bytes)
             || file.actual_bytes.as_ref() != Some(&previous.bytes)
             || file.expected_sha1.as_ref() != Some(&previous.expected_sha1)
         {
-            return Err(bad(format!("Datei oder Depotwert geändert: {}", file.path)).into());
+            return Err(bad(format!("File or depot value changed: {}", file.path)).into());
         }
     }
     if inventory.registry_sha256.as_ref() != Some(&by_path[REGISTRY].sha256) {
-        return Err(bad("Registry seit dem Prüfbericht geändert").into());
+        return Err(bad("Registry changed since the audit report").into());
     }
     Ok(())
 }
@@ -266,18 +263,18 @@ fn prepare(policy: &PathPolicy, game: &Path, filename: &str) -> Result<Prepared>
     let mut registry = Vec::new();
     (&mut source).take(1_048_577).read_to_end(&mut registry)?;
     if registry.len() > 1_048_576 || stamp != audit::stamp(&source)? {
-        return Err(bad("Registry während der Sicherungsvorbereitung geändert").into());
+        return Err(bad("Registry changed while preparing backup").into());
     }
     let registry_sha256 = hash_bytes(&registry);
     let wanted = report.files.iter().find(|f| f.path == REGISTRY).unwrap();
     if registry_sha256 != wanted.sha256 || registry.len().to_string() != wanted.bytes {
-        return Err(bad("Registry-Inhalt passt nicht zum Prüfbericht").into());
+        return Err(bad("Registry contents do not match the audit report").into());
     }
     let after = super::inspect_managed(policy, game)?;
     compare(&report, &after)?;
     let identity = audit::identity(&before)?;
     if identity != audit::identity(&after)? {
-        return Err(bad("Installation während der Vorbereitung geändert").into());
+        return Err(bad("Installation changed during preparation").into());
     }
     let manifest = Manifest {
         version: 1,
@@ -313,9 +310,7 @@ fn capture_with(
 ) -> Result<Saved> {
     let mut p = prepare(policy, game, filename)?;
     if !valid_digest(review_id, 64) || preview_of(&p.manifest, &p.report)?.review_id != review_id {
-        return Err(
-            bad("Prüfbericht oder Installation seit der Vorschau geändert; erneut prüfen").into(),
-        );
+        return Err(bad("Audit report or installation changed since preview; check again").into());
     }
     static NEXT: AtomicU64 = AtomicU64::new(0);
     p.manifest.created_at = now();
@@ -340,12 +335,15 @@ fn capture_with(
     if read(policy, &base.join("audit.json"), MAX_REPORT)? != p.raw
         || read(policy, &base.join("registry.papgt"), 1_048_576)? != p.registry
     {
-        return Err(bad("Gespeicherte Ausgangsbasis konnte nicht verifiziert werden").into());
+        return Err(bad("Saved baseline could not be verified").into());
     }
     let current = super::inspect_managed(policy, game)?;
     compare(&p.report, &current)?;
     if hash_bytes(&audit::identity(&current)?) != p.manifest.inventory_sha256 {
-        return Err(bad("Installation vor Abschluss geändert; unvollständige Kopie bleibt zur Diagnose erhalten").into());
+        return Err(bad(
+            "Installation changed before completion; incomplete copy preserved for diagnosis",
+        )
+        .into());
     }
     point(2)?;
     // The manifest is the last, atomic publication point. Partial copies cannot load.
@@ -401,7 +399,7 @@ fn load(policy: &PathPolicy, id: &str) -> Result<(Manifest, audit::Report, Vec<u
         || !valid_digest(&m.registry_sha256, 64)
         || !valid_digest(&m.inventory_sha256, 64)
     {
-        return Err(bad("Ungültiges Ausgangsbasis-Manifest").into());
+        return Err(bad("Invalid baseline manifest").into());
     }
     report_name(&m.report_name)?;
     let raw = read(policy, &base.join("audit.json"), MAX_REPORT)?;
@@ -410,15 +408,13 @@ fn load(policy: &PathPolicy, id: &str) -> Result<(Manifest, audit::Report, Vec<u
         || hash_bytes(&registry) != m.registry_sha256
         || registry.len() as u64 != m.registry_bytes
     {
-        return Err(
-            bad("Gespeicherter Prüfbericht oder Registry-Sicherung wurde verändert").into(),
-        );
+        return Err(bad("Saved audit report or registry backup was modified").into());
     }
     let report: audit::Report = serde_json::from_slice(&raw)?;
     validate(&report)?;
     let wanted = report.files.iter().find(|f| f.path == REGISTRY).unwrap();
     if wanted.sha256 != m.registry_sha256 || wanted.bytes != m.registry_bytes.to_string() {
-        return Err(bad("Registry-Sicherung gehört nicht zum gespeicherten Prüfbericht").into());
+        return Err(bad("Registry backup does not belong to the saved audit report").into());
     }
     Ok((m, report, registry))
 }
@@ -431,7 +427,7 @@ pub(crate) fn apply_evidence(
 ) -> Result<(audit::Report, Vec<u8>, String)> {
     let (report, registry, report_sha256) = historical_evidence(policy, game, id)?;
     if !matches_read_schema(&report) {
-        return Err(bad("Ausgangsstand besitzt kein bekanntes Leseschema").into());
+        return Err(bad("Baseline has no known reading schema").into());
     }
     Ok((report, registry, report_sha256))
 }
@@ -442,10 +438,9 @@ pub(crate) fn historical_evidence(
 ) -> Result<(audit::Report, Vec<u8>, String)> {
     let (manifest, report, registry) = load(policy, id)?;
     if report.game_path != game.canonicalize()? {
-        return Err(bad(
-            "Ausgangsstand gehört nicht zur Installation oder zu einem bekannten Leseschema",
-        )
-        .into());
+        return Err(
+            bad("Baseline does not belong to this installation or a known reading schema").into(),
+        );
     }
     Ok((report, registry, manifest.report_sha256))
 }
@@ -457,14 +452,12 @@ pub fn catalog(policy: &PathPolicy) -> Result<Catalog> {
             return Ok((Vec::new(), false));
         }
         if super::linked(&fs::symlink_metadata(base)?) {
-            return Err(bad("Verknüpftes Ausgangsbasis-Verzeichnis").into());
+            return Err(bad("Linked baseline directory").into());
         }
         let mut names = Vec::new();
         for (count, item) in fs::read_dir(base)?.enumerate() {
             if count >= 2000 {
-                return Err(
-                    bad("Mehr als 2.000 Einträge; Ausgangsbasis-Liste nicht vollständig").into(),
-                );
+                return Err(bad("More than 2,000 entries; baseline list incomplete").into());
             }
             let item = item?;
             let Some(value) = item.file_name().to_str().map(str::to_owned) else {

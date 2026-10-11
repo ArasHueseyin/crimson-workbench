@@ -1,92 +1,46 @@
-# Reparatur 0.12.0 – native Itemkopien für Ausrüstungsereignisse
+# Repair 0.12.0 – native items copies for equipment events
 
-Historischer Entwicklungsstand; ergänzt durch
-[Slot-Markierung und gehaltene Erfassung 0.13.0](DIRTY_SLOTS_2949.md).
+historical stage of development; supplemented by [Slot marking and held capture 0.13.0](DIRTY_SLOTS_2949.md).
 
-Stand 22.09.2026, Steam 25455892 / EXE 1.0.0.2949. Vollständiger EXE-Hash:
-`a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`.
-Weiterhin ein Entwicklungsmodul; App v0.5.9 und gesperrte Reparaturoption unverändert.
+Status: 22.09.2026, Steam 25455892 / EXE 1.0.0.2949. Full EXE hash: `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`. further development module; App v0.5.9 and locked repair option unchanged.
 
-## Neu implementiert
+## Newly implemented
 
-`crimson_repair_item.lib` besitzt native Itemwerte über `item::Value`. Konstruktion,
-Zuweisung und Freigabe sind je Objekt fest gebunden. Kopieren und Verschieben des
-Besitzers sind ausgeschlossen. Zugriff und Operationen auf anderen Threads werden
-abgewiesen; eine Zerstörung auf dem falschen Thread beendet den Prozess gemäß dem
-gleichen Vertrag wie die bestehende Referenzverwaltung.
+`crimson_repair_item.lib` has native item values above `item::Value`. Construction, assignment and release are firmly bound for each object. Copying and moving the owner is excluded. Access and operations on other threads are rejected; a destruction on the wrong thread ends the process according to the same contract as the existing reference management.
 
-Vor einer Zuweisung werden Null-/Fehlzeiger, Überlappung, Ausrichtung sowie die drei
-Vektorheader geprüft. Ein ungültiger Header darf den vorhandenen Zielwert nicht
-erst löschen. Bei einer unerwarteten nativen Rückgabe wird der Wert unbenutzbar;
-er kann erst nach Freigabe neu konstruiert werden. Aufräumen bleibt gewährleistet,
-soweit die gebundenen nativen Funktionen ihren dokumentierten Vertrag erfüllen.
+Prior to assignment, zero/error pointers, overlap, alignment and the three vector headers are checked. An invalid header must not first delete the existing target value. In the event of an unexpected native return, the value becomes unusable; It can only be redesigned after release. Clean-up is guaranteed as far as the bound native functions fulfill their documented contract.
 
-Die Bindung muss später aus einem verifizierten, während der Nutzung geladenen
-Spielmodul kommen. Der Host muss auf dem korrekten Engine-Thread mit gültigem TLS
-laufen und den Quellwert samt allen verschachtelten Daten schützen. Die Bibliothek
-erteilt diese Freigaben nicht. `action::Image` ist ein abgetrenntes Abbild und darf
-mit seinen gespeicherten Pointerbytes nicht als native Quelle übergeben werden.
+The binding must later come from a verified game module loaded during use. The host must run on the correct engine thread with valid TLS and protect the source value along with all nested data. The library does not grant these releases. `action::Image` is a separate image and must not be transferred as a native source with its stored pointerbytes.
 
-## Belegtes Kopierlayout
+## Documented copy layout
 
-Die tatsächliche Zuweisung ist kein vollständiges `memcpy`: Sie löscht vorherige
-optionale Daten und kopiert relevante Felder sowie verschachtelte Speicherbereiche
-über eigene Helfer. Paddingbytes werden teilweise nicht kopiert.
+The actual assignment is not a complete `memcpy`: it deletes previous optional data and copies relevant fields and nested memory areas via its own helpers. Paddingbytes are partially not copied.
 
-| Bereich | Header / Größe | Verhalten |
+|Area|Header/Size|Behaviour|
 |---|---|---|
-| Sockeldaten | Pointer `+0x60`, Anzahl `+0x68`, Speicher-Kapazität `+0x6c`; 6 Bytes pro Eintrag | Eigene Allokation; Anzahl und Inhalte werden kopiert |
-| Logische Sockelgrenze | Byte `+0x70` | Separat von Speicher-Kapazität; wird ebenfalls kopiert |
-| Zusätzliche Liste | Pointer `+0x78`, Anzahl `+0x80`, Kapazität `+0x84`; Stride 16 | 13 belegte Inhaltsbytes pro Eintrag, restliche Bytes Padding |
-| Weitere Liste | Pointer `+0xa8`, Anzahl `+0xb0`, Kapazität `+0xb4`; Stride 6 | Eigene Allokation und Inhaltskopie |
-| Optionaler Block | Pointer `+0xb8`, 24 Bytes | Neu kopiert, vorheriger Block freigegeben |
-| Optionaler Block | Pointer `+0xc0`, 16 Bytes | Neu kopiert, vorheriger Block freigegeben |
+|Base data|Pointer `+0x60`, number `+0x68`, memory capacity `+0x6c`; 6 Bytes per entry|own allocation; Number and contents are copied|
+|Logical base boundary|Byte `+0x70`|Separate from storage capacity; It is also copied|
+|Additional list|Pointer `+0x78`, number `+0x80`, capacity `+0x84`; Stride 16|13 occupied content bytes per entry, remaining bytes padding|
+|Further list|Pointer `+0xa8`, number `+0xb0`, capacity `+0xb4`; Stride 6|Own allocation and content copy|
+|Optional block|Pointer `+0xb8`, 24 Bytes|Recopied, previous block released|
+|Optional block|Pointer `+0xc0`, 16 Bytes|Recopied, previous block released|
 
-Die fachliche Bedeutung der beiden zusätzlichen Listen/Blöcke wird aus ihrer
-Kopiergröße nicht abgeleitet. Die neue Kapazitätsprüfung gehört zur nativen
-Kopierfreigabe; der bestehende Leser wurde in diesem Schritt nicht geändert.
+The technical significance of the two additional lists/blocks is not derived from their copy size. The new capacity check shall be part of the native copy release; The existing reader has not been changed in this step.
 
-Native Einstiege: Konstruktor `0x2409750`, Zuweisung `0x240b020` → `0xf300c80`,
-Destruktor `0x240af10` → `0xf2fe4a0`, Leeren `0x240b430` → `0xf312630`.
-Alle 17 neuen Codebereiche einschließlich der vollständigen Listen-/Allokations-
-helfer sind mit Größen und Hashes in `tests/item_functions.inl` gepinnt.
+Native entries: constructor `0x2409750`, assignment `0x240b020` → `0xf300c80`, destructor `0x240af10` → `0xf2fe4a0`, empty `0x240b430` → `0xf312630`. All 17 new code ranges, including the full list/allocation helpers, are pinned with sizes and hashes in `tests/item_functions.inl`.
 
-## Integration und Prüfung
+## Integration and testing
 
-Die 15 Ausrüstungsereignistests verwenden jetzt diesen Besitzer mit originaler
-Konstruktion, tiefer Zuweisung und Destruktion. Die Nachherkopie entsteht noch unter
-den Besitzersperren. Nach deren Freigabe erhält der originale Server-Notifier die
-unabhängige Kopie. Erst nach allen Callbacks wird sie freigegeben; Actor-Referenzen
-bleiben bis dahin gehalten.
+The 15 equipment event tests now use this owner with original construction, deep assignment, and destruction. The subsequent copy is still produced under the owner's locks. Once approved, the original server notifier receives the independent copy. Only after all callbacks will it be released; Actor references are maintained until then.
 
-14 zusätzliche native Kopierfälle prüfen beide TLS-Allokationswege: einfache Items,
-Sockel, alle zusätzlichen Datenbereiche, erneutes Kopieren mit größerer Anzahl,
-Ersetzen durch leere Daten, Selbstzuweisung und ungültige Quellkapazität. Quelle
-und Quellspeicher bleiben unverändert. Eigener Windows-Heap mit Schutzmarkierungen
-prüft Allokationsgrenzen, unabhängige Pointer und vollständig ausgeglichene Freigaben.
+14 additional native copy cases check both TLS allocation paths: simple items, sockets, all additional data ranges, re-copying with larger numbers, replacement with empty data, self-assignment and invalid source capacity. The source and source memory remain unchanged. Own Windows heap with protection marks checks allocation limits, independent pointers and fully balanced releases.
 
-**Sieben CTest-Suiten, MSVC Release `/W4 /WX`, 30 neue Besitzertestbedingungen und
-117 native Szenarien mit 851 gezählten Aufrufen sowie 13.639 Bedingungen bestanden.**
-Die übrigen Suiten: 1.537 Aktions-, 385 Leser-, 25 Sperrgruppen- und 55 Quellenbedingungen.
-Der Test ohne EXE prüft nur 270 Manifestbedingungen.
+**Seven CTest suites, MSVC release `/W4 /WX`, 30 new owner test conditions and 117 native scenarios with 851 counted calls and 13,639 Conditions passed.** The remaining suites: 1,537 Action, 385 Reader, 25 Lockgroup and 55 Source conditions. The test without EXE only checks 270 manifest conditions.
 
-Insgesamt 45 Codebereiche, 49 pdata-Fragmente und 24 private TLS-Umleitungen.
-Bei einem verschobenen Listenhelfer zeigt die Unwind-Kette auf ein byteidentisches
-älteres Prologrecord. Ausschließlich dieser gepinnte Alias wird auf das registrierte
-Record normalisiert; auch verschachtelte Ketten sind explizit geprüft.
-Originale C++-Cleanup-Handler werden weiterhin nicht registriert. Allokationsfehler
-und Exceptions in fremden Funktionen sind damit nicht als beherrschbar nachgewiesen.
+Total 45 code ranges, 49 pdata fragments and 24 private TLS redirects. In the case of a shifted list helper, the Unwind chain points to an older byteidentical prolog record. Only this pinned alias is normalized to the registered record; Even nested chains are explicitly tested. Original C++ cleanup handlers will still not be registered. Allocation errors and exceptions in foreign functions are thus not proven to be controllable.
 
-## Noch offen
+## Still open
 
-Die native Itemkopie ist jetzt implementiert und isoliert geprüft. Sie ersetzt
-weiterhin keinen vollständigen Reparaturcommit: Spielhost/Manager/Threadbindung,
-eigentliche Itemänderung, Slot-Invalidierung, Inventarereignisse, echte Effekt-
-und Transportverarbeitung, Auftragszuordnung, Eingabe, Loader und B0 fehlen.
-Der private Heap ist kein nachgewiesener Engine-Allocator. Slot-Invalidierung
-wurde weiter statisch eingegrenzt, aber noch nicht implementiert oder ausgeführt.
+The native item copy is now implemented and tested in isolation. It still does not replace a complete repair commit: game host/manager/thread binding, actual item change, slot invalidation, inventory events, real effect and transport processing, order assignment, input, loader and B0 are missing. The private heap is not a proven engine allocator. Slot invalidation has been further statically confined, but not yet implemented or executed.
 
-Keine Spielprozess-/Save-Zugriffe oder Änderungen der Installation. Reproduktion:
-`./runtime/repair/Test.ps1 -RegistryGameExe "C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert/bin64/CrimsonDesert.exe"`.
-Nachweise: `.local/repair-runtime-v12-{build-test.log,native-result.json,validation.json}`.
-[Phasenstatus](../../PHASENSTATUS.md), [spätere Tests R01–R11](../../TESTCHECKLISTE.md).
+No game process/save accesses or installation changes. Reproduction: `./runtime/repair/Test.ps1 -RegistryGameExe "C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert/bin64/CrimsonDesert.exe"`. Evidence: `.local/repair-runtime-v12-{build-test.log,native-result.json,validation.json}`. [Phasenstatus](../../PHASENSTATUS.md), [Subsequent tests R01–R11](../../TESTCHECKLISTE.md).

@@ -13,7 +13,7 @@ import type { RecoveryListing, RecoveryReview, RecoveryReceipt } from './recover
 import type { BaselineCatalog, BaselinePreview, BaselineSaved } from './baseline-types';
 import type { AuditSnapshot, InstallationInventory, ModInfo, ModPreview, ModRehearsal, ModRequest } from './mod-types';
 function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
-  if (!isTauri()) return Promise.reject({ code: 'desktop_required', message: 'Öffne Crimson Workbench als Desktop-App, um deine lokale Installation zu lesen.' });
+  if (!isTauri()) return Promise.reject({ code: 'desktop_required', message: 'Open Crimson Workbench as a desktop app to read your local installation.' });
   return invoke<T>(command, args);
 }
 export const api = {

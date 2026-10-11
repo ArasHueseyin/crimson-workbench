@@ -1,114 +1,49 @@
 # Crimson Workbench
 
-**Version 0.6.2 Preview:** Windows-x64-Setup und portables Paket für die eigene
-Crimson-Desert-Installation. [Downloads auf GitHub](https://github.com/ArasHueseyin/crimson-workbench/releases)
-und [Installationsanleitung](docs/INSTALLATION.md). Das Setup berücksichtigt
-WebView2; für die fertige App sind keine Entwicklungswerkzeuge erforderlich.
-Einstellungen und Arbeitsdaten liegen im Benutzerprofil. Das Setup bringt
-Live-Items und Zusatzsockel mit und richtet sie im erkannten oder ausgewählten
-Spielordner ein. Dafür sind kein separates ZIP und keine PowerShell-Befehle nötig.
+**Version 0.6.3 Preview** provides a Windows x64 installer and portable package for your own Crimson Desert installation. [Download a release](https://github.com/ArasHueseyin/crimson-workbench/releases) or read the [installation guide](docs/INSTALLATION.md). The setup includes Live Items, Extra Sockets and their loader, detects the Steam game folder, and installs WebView2 if needed. No development tools, separate mod ZIP or PowerShell commands are required for the normal installation.
 
-Der eigene Code steht unter der [MIT-Lizenz](LICENSE). Die Lizenztexte der
-Abhängigkeiten werden mitgeliefert: [Fremdkomponenten](THIRD_PARTY_NOTICES.md).
-Spielarchive, Saves und persönliche Konfigurationen werden nicht verteilt.
+The interface and installer are in **English**. Item names and descriptions automatically follow the installed language in the selected game's Steam manifest. If it cannot be detected, the catalog uses English. You can still choose any of the 15 item languages manually. Separate in-game language overrides and Epic/Game Pass language settings are not detected yet.
 
-Die folgenden Entwicklungsberichte beschreiben auch frühere Versionen; für die
-Installation und Kompatibilität von 0.6.2 gilt die obige Installationsanleitung.
+The original Workbench code uses the [MIT license](LICENSE). Dependencies retain their own licenses, listed in [third-party notices](THIRD_PARTY_NOTICES.md). Game archives, saves and personal configurations are not distributed.
 
-[Phasenübersicht: implementiert, offen und nächste Schritte](PHASENSTATUS.md).
-[Konkrete Testcheckliste](TESTCHECKLISTE.md).
-[Weitergabe, Voraussetzungen und GitHub-Installation](docs/WEITERGEBEN.md).
+Development reports also describe earlier versions. For current installation and compatibility requirements, use the installation guide above. See the [phase overview](PHASENSTATUS.md), [test checklist](TESTCHECKLISTE.md) and [distribution guide](docs/WEITERGEBEN.md) for implementation status and remaining validation.
 
-**Buildhinweis 22.09.2026:** Die Installation wurde auf Steam 25455892 / EXE
-1.0.0.2949 aktualisiert. Workbench v0.5.9 unterstützt dessen Tabellen zusätzlich
-zum bisherigen Build 25381195 / 1.0.0.2944. Die native Reparaturanbindung ist
-weiterhin gesondert offen. [Buildvergleich und Grenzen](docs/BUILD_SUPPORT.md).
+## Features and limits
 
-Crimson Workbench hat eine **Tauri-2-Desktopoberfläche mit Itemdatenbank**:
-6.816 Gegenstände durchsuchen, echte Icons und alle Felder ansehen, nach Typ,
-Kategorie, Tier, Stapelbarkeit und Stat-ID filtern sowie einzelne Items als JSON
-speichern. Deutsch ist Standard; 15 Itemsprachen sind verfügbar.
+The Tauri 2 desktop app includes an **item database** with 6,816 items, original icons, typed and raw fields, filters for type, category, tier, stackability and stat ID, and JSON export. Catalog support covers the observed Steam builds 25381195 / EXE 1.0.0.2944, 25455892 / EXE 1.0.0.2949 and 25477059 / EXE 1.0.0.2976, with matching data files. See [build support](docs/BUILD_SUPPORT.md).
 
-Der neue **Herstellungsplan** berechnet 1.108 Rezepte mit Materialbaum,
-Materialalternativen und gemeinsamen Vorräten. Rezeptlinks führen aus den
-Itemdetails direkt zum Rechner. [Bedienung und Formatnachweise](docs/CRAFTING.md).
+The **crafting planner** covers 1,108 recipes, material trees, alternative ingredients and shared stock. Recipe links in item details open the planner directly. See [crafting](docs/CRAFTING.md).
 
-Die **Modwerkstatt (v0.5.9)** plant Shopbestände, Zusatzartikel,
-täglichen Refresh, Dropmengen/-chancen und positive Trust-Zuwächse.
-Neu sind Spawn-Gruppen, Reittiere/Blackstar, Inventar und Lager, Stacks,
-Haltbarkeit, Skillkosten/-cooldowns und Item-Stats/Buffs mit Vorlagen.
-Neue Enchant-Stufen lassen sich aus Originalstufen kopieren. Die Buffmatrizen
-aller 2.069 Skills sind mit Rohwerten und vollständigen Originalbytes inspizierbar.
-Zusätzlich sind 87.697 Basis-/Ressourcenfelder benannt, nach Namen oder Werten
-durchsuchbar und schreibgeschützt sichtbar. Der Leser folgt jetzt durchgehend
-der Tabellenstruktur, ohne eine wiederholte Skillkennung zu suchen.
-Neun Beschwörungseffekte und ein AddSubLevel-Effekt sind jetzt in einzelne
-Felder aufgeteilt; die Suche findet auch Feldnamen. Bestätigte 64-Bit-Buffwerte
-sind einzeln editierbar. Zwei Spawn-Patrouillen haben
-Reset-Faktoren und Einzelwerte; die Stadtflug-Abstiegsregel wird gezielt aufgehoben.
-108 Gebietswiederbesetzungsregeln lassen sich getrennt skalieren oder einzeln
-bearbeiten. Inventar-/Lagerwerte sind vorläufig auf 1.460 Plätze begrenzt,
-abgeleitet vom Standarddeckel eines bestätigten Inventar-Codepfads.
-Neu in v0.5.8: zusätzliche Ausrüstungs- und Skill-Eigenkosten; sieben getrennte Kostenkategorien, Einzelwerte und gemeinsame Nullkosten-Schalter.
-[Prüfung aller Phase-5-Restpunkte](docs/PHASE5_REMAINING.md).
-Phase 5 ist teilweise umgesetzt: allgemeine NPC-Respawn-Timer,
-Kostenfreie Reparatur und vollständige semantische Skill-Buffbearbeitung bleiben offen.
-Ein als unsicher nachgewiesenes Nullsetzen von Reparaturmaterialkosten wurde
-in v0.5.5 aus dem Writer entfernt; alte Vorlagen lassen sich gezielt korrigieren.
-[B4–B11: Bedienung und genaue Grenzen](docs/ADVANCED_MODS.md).
-Individuelle Artikelsets und Refresh-Ausnahmen pro Händler, Dropsetauswahl,
-Einzelausnahmen und manuelle Dropgarantien sind verfügbar. Sie zeigt alle
-Feldänderungen und geplanten Dateien, exportiert noch nicht angewendete Overlays
-und probt Apply, Wiederanwendung, Restore und Abbruch-Recovery an einer Projektkopie.
-Der Transaktionskern unterstützt mehrere Overlaygruppen; unterbrochene Projektproben
-lassen sich per CLI und über die neue
-[Sicherungs-/Wiederherstellungsansicht](docs/BACKUP_RECOVERY.md) prüfen und gezielt
-zurücksetzen. Die Rücknahme verlangt eine aktuelle Vorschau und eine vorhandene,
-geprüfte Sicherung. Neue Windows-Proben halten Start-/Quell-/
-Backupsperren an eigenen Testdateien und verweigern simulierte Quellupdates.
-Neu ist die lesende [Installationsprüfung](docs/INSTALLATION_CHECK.md): vollständige
-Datei-/Größeninventur gegen die lokal installierten Steam-Depots, EXE-Liste und
-Abweichungsbericht. Die großen Archive bleiben dabei ungeöffnet.
-Separat verfügbar: [vollständige Inhaltsprüfung](docs/CONTENT_AUDIT.md) nach dem
-Spielen, mit Fortschritt, Abbruch, SHA-1-/SHA-256-Vergleich und Berichtsexport.
-Exportierte Prüfberichte lassen sich jetzt mit einer geprüften Registry-Kopie
-als [beobachteter Ausgangsstand](docs/BASELINE.md) dauerhaft im Projekt speichern.
-Beim Wiederöffnen werden die Sicherung und der aktuelle Metadatenstand geprüft.
-Neu ist die [Live-Anwendung mit Restore](docs/LIVE_APPLY.md): explizite Einrichtung,
-Dateivorschau, vollständiger Quellvergleich unter Startschutz, Apply/Reapply und
-Wiederherstellung. **Für deine Installation noch nicht eingerichtet oder ausgeführt.**
-Der explizite Basiswechsel nach Updates archiviert eigene Dateien und Historien;
-die Inventur weist sie separat aus. [Fremde Zusatzdateien](docs/FOREIGN_FILES.md)
-können nach exakter Vorschau ausdrücklich zum unveränderten Beibehalten bestätigt
-werden. Fremde Originaländerungen bleiben gesperrt. Die Entwicklung von Phase 4
-ist abgeschlossen; die manuelle Spielabnahme steht noch aus. Unterstützt
-sind Shopergänzungen bei 208 Händlern und Chancenänderungen in 12.306 Dropsets.
-Manuelle Spieltests sind auf Nutzerwunsch bis zum Ende aller Entwicklungsphasen
-zurückgestellt; der Entwicklungsstand und die offene Spielabnahme werden getrennt geführt.
-[Bedienung, Abdeckung und offene Freigaben](docs/MODS.md).
+The **Mod Workshop** previews shop inventories, additional items, daily refresh, drop quantities and chances, and positive trust gains. It supports 208 vendors and 12,306 drop sets, including individual vendor overrides, refresh exceptions, drop-set selection and explicit guaranteed drops. It exports unapplied overlays and rehearses apply, reapply, restore and interruption recovery on workspace copies. See [mod editing](docs/MODS.md).
 
-Außerhalb der ausdrücklich gestarteten B0-Live-Abläufe wird die Installation nur
-gelesen. Konkrete Weltfundorte,
-vollständige Händlerquellen und Save-Auswertung bleiben offen. Der CLI-Core
-bleibt separat nutzbar.
+Advanced editing covers spawn groups, mounts and Blackstar, inventory and storage, item stacks, durability, skill costs and cooldowns, item stats and buffs, and new enchantment levels copied from original levels. All 2,069 skill buff matrices expose raw values and original bytes. Another 87,697 named base/resource fields can be searched and inspected. Nine summon effects and one AddSubLevel effect have individual decoded fields; confirmed 64-bit buff values can be edited separately. Two spawn patrols expose reset factors, and 108 territory reoccupation rules can be edited or scaled. The city flight departure rule remains excluded. Inventory and storage values are provisionally capped at 1,460 slots, based on a confirmed inventory code path. Seven separate cost categories expose individual values and zero-cost switches. See [advanced mods](docs/ADVANCED_MODS.md) and [remaining phase 5 work](docs/PHASE5_REMAINING.md).
 
-## Desktop starten
+General NPC respawn timers, free repair and complete semantic skill-buff editing remain unfinished. An unsafe repair-material zeroing operation was removed in v0.5.5; older presets can be corrected. Development checks and manual in-game validation are tracked separately. The latter remains pending where noted in the feature documentation.
 
-Für Freunde sind die fertigen [Release-Downloads](https://github.com/ArasHueseyin/crimson-workbench/releases)
-vorgesehen. Beim Selbstbau liegt die Windows-App unter
-`target/release/crimson-workbench.exe`. Im Projektordner starten:
+The transaction system provides these separate, explicit operations:
+
+- [Backup and recovery](docs/BACKUP_RECOVERY.md): check a workspace rehearsal and preview its rollback before restoring a verified backup.
+- [Installation check](docs/INSTALLATION_CHECK.md): compare file names and sizes with locally installed Steam depot metadata, without opening large archives.
+- [Content audit](docs/CONTENT_AUDIT.md): compare SHA-1/SHA-256 hashes with progress, cancellation and report export while the game is closed.
+- [Observed baseline](docs/BASELINE.md): retain an exported audit and verified registry copy, and recheck the backup and current metadata when reopening it.
+- [Live apply and restore](docs/LIVE_APPLY.md): review files, check sources under launch protection, then explicitly apply, reapply or restore. A matching reading schema alone does not establish vanilla origin or authorize a write.
+- [Foreign files](docs/FOREIGN_FILES.md): review and explicitly retain unchanged additional files. Conflicting modifications to original files remain blocked.
+
+Workspace rehearsals test launch, source and backup locks on their own test files and reject simulated source updates. Changing a live baseline after an update archives owned files and history. Outside explicitly requested edit operations, the app reads the installation. Comprehensive world locations, merchant-source mapping and save analysis remain unfinished; supported save features are documented separately.
+
+The optional Live Items and Extra Sockets modules have a narrower compatibility requirement: **the exact supported EXE 1.0.0.2976**. Their in-game validation remains pending. See [Live Items](docs/LIVE-ITEMS.md), [mount editing](docs/REITTIERE.md) and the installation guide for feature-specific requirements.
+
+## Run or build the desktop app
+
+For normal users, use the [release downloads](https://github.com/ArasHueseyin/crimson-workbench/releases). A local build produces `target/release/crimson-workbench.exe`. From a development checkout:
 
 ```powershell
 .\Start-Workbench.ps1
 ```
 
-Die App benötigt keinen laufenden Entwicklungsserver. Installierte und portable
-Starts verwenden einen eigenen Benutzer-Datenordner; mit `--project "C:\Pfad\zu\Daten"`
-lässt er sich überschreiben. Ein Entwicklungscheckout wird weiterhin erkannt.
-Windows verwendet die installierte WebView2-Laufzeit.
-[Bedienung, Grenzen und Architektur](docs/DESKTOP.md).
+The app runs without a development server. Installed and portable versions store settings, caches, backups and exports in `%LOCALAPPDATA%\CrimsonWorkbench`. Override that folder with `--project "C:\Path\To\Data"`. Development checkouts remain supported. Windows uses WebView2. See [desktop architecture and usage](docs/DESKTOP.md).
 
-Selbst bauen: Node 22.22+, Rust 1.95+, Windows SDK und C++-Buildwerkzeuge:
+To build locally, install Node 22.22+, Rust 1.95+, the Windows SDK and C++ build tools:
 
 ```powershell
 cd app
@@ -116,19 +51,11 @@ npm ci
 npm run desktop:build
 ```
 
-`npm run tauri dev` startet die Entwicklungsumgebung. `npm run dev` allein
-startet nur das Frontend: ohne Tauri werden ausdrücklich keine Spieldaten angezeigt.
+For a complete installer with freshly built native modules, follow the [distribution guide](docs/WEITERGEBEN.md). `npm run tauri dev` starts the development app; `npm run dev` starts only the frontend, which cannot load game data without Tauri.
 
-Die CLI liest Spielarchive und schreibt JSON-Ausgaben, Overlaykandidaten,
-Probekopien und SQLite-Caches nur unter
-`.local/` oder `exports/` im Projekt. Spiel- und Save-Verzeichnisse sind als
-Ausgabeziele gesperrt. Ausschließlich die neuen `live-setup`/`live-execute`-Befehle
-verwenden den getrennten B0-Schreibpfad; Save-Dateien sind weiterhin ausgeschlossen.
-CDUMM bleibt eine technische Referenz; es wird nicht benötigt oder aufgerufen.
+## CLI
 
-## Start in PowerShell
-
-Im Projektordner, mit Rust 1.95 oder neuer und installierten C++-Buildwerkzeugen:
+From the repository root, with Rust 1.95+ and the C++ build tools installed:
 
 ```powershell
 cargo build --workspace --locked
@@ -137,22 +64,13 @@ cargo run --locked -p cd-cli -- fingerprint
 cargo run --locked -p cd-cli -- search Stumpfpfeil
 ```
 
-Die vorhandene lokale `.env` enthält die gefundenen Spiel-/Save-Pfade. Auf einem
-anderen Rechner dienen `.env.example`, `CD_GAME_DIR` und `CD_SAVE_DIR` zur
-Konfiguration. Ohne expliziten Spielpfad versucht die CLI Steam, Epic und Game Pass.
-Deutsch ist die Standardsprache; `languages` zeigt die 15 hinterlegten Itemsprachen.
-Die Suche legt ihren Cache unter `.local/index/items.sqlite` an.
+Use `.env.example`, `CD_GAME_DIR` and `CD_SAVE_DIR` to configure paths on another computer. Without an explicit game path, the CLI tries Steam, Epic and Game Pass discovery. The CLI still defaults to German; `languages` lists the 15 catalog languages. Search caches are created under `.local/index/items.sqlite`.
 
-**Umfang:** `iteminfo` wird strukturell vollständig mit typisierten Feldern und
-Rohbereichen gelesen. Bei 13 weiteren Tabellen werden zunächst nur Index und
-uninterpretierte Datensatzblöcke geprüft. Das sind noch keine Shop-, Rezept- oder
-Skill-Editoren. Ein passendes Leseschema bestätigt weder Vanilla-Herkunft noch die
-Freigabe für Änderungen am Spiel. Unbekannte Builds werden nicht semantisch gelesen.
+The CLI writes ordinary JSON exports, overlay candidates, rehearsal copies and SQLite caches under `.local/` or `exports/`. Game and save folders are rejected as ordinary output destinations. The separate `live-setup`/`live-execute` path handles explicit B0 live transactions. CDUMM is a technical reference and is neither required nor invoked.
 
-[CLI-Anleitung und Core-API](docs/CORE.md) erklärt Einzelitems, Felddumps,
-Roundtrips, Buildvergleiche und die Grenzen der Implementierung.
+`iteminfo` has a complete structural reader with typed fields and raw regions. The initial generic reader for 13 other tables validates indexes and uninterpreted records; dedicated feature readers build on that foundation. A matching schema does not confirm vanilla provenance or permission to edit. Unknown builds are not read semantically. See the [CLI and core API guide](docs/CORE.md).
 
-## Prüfungen und Dokumentation
+## Tests and documentation
 
 ```powershell
 npm test --prefix app
@@ -162,19 +80,12 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
-Der aktuelle Ausführungsnachweis steht im [Fortschrittsbericht](docs/PROGRESS.md).
-Windows-/Linux-CI ist konfiguriert; Linux wurde lokal mangels laufendem
-Docker-Daemon nicht ausgeführt. Frontend- und native UI-Prüfungen sind in
-[TESTING.md](docs/TESTING.md) beschrieben.
+Execution evidence is recorded in the [progress report](docs/PROGRESS.md). CI checks Windows and Linux; release packaging runs on Windows. Frontend and packaged-app checks are described in [testing](docs/TESTING.md).
 
-- [Spezifikation mit eigener Apply-Engine](SPEC.md)
-- [Formate und lokale Buildbeobachtung](docs/FORMATS.md)
-- [Machbarkeit aller vorgesehenen Funktionen](docs/FEASIBILITY.md)
-- [Entwurf der späteren Apply-Engine](docs/APPLY_DESIGN.md)
-- [Prüfplan und manuelle Spieltests](docs/TESTING.md)
-- [Quellen und Lizenzen](CREDITS.md)
+- [Specification](SPEC.md)
+- [Formats and observed builds](docs/FORMATS.md)
+- [Feature feasibility](docs/FEASIBILITY.md)
+- [Apply-engine design](docs/APPLY_DESIGN.md)
+- [Credits and licenses](CREDITS.md)
 
-`.env`, `.local/`, `exports/`, `.research/` und lokal bereitgestellte `reference/mods/`-Inhalte
-bleiben außerhalb von Git. Spielarchive, extrahierte Tabellen, Texturen und Saves
-werden nicht mitgeliefert. Nach der Phase folgt die vorgesehene Durchsicht; die
-nächste Phase beginnt nicht automatisch.
+`.env`, `.local/`, `exports/`, `.research/` and local contents of `reference/mods/` are excluded from Git. Game archives, extracted tables, textures and saves are not included.

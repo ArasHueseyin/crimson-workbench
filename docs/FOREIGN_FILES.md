@@ -1,85 +1,37 @@
-# Fremde Mods und Zusatzdateien – v0.4.10
+# Foreign mods and additional files – v0.4.10
 
-Workbench trennt Originaldateien, nachgewiesene eigene Dateien und fremde
-Zusätze. Unbekannte Dateien sind nicht automatisch schädlich oder Mods: Auch
-Logs, Konfigurationen und Reste anderer Manager können zusätzliche Dateien sein.
-Ohne ausdrückliche Bestätigung blockieren sie Live-B0.
+Workbench separates original files, proven own files and third-party additions. Unknown files are not automatically harmful or mods: Logs, configurations and remains of other managers can also be additional files. Without explicit confirmation, they block Live-B0.
 
-## Unterstützter Umgang
+## Assisted handling
 
-**Modwerkstatt → Fremde Mods & Zusatzdateien → Zusatzdateien prüfen** erstellt
-auf Anforderung eine genaue Liste mit Pfaden, Größen und SHA-256-Werten. Hierbei
-werden ausschließlich Zusätze gehasht; Originalarchive werden nicht zusätzlich
-vollständig gelesen. Die Prüfung und Bestätigung verändern keine Spieldatei und
-nehmen keine Start-/Quellsperren. Sie sind auch während des Spielens möglich.
-Die getrennten Live-Schreibabläufe bleiben währenddessen gesperrt.
+**Mod Workshop → Foreign Mods & Additional Files → Check Additional Files** creates an exact list of paths, sizes and SHA-256 values on request. Only additives are hashed; Original archives are not additionally read in full. The checking and confirmation does not change any game file and does not take any start/source locks. They are also possible during play. Meanwhile, the separate live writing processes remain blocked.
 
-Nach dem Lesen der Liste die Checkbox zum Beibehalten setzen und **Geprüfte
-Zusatzdateien bestätigen** wählen. Vor dem Speichern wird die Liste erneut
-aufgebaut und gehasht; veraltete Vorschauen werden ohne automatischen Retry
-abgewiesen. Bestätigt wird genau dieser Dateisatz, keine beliebige künftige
-Version und kein ganzer Ordner mit ungeprüften späteren Inhalten.
+After reading the list, set the checkbox to keep and select **Confirm checked additional files**. Before saving, the list is rebuilt and hashed; Outdated previews are rejected without automatic retry. This fileset is confirmed, not any future version and not an entire folder with unchecked later content.
 
-Die Bestätigung wird ausschließlich im Projekt gespeichert. Sie ist kein
-Vanilla-Nachweis und keine Zusage zur technischen Kompatibilität fremder Mods.
-Sie startet weder eine Inhaltsprüfung noch Apply. Anschließend Dateiliste und
-Live-Vorschau neu laden. **Bestätigung zurücknehmen** widerruft sie, ohne die
-Zusatzdateien zu löschen oder zu ändern. Live-Vorgänge erfordern danach wieder
-einen zulässigen Bestand; bei weiterhin vorhandenen Zusätzen gegebenenfalls
-neu bestätigen. Ein leerer Bestand braucht keine Bestätigung.
+The confirmation is stored exclusively in the project. It is not a vanilla proof and no commitment to the technical compatibility of foreign mods. It does not start a content check or Apply. Then reload file list and live preview. **Remove Confirmation** revokes it without deleting or modifying the additional files. Live operations then require a permitted stock again; if additions are still present, reconfirm if necessary. An empty stock does not need confirmation.
 
-## Grenzen der Bestätigung
+## Confirmation limits
 
-- Bestätigbar sind zusätzliche gewöhnliche Dateien und Ordner außerhalb der
-  Depot-Originale, der Registry-/Metadatenbereiche und privater Workbench-Pfade.
-  Dazu können unregistrierte PAZ-Gruppen, Loaderdateien und Konfigurationen gehören.
-- Eine fremd modifizierte Registry oder registrierte Fremdgruppen werden nicht
-  übernommen. Zuerst den fremden Mod mit seinem Manager zurücknehmen und nach
-  dem Spielen Steam-Dateiprüfung abschließen. Verbleibende unregistrierte Zusätze
-  können danach separat bestätigt werden. Workbench verschmilzt keine fremden
-  Tabellenänderungen mit den eigenen Modulen.
-- Fehlende, abweichende oder veränderte Originale bleiben gesperrt. Eine
-  Zusatzbestätigung kann Originalhashes, Vanilla-Herkunftsbestätigung, bekannte
-  Leseschemata, Backup, Prozessschutz oder aktuelle Dateivorschauen nicht umgehen.
-  Gleiche Dateigröße allein beweist keinen unveränderten Originalinhalt.
-- Symlinks/Junctions, Hardlinks, Savepfade und zusätzlich konfigurierte geschützte
-  Unterordner werden nicht zum Beibehalten
-  zugelassen. Saveinhalte werden dabei nicht gelesen. Grenzen: 512 Dateien,
-  1.024 zusätzliche Ordner, zusammen 512 MiB und 128 Protokolleinträge.
-  Der letzte Eintrag bleibt einem Widerruf vorbehalten.
+- Confirmable are additional ordinary files and folders outside the
+Depot originals, registry/metadata domains and private Workbench paths. This can include unregistered PAZ groups, loader files and configurations.
+- A foreign modified registry or registered foreign groups will not
+taken over. First, take back the foreign mod with its manager and complete Steam file check after playing. Remaining unregistered additives can then be confirmed separately. Workbench does not merge any foreign table changes with its own modules.
+- Missing, deviating or modified originals remain blocked. One
+Additional confirmation cannot bypass original hashes, vanilla origin confirmation, known reading schemes, backup, process protection or current file previews. Same file size alone does not prove unchanged original content.
+- Symlinks/Junctions, hardlinks, savepaths and additionally configured protected
+Subfolders shall not be allowed to be maintained. Save contents are not read. Boundaries: 512 files, 1,024 additional folders, together 512 MiB and 128 log entries. The last entry is reserved for revocation.
 
-## Einbindung in B0 und Berichte
+## Integration into B0 and reports
 
-Inventur und Inhaltsprüfung weisen bestätigte Fremddateien separat aus.
-Originale Depotdateien können niemals durch diese Zuordnung aus ihrem Vergleich
-verschwinden, auch wenn Steam später einen früher zusätzlichen Pfad übernimmt.
-Die Inventur prüft bei der Zuordnung nur Metadaten; ein gleich großer nachträglicher
-Inhaltswechsel wird spätestens durch die geschützte Live-Prüfung abgewiesen.
-Ein Bericht mit `foreign_approval` prüft seine aufgelisteten Depot-Originale und
-verweist auf die separate Bestätigung; er zertifiziert die Fremddateien nicht.
-Alte Berichte ohne das optionale Feld bleiben lesbar.
+Inventory and content verification identify confirmed external files separately. Original repositories can never disappear from their comparison by this assignment, even if Steam later adopts an additional path earlier. The inventory checks only metadata when mapping; an equally large subsequent change of content is rejected at the latest by the protected live check. A report with `foreign_approval` checks its listed custodial originals and refers to the separate confirmation; it does not certify the foreign files. Old reports without the optional field remain readable.
 
-Einrichtung, Apply/Reapply, Restore und Basiswechsel nehmen die bestätigten Dateien
-in ihren frischen SHA-256-Vergleich und die gehaltenen Quellsperren auf. Zusätzliche
-EXEs gehören zum Startschutz, auch mit großgeschriebener Dateiendung. Leere Dateien
-werden ebenfalls mit ihrem tatsächlichen Hash geprüft. Fremdgruppen werden bei der
-Vergabe eigener Gruppen-IDs ausgespart und bleiben unregistriert, sofern sie zuvor
-unregistriert waren. Restore entfernt ausschließlich eigene Änderungen.
+Setup, Apply/Reapply, Restore and Base Change record the confirmed files in their fresh SHA-256 comparison and the held source locks. Additional EXEs belong to the launch protection, even with capitalized file extension. Empty files are also checked with their actual hash. Third-party groups are omitted when assigning their own group IDs and remain unregistered if they were previously unregistered. Restore only removes its own changes.
 
-Live-Vorschauen binden außerdem die aktuelle Bestätigung. Änderung oder Widerruf
-macht sie ungültig; ein parallel über die CLI ausgelöster Widerruf wird an den
-Schutzgrenzen des laufenden Vorgangs erkannt. Die Desktop-App verweigert Änderungen
-der Bestätigung während ihres eigenen Live-Auftrags. Es gibt keinen automatischen
-Schreibversuch nach Fehlern. Bei einem unterbrochenen Basiswechsel müssen die
-bereits bestätigten Fremddateien weiterhin exakt passen; ihre erneute Bestätigung
-während einer unvollständigen eigenen Historie wird nicht angeboten.
+Live previews also bind the current confirmation. Amendment or revocation shall invalidate them; a revocation triggered in parallel via the CLI is recognized at the protective limits of the ongoing process. The desktop app refuses to make changes to confirmation during its own live job. There is no automatic writing attempt for errors. If the base change is interrupted, the already confirmed third-party files must continue to fit exactly; their reconfirmation during an incomplete own history is not offered.
 
-Unveränderliche Datensätze liegen unter
-`.local/foreign/<Installationskennung>/<laufende-Nummer>.json`. Der jüngste
-Datensatz bestimmt die aktuelle Bestätigung; ein leerer Satz ist ein Widerruf.
-Beschädigte oder lückenhafte Protokolle erlauben keine Übernahme.
+Immutable data sets are below `.local/foreign/<Installationskennung>/<laufende-Nummer>.json`. The most recent data set determines the current confirmation; An empty sentence is a revocation. Damaged or incomplete protocols do not allow takeover.
 
-## CLI und spätere manuelle Abnahme
+## CLI and later manual acceptance
 
 ```powershell
 cargo run --release -p cd-cli --locked -- foreign-preview
@@ -87,9 +39,4 @@ cargo run --release -p cd-cli --locked -- foreign-confirm --review-id <review.re
 cargo run --release -p cd-cli --locked -- foreign-revoke --approval-id <approval_id>
 ```
 
-Nach Abschluss aller Entwicklungsphasen manuell prüfen: bekannte Zusatzdateien
-auflisten und bestätigen, eigenen Mod anwenden, Fremddateien unverändert vorfinden,
-eigene Änderungen zurücknehmen und die Bestätigung widerrufen. Fremde Registry,
-geänderte Originale und geänderte Zusatzinhalte müssen weiterhin die entsprechenden
-Vorgänge sperren. Die Spielwirkung fremder Mods ist durch die automatisierten
-Tests nicht bewiesen. [Gesamter Live-Ablauf](LIVE_APPLY.md).
+After completion of all development phases, check manually: list and confirm known additional files, apply your own mod, find foreign files unchanged, withdraw your own changes and revoke the confirmation. Third-party registries, modified originals and modified additional content must continue to block the corresponding processes. The game effect of foreign mods is not proven by the automated tests. [Entire live process](LIVE_APPLY.md).

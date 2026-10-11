@@ -1,237 +1,85 @@
-# Phase 5 – Prüfung aller Restpunkte
+# Phase 5 – Testing of all remaining points
 
-Stand: 23.09.2026, v0.5.9. Grundlage ist die überarbeitete SPEC, B4–B11.
-Steam 25455892 / EXE 1.0.0.2949 ist jetzt für Datenlesen und Tabellenplanung
-unterstützt. 57 von 61 verwendeten Dateien sind bytegleich; nur Stage-/Questdaten
-samt Headern ändern sich. Parser und Erhalt ungewählter Datensätze sind geprüft.
-Native Reparaturmethoden müssen getrennt neu belegt werden.
-[Buildvergleich](BUILD_SUPPORT.md), [Testcheckliste](../TESTCHECKLISTE.md).
+Status: 23.09.2026, v0.5.9. The basis is the revised SPEC, B4–B11. Steam 25455892 / EXE 1.0.0.2949 is now supported for data reading and table planning. 57 files used by 61 are byte-identical; Only stage/quest data and headers change. Parser and receipt of unelected data sets are checked. Native repair methods must be reassigned separately. [Comparison of build](BUILD_SUPPORT.md), [Testcheckliste](../TESTCHECKLISTE.md).
 
-**Phase 5 ist nicht vollständig abgeschlossen.** Die folgende Prüfung trennt
-implementierte Funktionen, technische Lücken und die vom Nutzer verschobene
-Spielabnahme. Reparatur-Laufzeitentwicklung und eine eigene Reparaturaktion sind
-freigegeben. Aktion, Leser, Schreiber und gemeinsamer Transaktionsadapter sind
-entwickelt; vollständige Inventarereignisse, echte Engine-Anbindung und Installation
-fehlen. Phase 6 und der optionale
-Farmmodus-Hotkey wurden nicht begonnen.
+**Phase 5 is not completely complete.** The following check separates implemented functions, technical gaps and the in-game validation moved by the user. Repair runtime development and own repair action are released. Action, readers, writers and common transaction adapters are developed; Complete inventory events, real engine connection and installation are missing. Phase 6 and the optional Farm Mode hotkey were not started.
 
-| Punkt | Ergebnis der Restprüfung | Verbleibender Nachweis |
+|Punkt|Result of the remaining test|Remaining proof|
 |---|---|---|
-| B4 Spawnzahlen und Einzelausnahmen | Terrain-/Pool-Gruppen und Limits sind implementiert, inklusive Multiplikatoren und Einzelfeldern. | Sichtbare Wirkung, aktive Populationen und Questabhängigkeiten im Spiel. |
-| B4 Respawn-Zeiten | Zwei Stage-Patrouillen und 108 Fraktions-Wiederbesetzungsregeln bearbeitbar. Ein allgemeiner NPC-Timer fehlt weiterhin. | Tabellenquelle und Einheit eines allgemeinen Timers. `_spawnPercent` ist Wahrscheinlichkeit; `_respawnTimeSecond` gehört zu gespeichertem NPC-Zustand; `_spawnIntervalTime` gehört zu Timeline-Beschwörungen. Diese Felder sind kein Ersatz. |
-| B4 Städte, Reitdauer und Cooldown | MainField-Freigabe, Stadt-Laufregel, Stadtflug-Bedingung sowie Riding-Charakterwerte implementiert. | Spielabnahme der einzelnen Reittiere. |
-| B5 Blackstar | Cooldown, freie Dauer und Presets sowie Regions-/Stadtflug-Regeln implementiert. | Regionswechsel im Spiel; bereits aktive Cooldowns im Save werden nicht migriert. Quest-/Zwischensequenzabstiege sind eigene Regeln. |
-| B6 Inventar und Lager | Jetzt neun Bereiche: Character, CampWareHouse, WareHouse, Kuku und fünf Housing-Lager. Start-/Maximalplätze frei eingegeben, mit Verhältnisprüfung. | 1.460 ist der belegte Standarddeckel eines Inventarpfads. Andere Engine-/Save-Grenzen und Konfigurationsabweichungen sind nicht vollständig bewiesen. Spezialcontainer bleiben geschützt. |
-| B7 Stapel | Globale Größe, Kategorieauswahl, Einzelwerte und Experimentalschalter für zustandsabhängige Items implementiert. | Universelles Engine-Maximum unbekannt. 1.000.000 bleibt ausdrücklich eine Workbench-Grenze. `applyMaxStackCap` begrenzt in einem belegten Pfad die Gesamtmenge; es bleibt unverändert. Spieltests für gewöhnliche und experimentelle Items getrennt durchführen. |
-| B8 Haltbarkeitsverlust | Ergänzt: Alle 122 Items mit endlicher Haltbarkeit erhalten den im Engine-Updater bestätigten Sentinel 65.535. EquipType-Verschleißfaktoren werden zusätzlich auf 0 gesetzt. | Spielabnahme, insbesondere Spezialausrüstung und gesockelte Items. Bereits verbrauchte oder zerstörte Exemplare werden nicht wiederhergestellt. |
-| B8 Reparaturkosten 0 | App weiterhin gesperrt. 0.23.0 verbindet Batchprüfung, native Nachherkopien, Feldschreiber und Meldungsadapter. Ausrüstungsweg sowie Inventar-Paketserializer, Streamauswahl und Client-Ack isoliert geprüft. Native Item-/Speicherobjekt-Konverter erhalten reparierte Haupt-/Sockelwerte und Färbedaten; No-Wear-Normalisierung geprüft. Speicherdispatcher, Steam-Zulassung, Queue-Marker und Dateischreibhelfer sowie Pufferaufbereitung/LZ4 auf privaten Daten geprüft; nachgelagerte Verarbeitung und Dateiempfänger bleiben künstlich. | Vollständige serverseitige Inventarroute, erfolgreicher Pool-Transport, reguläre Speicherung/Abschlussbestätigung und übrige Zusatzdaten, echte Effektverarbeitung/Transport/UI und Auftragsrückmeldungen. Gültiger Spieler-/Manager-/Engine-Thread-Host, Eingabe, Loader und B0-Installation fehlen; kein installierbarer Mod. |
-| B9 Ausdauer/Spirit | Sieben Kategorien, einschließlich 0: Skill-/Fahrerressourcen, 31 Eigenverbrauchswerte zweier Skills und 36 Zusatzkosten in 33 Ausrüstungs-Buffs. Positive Regeneration bleibt erhalten; Einzelausnahmen sind möglich. | Kategorien aus internen Namen abgeleitet. Kosten außerhalb der gelesenen Ressourcenlisten sind nicht als abgedeckt nachgewiesen; keine universelle Unlimited-Zusage. |
-| B10 Skills | Alle 2.069 Skills, vollständige Feld-/Rohdateninspektion, globale/individuelle Cooldowns und bestätigte numerische Werte bearbeitbar. | Unbekannte Bedeutungen/Einheiten bleiben gemäß SPEC roh. Referenzen und Strukturzähler sind keine frei editierbaren Zahlen. |
-| B11 God-Items | Stats, kompatible Buffs, Kopieren/Bearbeiten zusätzlicher Enchant-Zeilen und wiederverwendbare Vorlagen implementiert. | Spielabnahme. Tabellenstufen sind kein freigeschalteter Upgradeweg und keine Änderung bestehender Save-Instanzen. |
+|B4 Spawn numbers and individual exceptions|Terrain/pool groups and limits are implemented, including multipliers and individual fields.|Visible impact, active populations and quest dependencies in the game.|
+|B4 Respawn times|Two stage patrols and 108 faction replacement rules can be edited. A general NPC timer is still missing.|Table source and unit of a general timer. `_spawnPercent` is probability; `_respawnTimeSecond` belongs to stored NPC-Zustand; `_spawnIntervalTime` belongs to timeline summons. These fields are not a substitute.|
+|B4 Cities, Riding Duration and Cooldown|MainField release, City Run Rule, City Flight Condition and Riding Character Values are implemented.|in-game validation of the individual mounts.|
+|B5 Blackstar|Cooldown, free duration and presets as well as regional/city flight rules are implemented.|change of region in the game; Already active cooldowns in the save are not migrated. Quest/intersequence descents are their own rules.|
+|B6 Inventory and stock|Now nine areas: Character, CampWareHouse, WareHouse, Kuku and five housing warehouses. Start/maximum seats freely entered, with ratio check.|1,460 is the occupied standard lid of an inventory path. Other engine/save limits and configuration deviations are not fully proven. Special containers remain protected.|
+|B7 Stapel|Global size, category selection, individual values and experimental switches for state-dependent items are implemented.|Universal engine maximum unknown. 1,000,000 explicitly remains a Workbench limit. `applyMaxStackCap` limits the total amount in a occupied path; it remains unchanged. in-game tests perform separately for ordinary and experimental items.|
+|B8 Loss of durability|Added: All 122 items with finite durability receive the Sentinel 65,535 confirmed in the Engine Updater. EquipType wear factors are additionally set to 0.|in-game validation, especially special equipment and socketed items. Already consumed or destroyed specimens are not restored.|
+|B8 Repair costs 0|The app is still blocked. 0.23.0 combines batch checking, native post-copies, field recorders and message adapters. Equipment path as well as inventory package serializer, stream selection and client-ack isolated checked. Native item/storage object converters receive repaired main/socket values and dye data; No-wear normalization is tested. Save dispatchers, Steam authorisation, queue markers and file-writing helpers, and buffer preparation/LZ4 checked on private data; Downstream processing and file recipients remain artificial.|Complete server-side inventory route, successful pool transport, regular storage/confirmation of completion and other additional data, real effect processing/transport/UI and order feedback. Valid player/manager/engine thread host, input, loader and B0 installation missing; Not an installable mod.|
+|B9 Endurance/Spirit|Seven categories, including 0: skill/driver resources, 31 self-consumption values of two skills and 36 additional costs in 33 equipment buffs. Positive regeneration is maintained; Individual exceptions are possible.|Categories derived from internal names. Costs outside the read resource lists are not proven to be covered; There is no universal unlimited commitment.|
+|B10 Skills|All 2,069 skills, complete field/raw data inspection, global/individual cooldowns and confirmed numerical values can be edited.|Unknown meanings/units remain raw according to SPEC. References and structure counters are not freely editable numbers.|
+|B11 God-Items|Stats, compatible buffs, copy/edit additional enchant lines and reusable templates are implemented.|in-game validation. Table levels are not an unlocked upgrade path or a change to existing save instances.|
 
-## Ergänzung v0.5.8
+## Supplement v0.5.8
 
-Alle 292 BuffInfo-Datensätze vollständig strukturell gelesen und bytegleich
-rekonstruiert. 36 Zusatzkosten aus 33 Ausrüstungs-Buffs erhalten getrennte
-Regler und Einzelausnahmen. 31 weitere Eigenverbrauchswerte aus zwei Skills
-werden über „Weitere Skills: Geist“ erfasst. Vollständige Tabellenfingerprints
-und B0-Apply/Restore gelten auch für die hinzugefügte Tabelle.
+All 292 BuffInfo datasets are fully structurally read and byte-identical reconstructed. 36 Additional costs from 33 equipment buffs receive separate controllers and individual exceptions. 31 further self-consumption values from two skills are recorded via "Further Skills: Spirit". Full table fingerprints and B0 Apply/Restore also apply to the added table.
 
-Der Reparatur-Mengensonderwert -1 bietet keinen Tabellen-Ausweg: Die normalen
-Aufrufer prüfen vorher Menge > 0. Der untersuchte NPC-SpawnableTime-Check
-prüft Tageszeitfenster, keinen Respawn-Abstand. Die separate Laufzeitentwicklung
-für Reparatur wurde inzwischen freigegeben. [Prototyp 0.1.0](../runtime/repair/README.md)
-ist entwickelt: 79 native Aufrufe und drei Scanner-Regressionen bestanden.
-Die Kostenberechnung allein löst die vorgelagerte Reparatursperre nicht.
-Der Nutzer hat inzwischen ausdrücklich die eigene Reparaturaktion freigegeben.
-[Entwicklungsmodul 0.2.0](../runtime/repair/ACTION_INTEGRATION.md) ergänzt deren
-Planung, sicheren Batch für eigene Abbilder und Befehlswarteschlange. 1.377
-Aktionsprüfungen und 83 native Aufrufe bestanden; die Anbindung ans Spiel fehlt.
+The repair quantity special value -1 does not provide a table way out: the normal callers check quantity > 0 beforehand. The NPC-SpawnableTime-Check checks the time window of day, not the respawn distance. The separate runtime development for repair has now been released. [Prototyp 0.1.0](../runtime/repair/README.md) is developed: 79 passed native calls and three scanner regressions. The cost calculation alone does not release the upstream repair lock. The user has now expressly released his own repair action. [Development module 0.2.0](../runtime/repair/ACTION_INTEGRATION.md) complements their planning, secure batch for their own images and command queue. 1,377 Passed action checks and 83 native calls; The connection to the game is missing.
 
-[Entwicklungsmodul 0.3.0](../runtime/repair/READER_LAYOUT.md) ergänzt den lesenden
-Client-/Server-Adapter mit UID-/Positionsprüfung und Kontrolllesen. 124
-Leserprüfungen, drei CTest-Suiten und insgesamt 116 native Aufrufe bestanden.
-Die originalen Inventargetter und der neue Leser stimmen auf gemeinsamen
-Testdaten überein. Registry-Aufrufe sind mit künstlichen Engine-Locks geprüft;
-die echten Zugriffsfreigaben und der vollständige Schreib-/Ereignispfad fehlen.
+[Development module 0.3.0](../runtime/repair/READER_LAYOUT.md) complements the reading client/server adapter with UID/position check and control read. 124 Passed reader checks, three CTest suites and a total of 116 native calls. The original inventory getters and the new reader match on common test data. Registry calls are checked with artificial engine locks; the genuine access releases and the complete write/event path are missing.
 
-[Entwicklungsmodul 0.4.0](../runtime/repair/ACK_INTEGRATION.md) ergänzt den
-asynchronen Auftragsabschluss mit Sitzungs-/Nachherwertprüfung, Zeitlimit und
-dauerhafter Sperre bei Teilfehlern. Der originale Clientpfad kann vor einem
-Listenfehler bereits Sockel entfernen; sechs neue native Fälle sichern diese
-Semantik ab. 1.481 Aktionsbedingungen und insgesamt 122 native Aufrufe bestanden.
-Echte Spielereignisse sind weiterhin nicht angebunden.
+[Development module 0.4.0](../runtime/repair/ACK_INTEGRATION.md) complements the asynchronous order conclusion with session/after-value check, time limit and permanent lock in case of partial errors. The original client path can already remove sockets before a list error; Six new native cases secure this semantics. 1,481 Action conditions and total 122 native calls passed. Real game events are still untethered.
 
-[Entwicklungsmodul 0.5.0](../runtime/repair/LOCK_INTEGRATION.md) verbindet den
-Leser mit einer nicht wartenden Besitzer-Sperrgruppe. Originale Lock-Methoden
-sind mit echten Windows-SRW-Sperren im privaten Testhost geprüft. Vier CTest-
-Suiten, 163 Leserbedingungen, 25 Gruppenbedingungen und insgesamt 140 native
-Aufrufe bestanden. Die getrennte Lebensdauerverwaltung der Spielobjekte sowie
-der vollständige Änderungs-/Ereignispfad bleiben offen.
+[Development module 0.5.0](../runtime/repair/LOCK_INTEGRATION.md) connects the reader to a non-waiting owner lock group. Original lock methods are tested with real Windows SRW locks in the private test host. Four CTest suites, 163 Reader Conditions, 25 Group Conditions and a total of 140 native views passed. The separate lifetime management of the game objects as well as the complete change/event path remain open.
 
-[Entwicklungsmodul 0.6.0](../runtime/repair/REFERENCE_INTEGRATION.md) besitzt die
-nativen Referenzbelege während der Erfassung und gibt sie nach den Sperren
-zurück. Abgemeldete und in Zerstörung befindliche Besitzer werden abgewiesen.
-249 Leser-/Referenzbedingungen, vier CTest-Suiten und 203 native Aufrufe bestanden.
-Geschützte Live-Erwerbsquellen, konkrete Engine-Thread-/TLS-Anbindung und der
-vollständige Änderungs-/Ereignispfad fehlen weiterhin.
+[Development module 0.6.0](../runtime/repair/REFERENCE_INTEGRATION.md) owns the native reference documents during capture and returns them after the locks. Registered and destroyed owners are rejected. 249 Reader/reference conditions, four CTest suites and 203 native calls passed. Protected live acquisition sources, specific engine thread/TLS connection and the complete change/event path are still missing.
 
-[Entwicklungsmodul 0.7.0](../runtime/repair/REGISTRY_INTEGRATION.md) ergänzt den
-Manager-Quellenadapter und kontextgebundene Freigabe. 55 neue synthetische
-Bedingungen und fünf CTest-Suiten bestanden. Die neue EXE wird vom bisherigen
-nativen Host abgelehnt; kein erneuter nativer Erfolg behauptet. Buildfreigabe,
-konkrete Manager-/Spielerbindung und vollständiger Reparaturweg fehlen weiterhin.
+[Development module 0.7.0](../runtime/repair/REGISTRY_INTEGRATION.md) complements the Manager source adapter and contextual release. 55 new synthetic conditions and five CTest suites passed. The new EXE is rejected by the previous native host; No renewed native success is claimed. Build release, concrete manager/player retention and complete repair path are still missing.
 
-[Entwicklungsmodul 0.8.0](../runtime/repair/REGISTRY_NATIVE_INTEGRATION.md) prüft
-die geschützte Client-/Server-Suche mit konkreten Referenzmethoden, tatsächlicher
-Actor-/PaPtr-Freigabe und echten Windows-Registry-Sperren gemeinsam auf 1.0.0.2949.
-30 Szenarien, 263 Aufrufe, 3.490 Bedingungen und sechs CTest-Suiten bestanden.
-Managerlebensdauer, aktueller Spieler/Engine-Thread und Reparaturtransaktion
-bleiben offen; die bereitgestellten privaten Manager sind noch kein Live-Host.
+[Development module 0.8.0](../runtime/repair/REGISTRY_NATIVE_INTEGRATION.md) checks the protected client/server search for 1.0.0.2949 together with specific reference methods, actual Actor/PaPtr sharing and real Windows registry locks. 30 Scenarios, 263 Calls, 3,490 Conditions and six CTest suites passed. Manager lifetime, current player/engine thread and repair transaction remain open; The provided private managers are not yet a live host.
 
-[Entwicklungsmodul 0.9.0](../runtime/repair/PINNED_CAPTURE_INTEGRATION.md) beseitigt
-die ungeschützte zweite Registry-Suche im geschützten Leser. Gültige Kennung,
-lebendige Besitzer und aktuelle Clientauswahl werden geprüft. Sechs CTest-Suiten,
-362 Leserbedingungen sowie 48 native Szenarien mit 503 Aufrufen und 3.867
-Bedingungen bestanden. Neue native Erwerbs-/Sperrmethoden sind mit privaten
-Legacy-Inventarfixtures verbunden; das neue Inventarlayout ist damit noch nicht
-zugelassen. Die vollständige Reparaturanbindung bleibt offen.
+[Development module 0.9.0](../runtime/repair/PINNED_CAPTURE_INTEGRATION.md) eliminates the unprotected second registry search in the protected reader. Valid identifier, living owner and current client selection are checked. Six CTest suites, 362 reader conditions and 48 native scenarios with 503 views and 3,867 conditions passed. New native acquisition/blocking methods are associated with private legacy inventory fixtures; The new inventory layout is not yet approved. The complete repair connection remains open.
 
-[Entwicklungsmodul 0.10.0](../runtime/repair/INVENTORY_2949.md) ergänzt die eigenen
-2949-Nachweise für Inventarslots, Holder/Possessor, aktuelle Auswahl, Ausrüstung
-und Sockelfelder. Leser verlangt expliziten bekannten Build. Sechs CTest-Suiten,
-385 Leserbedingungen und 88 native Szenarien mit 578 Aufrufen sowie 6.219
-Bedingungen bestanden. Der eigene Leser stimmt mit aktuellen nativen Gettern
-überein. Delta-0-Ausrüstungsprüfung beweist keine Änderungsereignisse; vollständiger
-Commit und tatsächliche Spielhostbindung bleiben offen.
+[Development module 0.10.0](../runtime/repair/INVENTORY_2949.md) complements the own 2949 proofs for inventory slots, holder/possessor, current selection, equipment and base fields. Readers demand explicit known build. Six CTest suites, 385 reader conditions and 88 native scenarios with 578 views and 6,219 conditions passed. Your own reader agrees with current native getters. Delta 0 equipment testing does not prove any change events; Full commit and actual game hosting remain open.
 
-[Entwicklungsmodul 0.11.0](../runtime/repair/EQUIPMENT_EVENTS_2949.md) ergänzt
-Ereignismetadaten mit aktivem No-Wear und vorherigem Broken-Zustand. Originaler
-Server-Notifier und Client-Ack sind auf privaten reparierten Items gemeinsam
-geprüft, einschließlich Scheinerfolgen und Teiländerungen. Sechs CTest-Suiten,
-1.537 Aktionsbedingungen sowie 103 native Szenarien mit 758 Aufrufen und 9.311
-Bedingungen bestanden. Tatsächliche Effektverarbeitung, Transport und UI bleiben
-Testabhängigkeiten; der vollständige Engine-Commit und Spielhost fehlen weiterhin.
+[Development module 0.11.0](../runtime/repair/EQUIPMENT_EVENTS_2949.md) complements event metadata with active no-wear and previous broken-Zustand. Original Server Notifier and Client Ack are jointly checked on private repaired items, including mock successes and partial changes. Six CTest suites, 1,537 action conditions and 103 native scenarios with 758 calls and 9,311 conditions passed. Actual effects processing, transport and UI remain test dependencies; The full engine commit and game host are still missing.
 
-[Entwicklungsmodul 0.12.0](../runtime/repair/ITEM_LIFECYCLE_2949.md) ergänzt den
-Besitzer nativer Itemkopien. Originale Konstruktion, tiefe Zuweisung und Destruktion
-mit allen verwendeten Listenhelfern auf eigenen Quellen/Allokationen geprüft;
-die Ereignisprobe verwendet jetzt diese Kopien. Sieben CTest-Suiten, 30 neue
-Besitzerbedingungen sowie 117 native Szenarien mit 851 Aufrufen und 13.639
-Bedingungen bestanden. Vollständiger Schreibweg, Slot-Aktualisierung und Host
-bleiben offen; der private Heap ersetzt weiterhin den Engine-Allocator im Test.
+[Development module 0.12.0](../runtime/repair/ITEM_LIFECYCLE_2949.md) complements the owner of native items copies. Original design, deep assignment and destruction checked with all used list helpers on own sources/allocations; The event sample now uses these copies. Seven CTest suites, 30 new owner conditions and 117 native scenarios with 851 calls and 13,639 conditions passed. Full write path, slot update and host remain open; The private heap continues to replace the engine allocator in the test.
 
-[Entwicklungsmodul 0.13.0](../runtime/repair/DIRTY_SLOTS_2949.md) hält Besitzer
-und Sperren für Erfassung/Refresh/Vorprüfung. Originale Slot-Markierung einschließlich
-Kollisionen und Wachstum mit der Ereignisprobe verbunden. Sieben CTest-Suiten,
-519 Leserbedingungen und 133 native Szenarien mit 1.296 Aufrufen bestanden.
-Der spätere Slot-Verbraucher, vollständige Schreiber, Inventarereignisse und
-Spielhost sind weiterhin offen. Kein Erfolg im laufenden Spiel behauptet.
+[Development module 0.13.0](../runtime/repair/DIRTY_SLOTS_2949.md) holds owners and locks for capture/refresh/pre-check. Original slot marking including collisions and growth associated with the event sample. Seven CTest suites, 519 reader conditions and 133 native scenarios with 1,296 calls passed. The later slot consumer, full writer, inventory events and game host are still open. No success is claimed in the current game.
 
-[Entwicklungsmodul 0.14.0](../runtime/repair/FIELD_WRITER_2949.md) ergänzt den
-Feldschreiber für beide Bereiche/Zustandskopien. Acht CTest-Suiten, 34 neue
-Schreibszenarien und insgesamt 141 native Szenarien bestehen. Vorher-/Nachherprüfung
-erfasst auch leere Slots und Metadaten; Teilfehler bleiben unklar und werden nicht
-automatisch wiederholt. Die Verbindung mit vorbereiteten nativen Kopien und allen
-Ereignissen zum Engine-Commit sowie der Spielhost sind weiterhin offen.
+[Development module 0.14.0](../runtime/repair/FIELD_WRITER_2949.md) complements the field recorder for both ranges/Zustandcopies. Eight CTest suites, 34 new writing scenarios and a total of 141 native scenarios exist. Before/after check also captures empty slots and metadata; Partial errors remain unclear and are not automatically repeated. The connection with prepared native copies and all engine commit events as well as the game host are still open.
 
-[Entwicklungsmodul 0.15.0](../runtime/repair/TRANSACTION_2949.md) verbindet
-vorbereitete Nachherkopien, Feldschritt, Markierung und Meldungsadapter. Neun
-CTest-Suiten, 40 Ablaufszenarien und 159 native Szenarien bestehen. Die 15 nativen
-Ausrüstungsfälle verwenden diesen gemeinsamen Adapter und neue Erfassungen zur
-Bestätigung. Sockelanzahl/logische Grenze und Zusatzvektor-Strides korrigiert.
-Konkrete Inventarereignisse, vollständige Empfänger, Slot-Verbraucher und Host
-bleiben offen; eine Meldungsübermittlung allein gilt weiterhin nicht als Erfolg.
+[Development module 0.15.0](../runtime/repair/TRANSACTION_2949.md) combines prepared aftercopies, field step, marker and message adapter. Nine CTest suites, 40 workflow scenarios and 159 native scenarios exist. The 15 native equipment cases use this common adapter and new captures for confirmation. Base number/logical limit and additional vector strides corrected. Concrete inventory events, full recipients, slot consumers and host remain open; a notification transmission alone is still not considered to be a success.
 
-[Entwicklungsmodul 0.16.0](../runtime/repair/PERSISTENCE_2949.md) ergänzt den
-einmaligen Batchabschluss nach allen Meldungen. Originaler Slot-Verbraucher,
-wiederverwendbares Clear und endgültige Tabellenfreigabe sind auf privaten
-Komponenten integriert. Neun CTest-Suiten, 43 Ablaufszenarien und 186 native
-Szenarien bestehen, darunter 24 Verbraucherfälle und 18 Ausrüstungsfälle.
-Die Liste wird bereits vor der Persistenzantwort geleert; Fehler dürfen deshalb
-weder Erfolg noch eine automatische Wiederholung auslösen. Der Empfänger bleibt
-künstlich. Der belegte Verbraucher überträgt keine Sockeldatensätze; ihr ergänzender
-Speicherweg, Inventarereignisse, tatsächliche Rückmeldungen und Spielhost fehlen.
+[Development module 0.16.0](../runtime/repair/PERSISTENCE_2949.md) supplements the one-time batch termination after all messages. Original slot consumer, reusable clear and final table release are integrated on private components. Nine CTest suites, 43 operational scenarios and 186 native scenarios exist, including 24 consumer cases and 18 equipment cases. The list is already emptied before the persistence response; Errors must therefore not trigger success or automatic repetition. The receiver remains artificial. The occupied consumer shall not transmit baseline data sets; their complementary storage path, inventory events, actual feedback and game host are missing.
 
-[Entwicklungsmodul 0.17.0](../runtime/repair/INVENTORY_EVENTS_2949.md) verbindet
-den originalen Inventar-Client-Ack mit privaten Quellen und dem gemeinsamen Ablauf.
-36 neue native Fälle; neun CTest-Suiten und insgesamt 222 native Szenarien bestehen.
-Die Bestätigung verweigert UID-Wechsel, fehlende/doppelte Meldungen und
-Abschlussfehler. Der Ack prüft selbst keine UID und verändert keine Sockel.
-Inventar-Server, tatsächliche Persistenz-/Ladesemantik und Spielhost bleiben offen.
-Der gefundene Socket-SQL-Helper überträgt die Itemkennung und ist deshalb noch
-kein belegter Haltbarkeits-Speicherweg.
+[Development module 0.17.0](../runtime/repair/INVENTORY_EVENTS_2949.md) connects the original inventory client to private sources and the common flow. 36 new native cases; There are nine CTest suites and a total of 222 native scenarios. Confirmation denies UID change, missing/duplicate messages and completion errors. The Ack itself does not check any UID and does not change any bases. Inventory servers, actual persistence/load semantics and game host remain open. The found socket SQL helper transmits the item identifier and is therefore not yet an occupied durability storage path.
 
-[Entwicklungsmodul 0.18.0](../runtime/repair/SQL_DISPATCH_2949.md) prüft den
-vollständigen SQL-Ausführungs-Shim und Request-Erwerb. 19 neue native Fälle,
-insgesamt 241 native Szenarien und neun CTest-Suiten bestanden. Der Shim führt
-selbst keinen Datenbankauftrag aus und kann Erfolg ohne Request-Zugriff liefern.
-Die nachgelagerte Verarbeitung und tatsächliche Persistenz sind weiter offen;
-der laufende Spielmodus wurde dafür nicht abgefragt.
-Der getrennte ItemSaveData-Konverter samt Gegenweg übernimmt Hauptwert und
-Sockelhaltbarkeit. Der damalige statische Nachweis ist in 0.19.0 nativ erweitert.
+[Development module 0.18.0](../runtime/repair/SQL_DISPATCH_2949.md) verifies the full SQL execution shim and request acquisition. 19 new native cases, total 241 native scenarios and nine CTest suites passed. The Shim itself does not execute a database order and can deliver success without request access. downstream processing and actual persistence remain open; The current game mode was not requested for this. The separate ItemSaveData converter together with the counter-path takes over the main value and base durability. The static proof at that time is extended natively in 0.19.0.
 
-[Entwicklungsmodul 0.19.0](../runtime/repair/ITEM_SAVE_2949.md) führt die Original-
-Umwandlungen auf privaten Objekten aus. 38 neue Szenarien, davon 14 mit tatsächlicher
-Reparaturplanung und nativer Nachherkopie. Haupt-/Sockelwerte, No-Wear-Normalisierung,
-Färbedaten, Reset/Wiederverwendung und ausgeglichene Allokationen geprüft. Insgesamt
-279 native Szenarien und neun CTest-Suiten bestanden. Noch offen sind der reguläre
-Speichervorgang/Abschluss, weitere optionale Daten und tatsächliche Sockelrichtlinien.
-Die fünf vom Lader angelegten Datensätze erteilen keine allgemeine Zulassung für
-Reparaturgeometrien außerhalb der bisherigen Vorprüfung.
+[Development module 0.19.0](../runtime/repair/ITEM_SAVE_2949.md) performs the original conversions on private objects. 38 new scenarios, of which 14 with actual repair planning and native post-copy. Main/socket values, no-wear normalization, dye data, reset/reuse and balanced allocations are tested. In total 279 native scenarios and nine CTest suites passed. Still open are the regular saving process / completion, further optional data and actual base policies. The five data sets created by the loader do not grant general approval for repair geometries outside the previous pre-test.
 
-## Konkrete Änderungen der vorherigen Restprüfung
+## Concrete changes to the previous residual audit
 
-- Haltbarkeit ergänzt, mit bytegenauer Prüfung sämtlicher 6.816 Items:
-  ausschließlich `max_endurance` wird geändert; 0 und vorhandene Sentinels
-  bleiben unverändert. Kombination mit anderen Itemänderungen und erneute
-  Anwendung sind geprüft. Die Einstellungs-/Vorlagenformate bleiben kompatibel.
-- Kuku und fünf Hauslager ergänzt. Zwanzig Inventarpräfixe werden strukturell
-  gelesen, einschließlich verschachtelter Item-Move-Listen. Der variable
-  Character-Bedingungsbaum bleibt hashgebunden und unverändert erhalten.
-  Alle 21 Datensätze bestehen die Prüfung; nur neun erhalten editierbare Slots.
-- Vorschau, Rücksetzen, Export und Apply/Restore an der Projektkopie erfassen
-  die neuen Werte gemeinsam mit den übrigen Modulen.
+- Durability supplemented, with byte-accurate testing of all 6,816 items:
+only `max_endurance` is changed; 0 and existing Sentinels remain unchanged. Combination with other item changes and reapplication are tested. The settings/template formats remain compatible.
+- Kuku and five house camp supplements. Twenty inventory prefixes become structural
+Read, including nested item move lists. The variable character condition tree remains hash-bound and remains unchanged. All 21 records pass the test; Only nine will receive editable slots.
+- Preview, Reset, Export and Capture Apply/Restore on Project Copy
+the new values together with the other modules.
 
-## Warum noch keine vollständige Freigabe möglich ist
+## Why a full release is not yet possible
 
-Allgemeine NPC-Respawns, kostenlose Reparatur und universelle Größenlimits
-brauchen zusätzliche Verhaltens-/Formatnachweise. Die vorhandenen Belege
-erlauben dafür keine korrekten weiteren Tabellenpatches. Die bloße Bezeichnung
-einer Option in einem älteren Community-Mod belegt das aktuelle Dateiformat
-nicht. Im Ordner `reference/mods/` liegt weiterhin kein Vergleichsmod.
+General NPC respawns, free repair and universal size limits require additional behavioral/format proof. The existing documents do not allow for correct further table patches. Merely naming an option in an older community mod does not occupy the current file format. There is still no comparison mod in the `reference/mods/` folder.
 
-Die Nutzerentscheidung verschiebt manuelle Spieltests bis nach der Entwicklung
-aller Phasen. Diese Tests sind offen, nicht fehlgeschlagen oder bestanden.
-Save-Änderungen bleiben ausgeschlossen. Die Runtimeentwicklung für Reparatur ist
-freigegeben; auch die eigene Aktion hat noch keinen Einbau- oder Aktivierungspfad.
-Ein pauschales „Phase 5 fertig“ würde daher Funktionen behaupten, die fehlen.
+The user decision postpones manual in-game tests until after the development of all phases. These tests are open, have not failed or passed. Save changes are excluded. Runtime development for repair is released; Even your own action does not yet have an installation or activation path. A blanket “phase 5 finished” would therefore claim functions that are missing.
 
-Automatisierte Ergebnisse: [Prüfbericht](TESTING.md).
-Technische Adressen und Typen: [Feldnachweise](research/ADVANCED_TABLES.md).
-Bedienung und Grenzen: [B4–B11](ADVANCED_MODS.md).
+Automated results: [Test report](TESTING.md). Technical addresses and types: [Field evidence](research/ADVANCED_TABLES.md). Operation and limits: [B4–B11](ADVANCED_MODS.md).
 
 
-[Entwicklungsmodul 0.20.0](../runtime/repair/SAVE_BACKEND_2949.md) ergänzt
-39 native Fälle für Speicherdispatcher, Steam-Zulassung und vorgemerkte Einträge.
-Insgesamt 318 native Szenarien und neun CTest-Suiten bestanden. Datei-/Plattform-
-Empfänger bleiben eigene Testcallbacks. Die konkreten Dateimethoden und Timer
-sind statisch zugeordnet; der originale Schreibhelfer ignoriert das Flush-Ergebnis.
-Seine native Pufferverarbeitung, echte Abschlussbestätigung und vollständige
-Spielanbindung fehlen weiterhin. Keine Änderung an App, Installation oder Saves.
+[Development module 0.20.0](../runtime/repair/SAVE_BACKEND_2949.md) adds 39 native cases for save dispatchers, Steam approval and pre-registered entries. In total 318 native scenarios and nine CTest suites passed. File/platform recipients remain their own test callbacks. The concrete file methods and timers are statically assigned; The original writing assistant ignores the flush result. Its native buffer processing, real final confirmation and complete game connection are still missing. No changes to the app, installation or saves.
 
 
-[Entwicklungsmodul 0.21.0](../runtime/repair/SAVE_FILE_2949.md) ergänzt
-34 native Fälle für den Dateischreibhelfer und Pufferbereinigung. Insgesamt 352
-native Szenarien und neun CTest-Suiten bestanden. Flush-/Closefehler verhindern
-im Originalcode weder Erfolg noch Payload-Freigabe; diese Rückgabe bestätigt
-keine dauerhafte Speicherung. Echter Encoder, vollständiger Queue-/Backupweg,
-Abschlussbeleg und Spielhost bleiben offen. Die Desktop-App bleibt unverändert.
+[Development module 0.21.0](../runtime/repair/SAVE_FILE_2949.md) adds 34 native cases for the filewriter and buffer cleanup. In total 352 native scenarios and nine CTest suites passed. Flush/close errors do not prevent success or payload release in the original code; This return does not confirm permanent storage. Real encoder, full queue/backup path, closing voucher and game host remain open. The desktop app remains unchanged.
 
 
-[Entwicklungsmodul 0.22.0](../runtime/repair/SAVE_ENCODING_2949.md) ergänzt
-66 native Fälle für Aufbereitung, Allokation und Kompression. Insgesamt 418 native
-Szenarien und neun CTest-Suiten bestanden. Ein erneuter Aufruf desselben Eintrags
-nach Öffnungsfehler kann doppelt komprimieren; neue Versuche benötigen frische
-Rohdaten. Integrität/Verschlüsselung, vollständige Speicher-/Ereigniskette und
-Spielhost bleiben offen. App v0.5.9, Installation und Saves unverändert.
+[Development module 0.22.0](../runtime/repair/SAVE_ENCODING_2949.md) complements 66 native cases for preparation, allocation and compression. In total 418 native scenarios and nine CTest suites passed. Re-invoking the same entry for opening errors can compress twice; New experiments require fresh raw data. Integrity/encryption, full storage/event chain and game host remain open. App v0.5.9, installation and saves unchanged.

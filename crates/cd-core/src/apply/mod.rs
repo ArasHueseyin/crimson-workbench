@@ -35,7 +35,7 @@ pub(crate) fn original_registry(game: &Path) -> Result<Option<Vec<u8>>> {
     let registry = engine.original_registry()?;
     if before != crate::fingerprint::hash_file(&game.join("meta/0.papgt"))?.1 {
         return Err(crate::Error::Invalid(
-            "Registry während des Einlesens geändert; erneut öffnen".into(),
+            "Registry changed while reading; open again".into(),
         ));
     }
     Ok(Some(registry))
@@ -53,18 +53,16 @@ pub fn status(_game: &Path) -> ApplyStatus {
     let (game_running, mut reasons) = match guard::game_running() {
         Ok(true) => (
             Some(true),
-            vec!["Crimson Desert läuft. Apply und Restore sind gesperrt.".into()],
+            vec!["Crimson Desert is running. Apply and restore are blocked.".into()],
         ),
         Ok(false) => (Some(false), Vec::new()),
         Err(e) => (
             None,
-            vec![format!(
-                "Prozessprüfung fehlgeschlagen; Schreibpfad gesperrt: {e}"
-            )],
+            vec![format!("Process check failed; writes blocked: {e}")],
         ),
     };
-    reasons.push("Dieser Tabellenplan allein erteilt keine Schreibfreigabe. Live-Einrichtung und aktuelle Live-Dateivorschau sind separat erforderlich.".into());
-    reasons.push("Die manuelle Prüfung von Overlay-Vorrang und Wirkung ist bis zum Ende aller Entwicklungsphasen zurückgestellt.".into());
+    reasons.push("This table plan alone does not authorize writes. Live setup and a current live file preview are required separately.".into());
+    reasons.push("Manual verification of overlay precedence and effects remains pending.".into());
     ApplyStatus {
         game_running,
         can_apply: false,
@@ -75,11 +73,10 @@ pub(crate) fn require_game_stopped() -> Result<()> {
     match guard::game_running() {
         Ok(false) => Ok(()),
         Ok(true) => Err(crate::Error::Invalid(
-            "Crimson Desert läuft. Vollständige Inhaltsprüfung erst nach dem Spielen starten."
-                .into(),
+            "Crimson Desert is running. Close the game before a full content audit.".into(),
         )),
         Err(e) => Err(crate::Error::Invalid(format!(
-            "Spielstatus unbekannt; Inhaltsprüfung gesperrt: {e}"
+            "Game status unknown; content audit blocked: {e}"
         ))),
     }
 }
@@ -260,12 +257,12 @@ fn read_protection(
 pub fn rehearse(workspace: &Workspace, built: &BuiltMod) -> Result<Rehearsal> {
     if !cfg!(windows) {
         return Err(crate::Error::Invalid(
-            "Geschützte Projektproben benötigen Windows; kein ungesicherter Ersatzpfad.".into(),
+            "Protected workspace rehearsals require Windows; no unprotected fallback.".into(),
         ));
     }
     if built.files.is_empty() {
         return Err(crate::Error::Invalid(
-            "Die Vorschau enthält keine Änderungen.".into(),
+            "The preview contains no changes.".into(),
         ));
     }
     let relative = PathBuf::from(format!(".local/rehearsals/{}", unique()));
@@ -387,7 +384,7 @@ pub fn rehearse(workspace: &Workspace, built: &BuiltMod) -> Result<Rehearsal> {
         cycles: 2,
         registry_restored,
         archive_files_untouched: true,
-        scope: "Isolierte Registry-/Overlayprobe; Startschutz und Update-Sperre betreffen eine Kopie unserer eigenen EXE und synthetische Quelldaten. Keine Live-Installation, keine Vanilla-Zertifizierung und kein In-game-Test.",
+        scope: "Isolated registry/overlay rehearsal; launch protection and update blocking use a copy of our own EXE and synthetic source data. No live installation, vanilla certification or in-game test.",
         reapply_passed: true,
         recovery_passed: recovery.pending_recovered && recovery.registry_restored,
         launch_guard_held: true,

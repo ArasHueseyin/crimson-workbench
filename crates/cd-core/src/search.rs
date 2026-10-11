@@ -18,7 +18,7 @@ impl Matcher {
     pub(crate) fn new(text: &str, regex: bool) -> Result<Self> {
         if text.chars().count() > 512 {
             return Err(Error::Invalid(
-                "Suchtext ist zu lang (maximal 512 Zeichen).".into(),
+                "Search text is too long (maximum 512 characters).".into(),
             ));
         }
         let text = text.trim();
@@ -34,11 +34,7 @@ impl Matcher {
                 .dfa_size_limit(2_000_000)
                 .build()
                 .map(Self::Regex)
-                .map_err(|e| {
-                    Error::Invalid(format!(
-                        "Ungültiges oder nicht unterstütztes Regexmuster: {e}"
-                    ))
-                });
+                .map_err(|e| Error::Invalid(format!("Invalid or unsupported regex pattern: {e}")));
         }
         if let Ok(key) = text.parse::<u32>() {
             return Ok(Self::Key(key));
@@ -79,7 +75,7 @@ mod tests {
             assert!(
                 Matcher::new(query, false)
                     .unwrap()
-                    .matches(1001315, &["Blitz-Pfeile", "Munition"])
+                    .matches(1001315, &["Blitz-Pfeile", "Ammunition"])
             );
         }
         assert!(Matcher::new("löw", false).unwrap().matches(1, &["Löwen"]));

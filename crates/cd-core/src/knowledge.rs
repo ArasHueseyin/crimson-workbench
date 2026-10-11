@@ -48,31 +48,31 @@ fn learned(save_bytes: &[u8]) -> Result<BTreeMap<u32, Option<bool>>> {
         .filter(|b| b.class_name == "KnowledgeSaveData")
         .collect();
     if matches.len() != 1 {
-        return Err(bad("Wissensdaten nicht eindeutig gelesen."));
+        return Err(bad("Knowledge data could not be read unambiguously."));
     }
     let block = matches[0];
     if !block.undecoded_ranges.is_empty() {
-        return Err(bad("Wissensformat nicht vollständig gelesen."));
+        return Err(bad("Knowledge format not fully parsed."));
     }
     let f = block
         .fields
         .iter()
         .find(|f| f.name == "_list" && f.present)
-        .ok_or_else(|| bad("Wissensliste fehlt."))?;
+        .ok_or_else(|| bad("Knowledge list missing."))?;
     let FieldValue::ObjectList {
         count, elements, ..
     } = &f.value
     else {
-        return Err(bad("Wissensliste nicht lesbar."));
+        return Err(bad("Knowledge list unreadable."));
     };
     if *count as usize != elements.len() {
-        return Err(bad("Wissensanzahl stimmt nicht."));
+        return Err(bad("Knowledge count does not match."));
     }
     let mut known = BTreeMap::new();
     for element in elements {
         if element.class_name != "KnowledgeElementSaveData" || !element.undecoded_ranges.is_empty()
         {
-            return Err(bad("Unbestätigter Wissenseintrag."));
+            return Err(bad("Unverified knowledge entry."));
         }
         let key = scalar(element, "_key")?;
         let level = scalar(element, "_level")?;
@@ -82,7 +82,7 @@ fn learned(save_bytes: &[u8]) -> Result<BTreeMap<u32, Option<bool>>> {
             _ => None,
         };
         if known.insert(key, value).is_some() {
-            return Err(bad("Doppelte Wissens-ID: Status nicht eindeutig."));
+            return Err(bad("Duplicate knowledge ID: status ambiguous."));
         }
     }
     Ok(known)
@@ -122,11 +122,18 @@ pub fn snapshot(items: &[ItemRecord], root: &Path, selected: Option<&str>) -> Re
             saves
                 .iter()
                 .find(|s| s.id == id)
-                .ok_or_else(|| bad("Spielstand nicht gefunden."))?,
+                .ok_or_else(|| bad("Save not found."))?,
         ),
         None => saves.first(),
     };
-    let mut snapshot=Snapshot{saves:Vec::new(),selected_save:choice.map(|c|c.id.clone()),modified:choice.map(|c|c.modified),items:Vec::new(),message:"Wissen aus dem gespeicherten Spielstand. Nach dem Lesen im Spiel speichern und hier neu einlesen.".into()};
+    let mut snapshot = Snapshot {
+        saves: Vec::new(),
+        selected_save: choice.map(|c| c.id.clone()),
+        modified: choice.map(|c| c.modified),
+        items: Vec::new(),
+        message: "Knowledge from the saved game. After reading in game, save and reload here."
+            .into(),
+    };
     if let Some(c) = choice {
         let (save, _) = read_pair(root, &c.id)?;
         let known = learned(&save)?;
@@ -136,8 +143,7 @@ pub fn snapshot(items: &[ItemRecord], root: &Path, selected: Option<&str>) -> Re
             .map(|i| status(i.key, &i.knowledge_keys, &known))
             .collect();
     } else {
-        snapshot.message =
-            "Kein gespeicherter Spielstand gefunden. Wissensstatus unbekannt.".into();
+        snapshot.message = "No saved game found. Knowledge status unknown.".into();
     }
     snapshot.saves = saves;
     Ok(snapshot)

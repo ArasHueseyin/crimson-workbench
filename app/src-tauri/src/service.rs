@@ -48,6 +48,7 @@ pub struct Catalog {
     pub session: u64,
     pub info: BrowserInfo,
     pub game_path: PathBuf,
+    pub item_language: cd_core::language::ItemLanguage,
 }
 pub struct Session {
     id: u64,
@@ -75,7 +76,11 @@ impl AppService {
     pub fn bootstrap(&self) -> Result<Bootstrap> {
         crate::settings::ensure_workspace(&self.project)?;
         let loaded = cd_core::config::Preferences::load(&self.project);
-        let mut settings_warning = loaded.as_ref().err().map(|e| format!("Gespeicherte Einstellungen konnten nicht geladen werden: {e}. Bitte die Pfade erneut auswählen und Einstellungen speichern."));
+        let mut settings_warning = loaded.as_ref().err().map(|e| {
+            format!(
+                "Saved settings could not be loaded: {e}. Select the paths again and save settings."
+            )
+        });
         let mut settings = loaded.unwrap_or_default();
         let config =
             cd_core::config::LocalConfig::load(&self.project).map_err(cd_core::Error::from)?;
@@ -85,7 +90,7 @@ impl AppService {
             Ok(report) => report,
             Err(e) => {
                 settings_warning = Some(format!(
-                    "Die gespeicherte Installation ist nicht erreichbar. Bitte den Installationsordner korrigieren. {e}"
+                    "The saved installation is unreachable. Correct the installation folder. {e}"
                 ));
                 DiscoveryReport {
                     installations: Vec::new(),
@@ -106,19 +111,16 @@ impl AppService {
         let _settings = self
             .settings_lock
             .lock()
-            .map_err(|_| error("internal", "Einstellungssperre beschädigt"))?;
+            .map_err(|_| error("internal", "Settings lock poisoned"))?;
         crate::settings::ensure_workspace(&self.project)?;
         let preferences = crate::settings::validate(&self.project, preferences)?;
         let mut session = self
             .session
             .lock()
-            .map_err(|_| error("internal", "Sitzungssperre beschädigt"))?;
-        preferences.store(&self.project).map_err(|e| {
-            error(
-                "settings_error",
-                format!("Einstellungen konnten nicht gespeichert werden: {e}"),
-            )
-        })?;
+            .map_err(|_| error("internal", "Session lock poisoned"))?;
+        preferences
+            .store(&self.project)
+            .map_err(|e| error("settings_error", format!("Could not save settings: {e}")))?;
         self.generation.fetch_add(1, Ordering::SeqCst);
         self.audits.cancel_current();
         self.live.cancel_current();
@@ -131,7 +133,7 @@ impl AppService {
         let _settings = self
             .settings_lock
             .lock()
-            .map_err(|_| error("internal", "Einstellungssperre beschädigt"))?;
+            .map_err(|_| error("internal", "Settings lock poisoned"))?;
         crate::settings::ensure_workspace(&self.project)?;
         // Reserve generation and clear the old snapshot under the SAME lock.
         // An older suspended request must never clear a newer completed session.
@@ -139,7 +141,7 @@ impl AppService {
             let mut session = self
                 .session
                 .lock()
-                .map_err(|_| error("internal", "Sitzungssperre beschädigt"))?;
+                .map_err(|_| error("internal", "Session lock poisoned"))?;
             let id = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
             self.audits.cancel_current();
             self.live.cancel_current();
@@ -152,16 +154,18 @@ impl AppService {
             .map(Path::new);
         let report = cd_core::discover_project(&self.project, path)?;
         let game_path = cd_core::select_game(&report)?;
-        let browser = BrowserSession::open(&self.project, Some(&game_path), &language)?;
+        let item_language = cd_core::language::resolve(&game_path, &language);
+        let browser =
+            BrowserSession::open(&self.project, Some(&game_path), &item_language.language)?;
         let info = browser.info();
         let mut session = self
             .session
             .lock()
-            .map_err(|_| error("internal", "Sitzungssperre beschädigt"))?;
+            .map_err(|_| error("internal", "Session lock poisoned"))?;
         if id != self.generation.load(Ordering::SeqCst) {
             return Err(error(
                 "stale_session",
-                "Eine neuere Installation wird bereits geladen.",
+                "A newer installation is already loading.",
             ));
         }
         *session = Some(Session { id, browser });
@@ -169,6 +173,7 @@ impl AppService {
             session: id,
             info,
             game_path,
+            item_language,
         })
     }
     pub fn with_session<T>(
@@ -179,16 +184,11 @@ impl AppService {
         let guard = self
             .session
             .lock()
-            .map_err(|_| error("internal", "Sitzungssperre beschädigt"))?;
+            .map_err(|_| error("internal", "Session lock poisoned"))?;
         let session = guard
             .as_ref()
             .filter(|s| s.id == id && self.generation.load(Ordering::SeqCst) == id)
-            .ok_or_else(|| {
-                error(
-                    "stale_session",
-                    "Daten wurden neu geladen. Bitte erneut auswählen.",
-                )
-            })?;
+            .ok_or_else(|| error("stale_session", "Data was reloaded. Select again."))?;
         Ok(f(&session.browser)?)
     }
     pub fn search(&self, id: u64, query: BrowserQuery) -> Result<BrowserPage> {
@@ -316,15 +316,15 @@ impl AppService {
         let guard = self
             .session
             .lock()
-            .map_err(|_| error("internal", "Sitzungssperre beschädigt"))?;
+            .map_err(|_| error("internal", "Session lock poisoned"))?;
         let s = guard
             .as_ref()
             .filter(|s| s.id == session && self.generation.load(Ordering::SeqCst) == session)
-            .ok_or_else(|| error("stale_session", "Daten wurden neu geladen."))?;
+            .ok_or_else(|| error("stale_session", "Data was reloaded."))?;
         if self.live.active()? {
             return Err(error(
                 "live_busy",
-                "Live-Vorgang läuft; Inhaltsprüfung danach starten.",
+                "Live operation running; start content audit afterwards.",
             ));
         }
         self.audits.start(
@@ -361,7 +361,7 @@ impl AppService {
                 .map_err(|e| cd_core::Error::Invalid(e.message))?
             {
                 return Err(cd_core::Error::Invalid(
-                    "Live-Vorgang läuft; Bestätigung danach ändern".into(),
+                    "Live operation running; change approval afterwards".into(),
                 ));
             }
             cd_core::apply::live::foreign::confirm(
@@ -384,7 +384,7 @@ impl AppService {
                 .map_err(|e| cd_core::Error::Invalid(e.message))?
             {
                 return Err(cd_core::Error::Invalid(
-                    "Live-Vorgang läuft; Bestätigung danach ändern".into(),
+                    "Live operation running; change approval afterwards".into(),
                 ));
             }
             cd_core::apply::live::foreign::revoke(
@@ -449,11 +449,11 @@ impl AppService {
         let guard = self
             .session
             .lock()
-            .map_err(|_| error("internal", "Sitzungssperre beschädigt"))?;
+            .map_err(|_| error("internal", "Session lock poisoned"))?;
         let s = guard
             .as_ref()
             .filter(|s| s.id == session && self.generation.load(Ordering::SeqCst) == session)
-            .ok_or_else(|| error("stale_session", "Daten wurden neu geladen."))?;
+            .ok_or_else(|| error("stale_session", "Data was reloaded."))?;
         if self
             .audits
             .status(session)?
@@ -461,7 +461,7 @@ impl AppService {
         {
             return Err(error(
                 "audit_busy",
-                "Inhaltsprüfung läuft; auf Abschluss warten.",
+                "Content audit running; wait for completion.",
             ));
         }
         self.live.start(
@@ -487,12 +487,12 @@ impl AppService {
         let guard = self
             .session
             .lock()
-            .map_err(|_| error("internal", "Sitzungssperre beschädigt"))?;
+            .map_err(|_| error("internal", "Session lock poisoned"))?;
         if !guard
             .as_ref()
             .is_some_and(|s| s.id == session && self.generation.load(Ordering::SeqCst) == session)
         {
-            return Err(error("stale_session", "Daten wurden neu geladen."));
+            return Err(error("stale_session", "Data was reloaded."));
         }
         let report = self.audits.report(session, id)?;
         let policy = cd_core::output_policy(&self.project, Some(&report.game_path))?;

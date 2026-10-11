@@ -19,6 +19,7 @@ mod index;
 pub mod installation;
 pub mod item_groups;
 pub mod knowledge;
+pub mod language;
 pub mod paths;
 pub mod tables;
 mod workspace;

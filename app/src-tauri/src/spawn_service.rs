@@ -32,15 +32,15 @@ fn error(message: impl Into<String>) -> AppError {
 fn id_bytes(id: &str) -> Result<[u8; 16]> {
     let compact = id.replace('-', "");
     if compact.len() != 32 || !compact.is_ascii() {
-        return Err(error("Ungültige Anfrage-ID."));
+        return Err(error("Invalid request ID."));
     }
     let mut out = [0; 16];
     for (i, b) in out.iter_mut().enumerate() {
         *b = u8::from_str_radix(&compact[i * 2..i * 2 + 2], 16)
-            .map_err(|_| error("Ungültige Anfrage-ID."))?;
+            .map_err(|_| error("Invalid request ID."))?;
     }
     if out == [0; 16] {
-        return Err(error("Leere Anfrage-ID."));
+        return Err(error("Empty request ID."));
     }
     Ok(out)
 }
@@ -62,21 +62,21 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
     let u16_at = |n| u16::from_le_bytes(bytes[n..n + 2].try_into().unwrap());
     let u32_at = |n| u32::from_le_bytes(bytes[n..n + 4].try_into().unwrap());
     if u32_at(0) != MAGIC || u16_at(4) != WIRE_VERSION || u32_at(8) != expected_pid {
-        return Err(error("Ungültige Antwort des Live-Moduls."));
+        return Err(error("Invalid response from live module."));
     }
     let epoch = u64::from_le_bytes(bytes[40..48].try_into().unwrap());
     if let Some(r) = request {
         if r.epoch != epoch || r.pid != expected_pid {
             return Err(error(
-                "Die Spielinstanz hat sich geändert. Prüfe das Inventar vor einer neuen Anfrage.",
+                "The game instance changed. Check inventory before making a new request.",
             ));
         }
         if bytes[16..32] != id_bytes(&r.id)? {
-            return Err(error("Antwort gehört zu einer anderen Anfrage."));
+            return Err(error("Response belongs to another request."));
         }
         if u32_at(32) != r.key || u32_at(36) != r.quantity {
             return Err(error(
-                "Item oder Menge in der Antwort stimmt nicht mit der Anfrage überein.",
+                "Item or quantity in the response does not match the request.",
             ));
         }
     }
@@ -96,48 +96,40 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
     let detail = match u32_at(12) {
         0 => match state {
             "starting" => {
-                "Spielstand laden und kurz ins Spiel zurückkehren. Das Modul verbindet sich automatisch mit dem aktiven Inventar."
+                "Load a save and return to the game briefly. The module connects to the active inventory automatically."
             }
             "ready" => "Live-Spawner verbunden.",
             "queued" => {
-                "Anfrage wartet auf die nächste Aktualisierung des Charakters. Kehre kurz ins Spiel zurück; du musst nichts aufheben."
+                "Request is waiting for the next character update. Return to the game briefly; you do not need to pick anything up."
             }
-            "executing" => "Das Spiel verarbeitet die Anfrage.",
-            "applied" => {
-                "Die zusätzliche Itemmenge wurde im Spiel bestätigt. Jetzt normal speichern."
-            }
+            "executing" => "The game is processing the request.",
+            "applied" => "The additional item quantity was confirmed in game. Save normally now.",
             "expired" => {
-                "Das Spiel hat innerhalb von 30 Sekunden keinen passenden Charakteraufruf verarbeitet. Es wurden keine Items gegeben."
+                "The game did not process a matching character call within 30 seconds. No items were given."
             }
-            "cancelled" => "Anfrage vor der Ausführung abgebrochen.",
-            _ => "Live-Modul nicht verbunden.",
+            "cancelled" => "Request cancelled before execution.",
+            _ => "Live module not connected.",
         },
-        1 => "Protokollversion stimmt nicht überein.",
-        2 => "Ungültige Itemmenge oder geänderte Anfrage-ID.",
-        3 => "Eine andere Anfrage läuft bereits.",
-        4 => "Diese Anfrage ist dem Modul nicht bekannt.",
-        5 => "Das Modul ist noch nicht bereit oder nach einem unklaren Ergebnis gesperrt.",
-        6 => {
-            "Die ausgewählte Item-ID ist in der nativen Itemtabelle dieses Builds nicht vorhanden."
-        }
+        1 => "Protocol version mismatch.",
+        2 => "Invalid item quantity or changed request ID.",
+        3 => "Another request is already running.",
+        4 => "This request is unknown to the module.",
+        5 => "The module is not ready or is blocked after an uncertain result.",
+        6 => "The selected item ID is absent from the native item table of this build.",
         7 => {
-            "Diese Itemart ist im Live-Erzeugungsweg auf 100 Stück pro Anfrage begrenzt. Wähle eine kleinere Menge."
+            "This item type is limited to 100 units per request by the live creation path. Choose a smaller quantity."
         }
         8 => {
-            "Inventarkontext nicht bestätigt oder nach Laden/Charakterwechsel geändert. Keine Items gegeben."
+            "Inventory context unverified or changed after loading/switching characters. No items given."
         }
-        9 => "Native Ausnahme. Ergebnis unklar; keine automatische Wiederholung.",
-        10 => "Das Spiel hat einen Fehler gemeldet. Ergebnis unklar; Inventar prüfen.",
-        11 => {
-            "Die zusätzliche Menge konnte nicht bestätigt werden. Ergebnis unklar; Inventar prüfen."
-        }
-        12 => "Das Anfrageprotokoll ist voll. Speichere und starte das Spiel neu.",
-        13 => "Die native Itemdefinition fehlt oder passt nicht zur ausgewählten ID.",
-        14 => {
-            "Dieses Item hat mehr als fünf voreingestellte Sockel. Die native Ausgabe unterstützt höchstens fünf."
-        }
-        15 => "Die native Umwandlung hat Item-ID oder Menge verändert. Es wurde nichts ausgegeben.",
-        _ => return Err(error("Unbekannter Fehler des Live-Moduls.")),
+        9 => "Native exception. Result uncertain; no automatic retry.",
+        10 => "The game reported an error. Result uncertain; check inventory.",
+        11 => "The additional quantity could not be confirmed. Result uncertain; check inventory.",
+        12 => "Request log is full. Save and restart the game.",
+        13 => "Native item definition is missing or does not match the selected ID.",
+        14 => "This item has more than five preset sockets. Native output supports at most five.",
+        15 => "Native conversion changed the item ID or quantity. Nothing was given.",
+        _ => return Err(error("Unknown live module error.")),
     };
     Ok(Snapshot {
         state,
@@ -151,9 +143,9 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
 }
 pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> Result<Snapshot> {
     if operation == 2 {
-        let r = request.ok_or_else(|| error("Anfrage fehlt."))?;
+        let r = request.ok_or_else(|| error("Request missing."))?;
         if r.key == 0 || r.quantity == 0 || r.quantity > 10000 {
-            return Err(error("Menge muss zwischen 1 und 10.000 liegen."));
+            return Err(error("Quantity must be between 1 and 10,000."));
         }
     }
     let wire = encode(operation, request)?;
@@ -164,7 +156,7 @@ pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> 
             && r.pid != pid
         {
             return Err(error(
-                "Die Spielinstanz hat sich geändert. Prüfe das Inventar vor einer neuen Anfrage.",
+                "The game instance changed. Check inventory before making a new request.",
             ));
         }
         let bytes = windows::transact(pid, &wire)?;
@@ -173,7 +165,7 @@ pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> 
     #[cfg(not(windows))]
     {
         let _ = (game, wire);
-        Err(error("Der Live-Spawner benötigt Windows."))
+        Err(error("The live spawner requires Windows."))
     }
 }
 #[cfg(windows)]
@@ -206,7 +198,7 @@ mod windows {
                 .map_err(|e| error(e.to_string()))?;
             let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
             if snapshot == INVALID_HANDLE_VALUE {
-                return Err(error("Prozessliste nicht verfügbar."));
+                return Err(error("Process list unavailable."));
             }
             let mut entry: PROCESSENTRY32W = std::mem::zeroed();
             entry.dwSize = std::mem::size_of_val(&entry) as u32;
@@ -242,7 +234,9 @@ mod windows {
             }
             CloseHandle(snapshot);
             if found.len() != 1 {
-                return Err(error("Crimson Desert ist nicht eindeutig geöffnet."));
+                return Err(error(
+                    "A single running Crimson Desert instance could not be identified.",
+                ));
             }
             Ok(found[0])
         }
@@ -258,7 +252,7 @@ mod windows {
                 }
                 _ => {
                     return Err(error(
-                        "Live-Modul nicht verbunden. Die neue ASI muss bei geschlossenem Spiel installiert und beim nächsten Spielstart geladen werden.",
+                        "Live module not connected. Install the matching ASI with the game closed, then restart the game to load it.",
                     ));
                 }
             }
@@ -271,14 +265,14 @@ mod windows {
                 || server != pid
                 || SetNamedPipeHandleState(handle, &mode, std::ptr::null(), std::ptr::null()) == 0
             {
-                return Err(error(
-                    "Die Verbindung zum Spiel konnte nicht geprüft werden.",
-                ));
+                return Err(error("Could not check the connection to the game."));
             }
         }
         // A single write forms one message. Never retry a grant after a timeout.
         if file.write(request).map_err(|e| error(e.to_string()))? != request.len() {
-            return Err(error("Anfrage nur teilweise übertragen. Ergebnis prüfen."));
+            return Err(error(
+                "Request only partially transmitted. Check the result.",
+            ));
         }
         let deadline = Instant::now() + Duration::from_millis(1500);
         let mut reply = [0; 48];
@@ -294,7 +288,7 @@ mod windows {
                 }
                 other => {
                     return Err(error(format!(
-                        "Keine vollständige Antwort ({other:?}). Ergebnis über dieselbe Anfrage-ID abfragen; nicht erneut geben."
+                        "No complete response ({other:?}). Check the result using the same request ID; do not grant again."
                     )));
                 }
             }

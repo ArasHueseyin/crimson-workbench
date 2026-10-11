@@ -76,7 +76,7 @@ fn read<T: serde::de::DeserializeOwned>(policy: &PathPolicy, path: &Path) -> Res
         .take(8_388_609)
         .read_to_end(&mut bytes)?;
     if bytes.len() > 8_388_608 {
-        return Err(bad("Basiswechsel-Protokoll zu groß"));
+        return Err(bad("Baseline change log too large"));
     }
     Ok(serde_json::from_slice(&bytes)?)
 }
@@ -98,12 +98,12 @@ fn publish_record(policy: &PathPolicy, path: &Path, bytes: &[u8]) -> Result<()> 
     }
     let mut file = options.open(&partial)?;
     if file.metadata()?.len() > bytes.len() as u64 {
-        return Err(bad("Partielles Updateprotokoll zu groß"));
+        return Err(bad("Partial update log too large"));
     }
     let mut previous = Vec::new();
     file.read_to_end(&mut previous)?;
     if !bytes.starts_with(&previous) {
-        return Err(bad("Partielles Updateprotokoll wurde verändert"));
+        return Err(bad("Partial update log was modified"));
     }
     file.write_all(&bytes[previous.len()..])?;
     file.sync_all()?;
@@ -123,7 +123,7 @@ fn shape(p: &Plan) -> Result<()> {
         || p.trees.is_empty()
         || p.trees.len() > 17
     {
-        return Err(bad("Ungültiger Basiswechsel"));
+        return Err(bad("Invalid baseline change"));
     }
     let mut names = BTreeSet::new();
     for t in &p.trees {
@@ -135,7 +135,7 @@ fn shape(p: &Plan) -> Result<()> {
             || t.directories.len() > 16384
             || !t.directories.contains(&t.source)
         {
-            return Err(bad("Ungültiges Archivziel"));
+            return Err(bad("Invalid archive destination"));
         }
         let valid = |s: &str| {
             (s == t.source || s.starts_with(&format!("{}/", t.source)))
@@ -154,15 +154,15 @@ fn shape(p: &Plan) -> Result<()> {
                 || f.bytes > crimson_format::MAX_FILE_BYTES as u64
                 || !paths.insert(f.path.to_lowercase())
             {
-                return Err(bad("Ungültige Archivdatei"));
+                return Err(bad("Invalid archive file"));
             }
         }
         if t.directories.iter().any(|d| !valid(d)) {
-            return Err(bad("Ungültiger Archivordner"));
+            return Err(bad("Invalid archive folder"));
         }
     }
     if !names.contains(".workbench") {
-        return Err(bad("Alte Transaktionshistorie fehlt"));
+        return Err(bad("Previous transaction history missing"));
     }
     Ok(())
 }
@@ -184,10 +184,10 @@ pub(super) fn state(policy: &PathPolicy, game: &Path) -> Result<State> {
             let name = item
                 .file_name()
                 .into_string()
-                .map_err(|_| bad("Ungültige Updatehistorie"))?;
+                .map_err(|_| bad("Invalid update history"))?;
             if entries.len() >= 128 || name.len() != 16 || !name.bytes().all(|b| b.is_ascii_digit())
             {
-                return Err(bad("Ungültige oder zu große Updatehistorie"));
+                return Err(bad("Invalid or oversized update history"));
             }
             transaction::plain(&item.path(), true)?;
             entries.insert(name, item.path());
@@ -195,7 +195,7 @@ pub(super) fn state(policy: &PathPolicy, game: &Path) -> Result<State> {
         let count = entries.len();
         for (i, (sequence, dir)) in entries.into_iter().enumerate() {
             if sequence != format!("{:016}", i + 1) || pending.is_some() {
-                return Err(bad("Lücke oder offener Vorgang in der Updatehistorie"));
+                return Err(bad("Gap or pending operation in update history"));
             }
             // A directory without an intent may be the result of an interrupted
             // atomic publication; only the matching partial intent may remain.
@@ -204,7 +204,7 @@ pub(super) fn state(policy: &PathPolicy, game: &Path) -> Result<State> {
                     || fs::read_dir(&dir)?
                         .any(|e| e.map_or(true, |e| e.file_name() != "intent.part"))
                 {
-                    return Err(bad("Unvollständiges Updateprotokoll"));
+                    return Err(bad("Incomplete update log"));
                 }
                 continue;
             }
@@ -213,22 +213,22 @@ pub(super) fn state(policy: &PathPolicy, game: &Path) -> Result<State> {
                     file?.file_name().to_str(),
                     Some("intent.json" | "complete.json" | "complete.part")
                 ) {
-                    return Err(bad("Fremde Datei in der Updatehistorie"));
+                    return Err(bad("Foreign file in update history"));
                 }
             }
             let p: Plan = read(policy, &dir.join("intent.json"))?;
             shape(&p)?;
             if p.sequence != sequence || p.before != active {
-                return Err(bad("Basiswechselkette stimmt nicht"));
+                return Err(bad("Baseline change chain does not match"));
             }
             let expected = evidence_kind(policy, &root, &p.after.baseline_id, false)?;
             if expected.admission != p.after {
-                return Err(bad("Gespeicherte neue Basis wurde verändert"));
+                return Err(bad("Saved new baseline was modified"));
             }
             if dir.join("complete.json").try_exists()? {
                 let complete: Complete = read(policy, &dir.join("complete.json"))?;
                 if complete.intent_sha256 != plan_id(&p)? {
-                    return Err(bad("Updateabschluss stimmt nicht"));
+                    return Err(bad("Update completion does not match"));
                 }
                 active = p.after.clone();
                 plans.push(p);
@@ -302,7 +302,7 @@ fn registry(e: &Evidence) -> Result<()> {
         != e.admission.registry_sha256
     {
         return Err(bad(
-            "Basiswechsel benötigt die bereits wiederhergestellte Original-Registry des neuen Builds. Steam-Dateiprüfung zuerst abschließen.",
+            "Baseline changes require the already restored original registry of the new build. Complete Steam file verification first.",
         ));
     }
     Ok(())
@@ -328,7 +328,7 @@ fn collect_plan(old: &Admission, new: &Evidence, sequence: String) -> Result<Pla
                 .any(|f| f.path.starts_with(&format!("{source}/")))
         {
             return Err(bad(
-                "Alte Overlaygruppe kollidiert mit dem neuen Originalbestand; nichts archiviert",
+                "Previous overlay group conflicts with new original files; nothing archived",
             ));
         }
         let mut files = Vec::new();
@@ -342,7 +342,7 @@ fn collect_plan(old: &Admission, new: &Evidence, sequence: String) -> Result<Pla
                 && (expected.bytes != bytes || expected.sha256 != sha256)
             {
                 return Err(bad(
-                    "Eigene Overlaydatei wurde fremd verändert; nicht archiviert",
+                    "Owned overlay file was modified externally; not archived",
                 ));
             }
             files.push(FileHash {
@@ -407,12 +407,12 @@ fn tree_check(root: &Path, t: &Tree, archived: bool, contents: bool) -> Result<(
             let item = item?;
             count += 1;
             if count > 16384 {
-                return Err(bad("Archivbaum zu groß"));
+                return Err(bad("Archive tree too large"));
             }
             let name = item
                 .file_name()
                 .into_string()
-                .map_err(|_| bad("Ungültiger Archivpfad"))?;
+                .map_err(|_| bad("Invalid archive path"))?;
             let path = format!("{dir}/{name}");
             let meta = fs::symlink_metadata(item.path())?;
             transaction::plain(&item.path(), meta.is_dir())?;
@@ -422,16 +422,16 @@ fn tree_check(root: &Path, t: &Tree, archived: bool, contents: bool) -> Result<(
                 if meta.len() != f.bytes
                     || (contents && crate::fingerprint::hash_file(&item.path())?.1 != f.sha256)
                 {
-                    return Err(bad(format!("Archivdatei verändert: {path}")));
+                    return Err(bad(format!("Archive file modified: {path}")));
                 }
                 seen.insert(path);
             } else {
-                return Err(bad(format!("Fremder Inhalt im Archivbaum: {path}")));
+                return Err(bad(format!("Foreign content in archive tree: {path}")));
             }
         }
     }
     if seen.len() != expected.len() || seen_dirs != dirs {
-        return Err(bad("Archivbaum unvollständig"));
+        return Err(bad("Archive tree incomplete"));
     }
     Ok(())
 }
@@ -439,7 +439,7 @@ fn new_history(p: &Plan, source: &Path) -> Result<()> {
     transaction::plain(source, true)?;
     let registry = fs::read(transaction::checked(&p.after.game, "meta/0.papgt")?)?;
     if hash_bytes(&registry) != p.after.registry_sha256 {
-        return Err(bad("Neue Registry verändert"));
+        return Err(bad("New registry modified"));
     }
     for item in fs::read_dir(source)? {
         let item = item?;
@@ -448,7 +448,7 @@ fn new_history(p: &Plan, source: &Path) -> Result<()> {
             Some("transactions") => {
                 transaction::plain(&path, true)?;
                 if fs::read_dir(path)?.next().is_some() {
-                    return Err(bad("Neue Historie ist nicht leer"));
+                    return Err(bad("New history is not empty"));
                 }
             }
             Some("lock") => {
@@ -460,13 +460,13 @@ fn new_history(p: &Plan, source: &Path) -> Result<()> {
             Some("baseline.papgt" | "baseline.part") => {
                 transaction::plain(&path, false)?;
                 if fs::metadata(&path)?.len() > registry.len() as u64 {
-                    return Err(bad("Neue Sicherung zu groß"));
+                    return Err(bad("New backup too large"));
                 }
                 let bytes = fs::read(path)?;
                 if !registry.starts_with(&bytes)
                     || (item.file_name() == "baseline.papgt" && bytes != registry)
                 {
-                    return Err(bad("Neue Sicherung verändert"));
+                    return Err(bad("New backup modified"));
                 }
             }
             _ => return Err(bad("Fremder Inhalt in neuer Historie")),
@@ -482,7 +482,7 @@ fn locations(p: &Plan, contents: bool) -> Result<()> {
             tree_check(&p.after.game, t, true, contents)?;
             if source.try_exists()? {
                 if t.source != ".workbench" {
-                    return Err(bad("Quelle und Archivziel gleichzeitig vorhanden"));
+                    return Err(bad("Source and archive destination both exist"));
                 }
                 new_history(p, &source)?;
             }
@@ -501,19 +501,19 @@ fn prepared(policy: &PathPolicy, game: &Path, id: &str) -> Result<(State, Eviden
     let p = if let Some(p) = &state.pending {
         if p.after != e.admission {
             return Err(bad(
-                "Offenen Basiswechsel mit der vorgesehenen Basis fortsetzen",
+                "Continue the pending baseline change with the intended baseline",
             ));
         }
         locations(p, true)?;
         p.clone()
     } else {
         if state.active == e.admission {
-            return Err(bad("Diese Basis ist bereits aktiv"));
+            return Err(bad("This baseline is already active"));
         }
         let current = crate::installation::baseline::inspect(policy, game, id)?;
         if current.current_state != "metadata_match" {
             return Err(bad(
-                "Neuer Inhaltsbericht passt nicht zum aktuellen Originalbestand",
+                "New content report does not match current original files",
             ));
         }
         collect_plan(&state.active, &e, format!("{:016}", state.plans.len() + 1))?
@@ -539,13 +539,13 @@ pub fn execute(
 ) -> Result<Receipt> {
     if !steam_verified_before_audit {
         return Err(bad(
-            "Steam-Dateiprüfung vor dem neuen Inhaltsbericht muss bestätigt sein",
+            "Steam file verification before the new content report must be confirmed",
         ));
     }
     stopped(cancel)?;
     let (state, e, p) = prepared(policy, game, id)?;
     if !digest(review_id) || to_review(&p, &e, state.pending.is_some())?.review_id != review_id {
-        return Err(bad("Basiswechsel-Vorschau veraltet; nichts geändert"));
+        return Err(bad("Baseline change preview is stale; nothing changed"));
     }
     migrate(
         policy,
@@ -623,7 +623,7 @@ fn migrate(
         guard()?;
         let engine = transaction::Engine::new(&p.after.game, &p.after.registry_sha256)?;
         if !engine.restore_review()?.files.is_empty() {
-            return Err(bad("Neue Registry ist nicht original"));
+            return Err(bad("New registry is not original"));
         }
         drop(engine);
         point()?;

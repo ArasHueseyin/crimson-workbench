@@ -124,7 +124,7 @@ pub(in crate::mods::advanced) fn inspect(bytes: &[u8]) -> Result<Detail> {
     }
     let mut row = Record::new("buffinfo", key, name, "resource", costs);
     row.category = "equipment".into();
-    row.description = "Zusätzliche Eigenkosten von Ausrüstungs-Buffs. Gilt für die in diesem Buff referenzierten Skills. Positive Ressourcenwerte, Regenerationsflags und andere Buff-Effekte bleiben bei globaler Skalierung erhalten.".into();
+    row.description = "Additional self-costs from equipment buffs. Applies to skills referenced by this buff. Positive resource values, regeneration flags and other buff effects are preserved by global scaling.".into();
     Ok(Detail {
         row,
         fields: i.values,

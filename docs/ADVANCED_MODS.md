@@ -1,183 +1,82 @@
-# Phase 5 – Welt, Ausrüstung und Skills
+# Phase 5 – World, equipment and skills
 
-Stand: 21.09.2026, v0.5.8 Vorschau. **Phase 5 ist teilweise umgesetzt.**
-Die unten ausdrücklich offenen Spezifikationspunkte sind keine bestandenen
-Features. Die manuelle Spielabnahme erfolgt auf Nutzerwunsch erst nach allen
-Entwicklungsphasen. An der laufenden Installation wurde nichts angewendet.
+Read: 21.09.2026, v0.5.8 Preview. **Phase 5 is partially implemented.** The specification points expressly open below are not passed features. The manual in-game validation takes place on user request only after all development phases. Nothing was applied to the ongoing installation.
 
-## Bedienung
+## Operation
 
-In der **Modwerkstatt** stehen unter den bisherigen Modulen acht Bereiche
-B4–B11. Alle Einstellungen sind zunächst Entwürfe. **Vorschau berechnen**
-zeigt die einzelnen Werte und die geplanten Dateien. **Vorschau exportieren**
-und **Probe an Projektkopie** benutzen exakt diesen Plan. Nach Änderungen
-muss er neu berechnet werden. Die separate Live-Anwendung behält sämtliche
-B0-Prüfungen, insbesondere das beendete Spiel und die geprüfte Ausgangsbasis.
-Auch eine sichtbar ungültige Zahl sperrt Export/Probe und verwirft eine bereits
-vorbereitete Live-Dateifreigabe, selbst wenn intern noch der letzte gültige
-Zahlenwert gespeichert ist. Nach Korrektur braucht Live-Apply eine neue Dateiprüfung.
+In the **Mod Workshop** there are eight areas B4–B11 among the previous modules. All settings are first drafts. **Calculate Preview** shows the individual values and the planned files. **Export preview** and **Rehearse on workspace copy** use exactly this plan. After changes, it must be recalculated. The separate live application retains all B0 checks, in particular the closed game and the tested baseline. A visible invalid number also blocks export/sample and discards an already prepared live file approval, even if the last valid numerical value is still stored internally. After correction, Live-Apply needs a new file check.
 
-| Modul | Implementiert | Grenze / offener Teil der SPEC |
+|Module|Implemented|Border/open part of SPEC|
 |---|---|---|
-| B4 Welt | Charakterzahlen und gesetzte Limits in Terrain-/Pool-Spawn-Gruppen; Prozentfaktor und Einzelfelder; Reset-Intervalle zweier Spawn-Patrouillen und Wartezeiten von 108 Gebietswiederbesetzungsregeln; MainField-Reittierfreigabe, Stadt-Laufbeschränkung und Stadtflug-Regel; Dauer und Cooldown der `Riding_*`-Charaktere | Keine allgemeinen NPC-Respawn-Zeitgeber, keine vollständige Skript-/Questspawn-Abdeckung. Spielwirkung ungeprüft. |
-| B5 Drache | Blackstar-Cooldown 0; Dauer 10/30/60/120 Minuten oder freie Sekunden; Entfernung der Mercenary-Sperre 79 aus Regionslisten und gezielte Deaktivierung der Stadtflug-Abstiegsbedingung | Stadtflug-Regel gilt auch für andere Flugreittiere. Quest-/Zwischensequenz-Abstiege und maximale Flughöhe bleiben unverändert. Spielabnahme offen; 0 Sekunden wird nicht als unbegrenzt erfunden. |
-| B6 Inventar | Character, CampWareHouse, WareHouse, Kuku sowie Housing_Dresser, Housing_Refrigerator, Housing_Symbol, Housing_Collecting und Housing_GatheredMaterials; Startplätze und Maximum als freie Ganzzahlen | Workbench erlaubt 1..1.460, abgeleitet vom Standarddeckel im geprüften Inventar-Codepfad; kein Nachweis aller Engine-/Save-Grenzen. Bestehende Save-Slotzahlen können vom Datenstandard abweichen. |
-| B7 Stacks | Globale Größe für bereits stapelbare Items; zusätzliche Kategorie-IDs; einzelne Items; ausdrücklicher experimenteller Schalter | 1.000.000 ist eine Workbench-Prüfgrenze. Universelles Engine-Cap unbekannt. `apply_max_stack_cap` kann zusätzlich die Gesamtmenge im Inventar begrenzen und bleibt erhalten. |
-| B8 Haltbarkeit | EquipType-Verschleißfaktor 0 plus Engine-Sentinel 65.535 für alle 122 Items mit endlicher Haltbarkeit | Aktuelle 6.816 Items enthalten **keine** `repair_data_list`-Einträge. Kostenfreie Reparatur ist gesperrt, auch bei vorhandenen Regeln. Der gefundene Kostenpfad erlaubt kein sicheres Nullsetzen; ein geeigneter Tabellenpfad fehlt. Geskriptete Haltbarkeitsverluste ungeprüft. |
-| B9 Kosten | Skill-/Fahrerlisten, 31 Eigenverbrauchswerte in zwei Skills und 36 Zusatzkosten in 33 Ausrüstungs-Buffs; sieben Kategorien, Einzelausnahmen und Nullkosten-Schalter | Keine universelle Unlimited-Funktion. Skill-Kategorien aus Namen abgeleitet; Ausrüstungs-Buffs separat. Positive Regeneration, gegnerische Drain-Effekte und andere Statusarten unverändert. |
-| B10 Skills | Alle 2.069 Skills suchbar; bekannte Zahlen bearbeitbar; globale/individuelle Cooldowns; vollständige Buffmatrix-Inspektion, 87.697 benannte Basis-/Ressourcenfelder und individuelle Bearbeitung bestätigter i64-Werte einschließlich der drei Graphwerte | Unbekannte Bedeutungen/Einheiten bleiben als roh markiert. Referenzen, Typen, Counts, Graphkurven sowie die neu aufgeteilten Summon-/AddSubLevel-Payloads bleiben schreibgeschützt. |
-| B11 Items | Stats und kompatible Buff-Paare bearbeiten; neue Enchant-Zeilen aus einer Originalstufe kopieren und bearbeiten; einzelne Stacks; wiederverwendbare Vorlagen | Keine beliebigen unbestätigten Buff-IDs/-Levels. Eine neue Tabellenstufe schaltet keinen Upgradeweg frei und erhöht keine vorhandene Iteminstanz. |
+|B4 World|Character numbers and set limits in terrain/pool spawn groups; percentage factor and individual fields; Reset intervals of two spawn patrols and wait times of 108 Territorial reoccupation rules; MainField mount clearance, city run restriction and city flight rule; Duration and cooldown of the `Riding_*` characters|No general NPC respawn timers, no full script/questspawn coverage. In-game effects are untested.|
+|B5 Dragon|Blackstar cooldown 0; duration 10/30/60/120 minutes or free seconds; Removal of the Mercenary lock 79 from region lists and targeted deactivation of the city flight departure condition|City flight rule also applies to other flight mounts. Quest/intersequence descents and maximum flight altitude remain unchanged. in-game validation open; 0 Seconds is not invented as unlimited.|
+|B6 Inventory|Character, CampWareHouse, WareHouse, Kuku and Housing_Dresser, Housing_Refrigerator, Housing_Symbol, Housing_Collecting and Housing_GatheredMaterials; Starting places and maximum as free integers|Workbench allows 1..1,460, derived from the default cap in the checked inventory code path; No proof of all engine/save limits. Existing save slot numbers may deviate from the data standard.|
+|B7 Stacks|Global size for already stackable items; additional category IDs; individual items; express experimental switch|1,000,000 is a Workbench test limit. Universal engine cap unknown. `apply_max_stack_cap` can additionally limit the total amount in the inventory and is retained.|
+|B8 Durability|EquipType wear factor 0 plus Engine Sentinel 65,535 for all 122 items with finite durability|Current 6,816 items contain **no**`repair_data_list` entries. Free repair is blocked, even with existing rules. The found cost path does not allow safe zeroing; A suitable table path is missing. Scripted durability losses unchecked.|
+|B9 Costs|skill/driver lists, 31 self-consumption values in two skills and 36 additional costs in 33 equipment buffs; Seven categories, individual exceptions and zero-cost switches|There is no universal unlimited function. skill categories derived from names; Equipment buffs separately. Positive regeneration, enemy drain effects and other status types unchanged.|
+|B10 Skills|All 2,069 skills searchable; Known numbers can be processed; global/individual cooldowns; Full buff matrix inspection, 87,697 named base/resource fields and individual editing of confirmed i64 values including the three graph values|Unknown meanings/units remain marked as raw. References, types, counts, graph curves, and the newly split Summon/AddSubLevel payloads remain read-only.|
+|B11 Items|edit stats and compatible buff pairs; copy and edit new Enchant lines from an original level; individual stacks; Reusable templates|No unconfirmed Buff IDs/levels. A new table level does not unlock an upgrade path and does not increase an existing item level.|
 
-[Vollständige Restpunktprüfung](PHASE5_REMAINING.md).
+[Complete residual point test](PHASE5_REMAINING.md).
 
-Diese offenen Punkte benötigen zusätzliche Format-/Verhaltensnachweise. Es gibt
-keine versteckten Platzhalter-Patches, Runtime-Hooks oder Änderungen an Saves.
-Phase 6 und die optionale Runtime-Phase wurden nicht begonnen.
+These open points require additional format/behavioural evidence. There are no hidden wildcard patches, runtime hooks, or changes to saves. Phase 6 and the optional runtime phase were not started.
 
-## Regeln und Reihenfolge
+## Rules and order
 
-- Prozentwerte: 100 = unverändert, 50 = halb, 300 = dreifach. Ganzzahldivision
-  rundet Richtung 0. Faktoren gelten jedes Mal auf das Original, niemals auf
-  eine bereits modifizierte Ausgabe. Überläufe werden abgelehnt.
-- Spawn-Nullen und Maximal-Sentinelwerte 255/65.535 werden global bewahrt.
-  Einzelfelder erlauben eine bewusste Ausnahme. Andere Grenzüberschreitungen
-  führen zu einem Fehler statt zu stiller Sättigung.
-- **Patrouillen-Reset in Prozent** erfasst ausschließlich Stage 1017811
-  (Hidden Estate) und 1002224 (Watergate), beide mit direkter Spawnreferenz
-  und ursprünglich `resetSecond = 259200`. 50 % ergibt 129600 Sekunden
-  in den Tabelleneinheiten. Individuelle Sekundenwerte stehen im Welt-Browser;
-  Workbenchgrenze 1..31.536.000. Keine Hochrechnung auf sämtliche NPCs oder
-  Zusicherung derselben Dauer auf der realen Uhr.
-- **Wiederbesetzung: Wartezeit in Prozent** skaliert ausschließlich `delayTime`
-  der 108 `factionreblockadinginfo`-Regeln. Originalwerte: 24 × 86.400,
-  84 × 432.000. 50 % halbiert diese Tabellenwerte. Individuelle Werte im
-  Welt-Browser (Suche nach Gebietsname/ID), Grenze 1..31.536.000.
-  Faktor 1..10.000 %, standardmäßig aus. Questbedingungen, Wahrscheinlichkeiten,
-  andere Questzeitgeber und Gebietsverknüpfungen bleiben byteidentisch.
-  Das ist keine allgemeine NPC-Respawn-Regel; Spielzeiteinheit, Fortschritts-
-  abhängigkeiten und Wirkung werden erst bei der späteren Spielabnahme geprüft.
-- Stadtfreigabe und Drachen-Regionsoption deaktivieren dieselbe Bedingung
-  1011130 (`IsInTown() && !IsAboveRoad(Bird,20)`) genau einmal. Alle anderen
-  10.797 Bedingungen einschließlich Stadt-, Kopfgeld- und Questprüfungen bleiben
-  byteidentisch. Die gemeinsame Regel betrifft sämtliche Flugreittiere.
-- Individueller Skillfaktor ersetzt den globalen Faktor. Blackstar-Optionen
-  ersetzen globale Reittierwerte. **Explizite Einzelfelder haben zuletzt Vorrang**.
-- Inventory-Startplätze müssen kleiner/gleich dem Maximum sein. Das Ändern
-  von Datenstandards ersetzt keine Save-Migration. Große Zahlen und
-  Verkleinerungen sind vor einer Freigabe im Spiel zu prüfen.
-- Nicht bestätigte Felder, Kategorien, Skills, Items, Status-IDs, Buff-Paare
-  und weder vorhandene noch explizit neu vorgemerkte Enchant-Zeilen führen zu einer Fehlermeldung.
-- Als zustandsabhängig erkannte Items werden bei globalen Stacks ohne
-  Experimentalschalter ausgelassen. Einzeländerungen auf eine Stapelgröße über 1 werden abgelehnt.
-  Erfasst werden Equip-Typen, endliche Haltbarkeit, mehrere Enchant-Zeilen,
-  Passivskills/Buffs, Sockeldaten, Ladungs-/Schärfemerkmale, Subitems und
-  Siegel-/Behälterdaten. Dies beweist keine allgemeine Stapelverträglichkeit.
-- Item-Stats sind vorzeichenbehaftete Rohzahlen. Grenze ±1.000.000.000;
-  `per_level` muss ins tatsächliche i8-Format −128..127 passen. Keine erfundenen
-  Prozent-/Schadenseinheiten. Buffs stammen aus beobachteten ID/Level-Paaren
-  desselben Equip-Typs; auch dies ersetzt keinen Spieltest.
+- Percentage values: 100 = unchanged, 50 = half, 300 = triple. Integer division
+Rounded direction 0. Factors apply every time to the original, never to an already modified edition. Overflows are rejected.
+- Spawn zeros and maximum sentinel values 255/65,535 are preserved globally.
+Individual fields allow a conscious exception. Other border crossings lead to an error instead of silent saturation.
+- **Patrol reset in percent** captures only stage 1017811
+(Hidden Estate) and 1002224 (Watergate), both with direct spawn reference and originally `resetSecond = 259200`. 50 % gives 129600 seconds in the table units. Individual second values are available in the world browser; Workbenchlimit 1..31.536.000. No extrapolation to all NPCs or assurance of the same duration on the real clock.
+- **Reset: waiting time in percent** scales exclusively `delayTime`
+of the 108 `factionreblockadinginfo` rules. Original values: 24 × 86,400, 84 × 432.000. 50 % halves these table values. Individual values in the world browser (search by area name/ID), limit 1..31.536.000. Factor 1..10,000 %, off by default. Quest conditions, probabilities, other quest timers and area links remain byte-identical. This is not a general NPC respawn rule; Game time unit, progression dependencies and effect are only checked at the later in-game validation.
+- City clearance and dragon region option deactivate same condition
+1011130 (`IsInTown() && !IsAboveRoad(Bird,20)`) exactly once. All other 10,797 conditions including city, bounty and quest exams remain byte-identical. The common rule applies to all flight mounts.
+- Individual skill factor replaces the global factor. Blackstar Options
+Replace global mount values. **Explicit individual fields last have priority**.
+- Inventory starting positions shall be less than or equal to the maximum. The change
+of data standards does not replace save migration. Large numbers and reductions are to be checked before a release in the game.
+- Unconfirmed fields, categories, skills, items, status IDs, buff pairs
+and neither existing nor explicitly newly registered Enchant lines lead to an error message.
+- Recognized as condition-dependent items are used in global stacks without
+Experimental switch is omitted. Individual changes to a stack size above 1 are rejected. Equip types, finite durability, multiple enchant lines, passive skills/buffs, base data, load/sharpness characteristics, subitems and seal/container data are recorded. This proves no general stack compatibility.
+- Item stats are signed raw numbers. Limit ±1,000,000,000;
+`per_level` must fit into the actual i8 format −128..127. No invented percentage/damage units. buffs are derived from observed ID/level pairs of the same type of equipment; This also does not replace in-game test.
 
-## Neue Enchant-Stufen und Skill-Details
+## New Enchant Levels and Skill Details
 
-Unter B11 ein Item auswählen, **Enchant-Stufe hinzufügen** öffnen und eine
-Originalstufe sowie eine neue Zielnummer wählen. **Enchant-Stufe vormerken**
-kopiert deren gesamte Zeile einschließlich Stats, Buffs und Preisen. Danach
-können Stats/Buffs für die neue Stufe geändert werden. Nur Originalstufen
-dürfen Kopierquelle sein; vorhandene/doppelte Ziele, fremde Trenndaten oder
-unsortierte Originalstrukturen werden abgelehnt. Grenze: 64 neue und 256
-gesamte Zeilen pro Item, Stufennummer 0..65.535 (Format-/Workbenchgrenzen).
-Beim Entfernen einer vorgemerkten Stufe werden ihre vorgemerkten Stats/Buffs
-ebenfalls entfernt. Vorlagen speichern diese Kopierregeln mit.
+Select an item under B11, open **Add Enchant Level** and select an original level and a new destination number. **Remark Enchant Level** copies their entire line including stats, buffs and prizes. After that, stats/buffs can be changed for the new level. Only original stages may be a copy source; Existing/double targets, external separation data or unsorted original structures are rejected. Limit: 64 new and 256 total rows per item, level number 0..65,535 (format/Workbenchlimits). When a pre-registered stage is removed, its pre-registered stats/buffs are also removed. Templates also store these copying rules.
 
-Neue Buffs oder zusätzliche Enchant-Stufen können ein vorher gewöhnliches
-Item zustandsabhängig machen. Hat es danach Stapelgröße über 1, verlangt die
-Vorschau den Experimentalschalter oder ausdrücklich Stapelgröße 1.
+New buffs or additional enchant levels can make a previously ordinary item state-dependent. If it then has a stack size above 1, the preview requires the experimental switch or explicitly stack size 1.
 
-Unter B10 nach der Skill-Auswahl **Buffmatrix & vollständiger Datensatz**
-öffnen. Alle 4.607 Einträge (einschließlich null) sind über Matrixzeile,
-Spalte, Typnamen und Feldnamen auffindbar. Seit v0.5.4 sind die neun
-Summon-Payloads in benannte Felder und der AddSubLevel-Payload in Referenz
-und unbekanntes Vier-Byte-Feld aufgeteilt. Auch benannte Spawn-/Zeitfelder
-bleiben hier schreibgeschützt; Namen bestätigen weder Einheiten noch
-Editierregeln. Koordinaten/unklare Zahlenformate bleiben als Hexwerte sichtbar. Die Strukturpositionen `mem_*` sind keine
-bestätigten Feldnamen; Bytepositionen beziehen sich auf den Dateidatensatz.
-Die Ansicht zeigt die Originaldaten, nicht einen angewendeten Mod. Die
-gesamten Originalbytes einschließlich noch unbekannter Suffixwerte stehen
-als Hexansicht bereit. Bei bestätigten i64-Feldern **Rohwert überschreiben**
-aktivieren und eine Ganzzahl zwischen −1.000.000.000 und 1.000.000.000 eingeben.
-Jede Änderung ersetzt genau acht Bytes; alle anderen Matrixbytes bleiben
-erhalten. Einheiten werden nicht aus den Zahlen geraten. Ausgewählte Rohwerte
-und Cooldown-/Kostenänderungen werden im selben Plan zusammengeführt.
-Ohne explizite Buffänderung bleibt die Matrix vollständig byteidentisch.
+Open under B10 after the skill selection **Buff matrix & complete record**. All 4,607 entries (including zero) can be found via matrix row, column, type names and field names. Since v0.5.4, the nine summon payloads are divided into named fields and the AddSubLevel payload into reference and unknown four-byte fields. Also named spawn/time fields remain write-protected here; Names confirm neither units nor editing rules. Coordinates/unclear number formats remain visible as hex values. The structure positions `mem_*` are not confirmed field names; Byte positions refer to the file record. The view shows the original data, not an applied mod. The entire original bytes including still unknown suffix values are available as a hexan view. For confirmed i64 fields **Overwrite ** and enter an integer between −1,000,000,000 and 1.000.000.000. Each change replaces exactly eight bytes; All other matrix bytes are retained. Units will not get out of numbers. Selected raw values and cooldown/cost changes are combined in the same plan. Without an explicit buff change, the matrix remains completely byte-identical.
 
-## Basisdaten, Voraussetzungen und Ressourcen eines Skills
+## Basic data, prerequisites and resources of a skill
 
-Unter **Buffmatrix & vollständiger Datensatz** den Abschnitt **Basisdaten,
-Voraussetzungen & Ressourcen** öffnen. Er zeigt alle Felder vor und nach der
-Buffmatrix: unter anderem Gruppen-/Elternreferenzen, Upgrade-Graphen,
-Charakter-/Bedingungslisten, Statusressourcen samt Regenerationsflag,
-Itemressourcen, Batterie, UI-Flags und Entwicklertexte. Die Suche findet
-Feldnamen, Kennungen und Originalwerte. Referenzen sind als solche markiert;
-unbestätigte Zahlenformate wie `useItemCount` bleiben als Hexwerte sichtbar.
+Under **Buffmatrix & Complete Record** open the section **Basic Data, Requirements & Resources**. It shows all fields before and after the buff matrix: group/parent references, upgrade graphs, character/condition lists, status resources including regeneration flag, item resources, battery, UI flags and developer texts. The search finds field names, identifiers and original values. references are marked as such; Unconfirmed number formats such as `useItemCount` remain visible as hex values.
 
-Dieser Bereich zeigt Originalwerte und ist vollständig schreibgeschützt.
-Bereits freigegebene Zahlen weiterhin in den Skill-Feldern oberhalb bearbeiten;
-dortige Änderungen bleiben beim Filtern erhalten. Ein Originalwert in der
-Detailansicht ist deshalb nicht zwangsläufig der vorgemerkte Wert. Es werden
-keine zusätzlichen Schreibrechte aus Feldnamen oder Referenzen abgeleitet.
+This area shows original values and is completely read-only. Continue editing already released numbers in the skill fields above; Changes there are retained during filtering. An original value in the detailed view is therefore not necessarily the pre-recorded value. No additional write privileges are derived from field names or references.
 
-Seit v0.5.6 bestimmt der Reader das Ende der Buffmatrix direkt aus ihrem
-Format. `skillGroupKey` ist eine Gruppenreferenz und muss nicht mit dem
-Datensatzschlüssel übereinstimmen. Die Prüfung rekonstruiert alle 2.069
-vollständigen Skill-Datensätze einschließlich Header und Suffix byteidentisch.
+Since v0.5.6, the reader determines the end of the buff matrix directly from its format. `skillGroupKey` is a group reference and does not have to match the record key. The test reconstructs all 2,069 complete skill records including header and suffix byte-identical.
 
-## Vorlagen
+## Templates
 
-Ein Item wählen, Werte vormerken, einen Namen vergeben und **Item-Vorlage
-speichern** benutzen. Die Vorlage enthält nur die Item-Einstellungen, keine
-Spieldateien. Sie bleibt im lokalen WebView-Speicher derselben App erhalten.
-Mit **Vorlage auf Item übernehmen** wird sie auf das ausgewählte Item angewendet;
-die Vorschau prüft dessen tatsächliche Eignung erneut. Speichern unter demselben
-Namen ersetzt die Vorlage. Maximal 100 Vorlagen, Namen bis 80 Zeichen.
-Die Vorlagen sind noch keine Phase-6-Profile. Das Löschen des App-Speichers
-entfernt sie. Beschädigte oder formal ungültige Einträge werden nicht geladen.
+Select an item, save values, assign a name and use **Save an item template**. The template contains only the item settings, no game files. It remains in the local WebView store of the same app. With **Apply template to Item** it is applied to the selected Item; the preview re-examines its actual suitability. Saving under the same name replaces the template. Maximum 100 templates, names up to 80 characters. The templates are not yet phase 6 profiles. Deleting the app memory removes them. Corrupted or formally invalid entries are not loaded.
 
-## Technischer Nachweis
+## Technical demonstration
 
-Parser, Aufbau und Grenzen: [Recherche](research/ADVANCED_TABLES.md).
-Alle geänderten Tabellen gelangen in dasselbe B0-Overlay. Bei längeren
-Item-/kürzeren Regionsdatensätzen werden Header-Offsets neu aufgebaut.
-Die Primärprüfung erfolgt vor jeder semantischen Interpretation anhand der
-bekannten Build-/Tabellenhashes. Zusätzliche kleine Tabellen sind separat in
-`crates/cd-core/schemas/steam-25381195.advanced.json` gepinnt.
+Parser, construction and boundaries: [Recherche](research/ADVANCED_TABLES.md). All changed tables enter the same B0 overlay. For longer item/shorter region data sets, header offsets are rebuilt. The primary check is carried out before each semantic interpretation using the known build/table hashes. Additional small tables are pinned separately in `crates/cd-core/schemas/steam-25381195.advanced.json`.
 
-Automatische und manuelle Prüfungen: [TESTING.md](TESTING.md).
-Roundtrip- und Projektproben belegen Dateikonsistenz und Rücknahme, nicht die
-Gameplaywirkung.
+Automatic and manual checks: [TESTING.md](TESTING.md). Roundtrip and workspace rehearsals prove file consistency and withdrawal, not the gameplay effect.
 
 
-## Nicht unterstützte Reparaturoptionen in alten Vorlagen
+## Unsupported repair options in old templates
 
-Seit v0.5.5 wird `free_repair: true` sowohl global als auch pro Item immer
-abgelehnt. Die Materialkosten können im Spiel als Divisor verwendet werden;
-Nullsetzen ist daher kein freigegebener Weg zu kostenloser Reparatur. Der
-Schalter für Verschleiß bleibt davon unabhängig. Alte Vorlagen bleiben lesbar:
-Eine darin aktivierte Reparaturoption lässt sich abwählen. Stats, Buffs,
-Stapelgröße und Enchant-Kopien bleiben dabei erhalten. Anschließend die
-Vorschau erneut berechnen und bei Bedarf die korrigierte Vorlage speichern.
+Since v0.5.5, `free_repair: true` is always rejected both globally and per item. The material costs can be used in the game as a divisor; Zeroing is therefore not a released way to free repair. The switch for wear remains independent of this. Old templates remain readable: A repair option activated in them can be de-selected. Stats, buffs, stack size and enchant copies are retained. Then calculate the preview again and save the corrected template if necessary.
 
-## Zusätzliche Ausrüstungs- und Skillkosten
+## Additional equipment and skill costs
 
-Unter B9 regelt **Ausrüstungs-Buffs** die zusätzlichen Ressourcenlisten aus
-`buffinfo`: 100 Prozent erhält das Original, 50 halbiert, 0 entfernt die
-bestätigten Eigenkosten. Der Browser **Buff-Eigenkosten** erlaubt die Suche
-nach Buffname/ID und einzelne Ausnahmen. Die Kategorie wirkt auf die in jedem
-Buff hinterlegten Skills; deren Referenzen werden nicht geändert.
+Under B9, **equipment buffs** regulates the additional resource lists from `buffinfo`: 100 percent gets the original, 50 halved, 0 removes the confirmed own costs. The browser **Buff own costs** allows the search for buffname/ID and individual exceptions. The category affects the skills deposited in each buff; their references are not changed.
 
-**Weitere Skills: Geist** erfasst zusätzlich die Buffmatrix-Verbrauchswerte
-der Skills 40013 und 10300. Einzelwerte in B10 → Buffmatrix haben Vorrang.
-Die gemeinsamen Nullkosten-Schalter setzen alle sieben Kategorien der gewählten
-Ressource; vorhandene Einzelausnahmen bleiben ausdrücklich erhalten.
-Positive Ressourcenwerte und Regenerationsflags werden nicht genullt, ebenso
-wenig fremde Angriffs-/Dot-Effekte oder Bufflaufzeiten. Die Funktion ist keine
-Zusage unbegrenzter Ressourcen in jedem Engine- oder Skriptpfad.
+**Other Skills: Spirit** additionally captures the Buffmatrix consumption values of the skills 40013 and 10300. Individual values in B10 → Buff matrix have priority. The common zero-cost switches set all seven categories of the chosen resource; Existing individual exceptions are expressly retained. Positive resource values and regeneration flags are not zeroed out, nor are foreign attack/dot effects or buff runtimes. The function is not a promise of unlimited resources in any engine or script path.

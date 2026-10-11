@@ -1,101 +1,62 @@
-# Reparatur 0.11.0 – Vorbereitung und Prüfung von Ausrüstungsereignissen
+# Repair 0.11.0 – Preparation and verification of equipment events
 
-Historischer Ereignisnachweis. Die Probe verwendet inzwischen native Itemkopien:
-[Entwicklungsmodul 0.12.0](ITEM_LIFECYCLE_2949.md).
+Historical evidence of events. The sample now uses native copies of items: [Development module 0.12.0](ITEM_LIFECYCLE_2949.md).
 
-Stand 22.09.2026. Entwicklungsmodul für Steam 25455892 / EXE 1.0.0.2949,
-SHA-256 `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`.
-Die App bleibt v0.5.9; kostenlose Reparatur ist weiterhin nicht freigeschaltet.
+Status: 22.09.2026. Development module for Steam 25455892 / EXE 1.0.0.2949, SHA-256 `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`. The app remains v0.5.9; Free repair is still not unlocked.
 
-## Implementierung
+## Implementation
 
-`action::equipment_notice` gewinnt die Ereignisdaten aus dem unveränderlichen
-Reparaturplan: Sitzung, genaue Item-/Slotidentität sowie Broken-Zustand vor und
-nach der Änderung. Die Berechnung entspricht der originalen Ausrüstungslogik:
-aktive Maximalhaltbarkeit ungleich `0xffff` und **vorzeichenbehaftete** aktuelle
-Haltbarkeit <= 0. Der aktive No-Wear-Override wird dadurch berücksichtigt.
-Ein beliebiger Nachherwert reicht nicht, um den vorherigen Zustand zu rekonstruieren.
+`action::equipment_notice` gets the event data from the immutable repair plan: session, exact item/slot identity, and broken-Zustand before and after the change. The calculation corresponds to the original equipment logic: active maximum durability unequal to `0xffff` and **signed** current durability <= 0. The active no-wear override is thereby taken into account. Any subsequent value is not enough to reconstruct the previous Zustand.
 
-Fehlende oder verschobene Items, nicht vorbereitete Pläne und mitgeführte Items
-werden abgelehnt; alte Ausgabedaten werden gelöscht. Die Funktion liest keine
-Spielpointer und erzeugt weder einen Ereignisbeleg noch eine Zugriffsfreigabe.
-Auch `is_broken` wird ausgegeben: Eine reine Sockelreparatur an einem im Engine-Sinn
-weiterhin kaputten Hauptitem darf nicht als Broken→Repaired-Wechsel behandelt werden.
+Missing or postponed items, unprepared plans and items carried will be rejected; Old output data will be deleted. The function does not read game pointers and generates neither an event receipt nor an access share. Also `is_broken` is output: A pure base repair on a main item that is still broken in the engine sense must not be treated as a Broken→Repaired change.
 
-## Native Verbindung im privaten Testhost
+## Native connection in the private test host
 
-Der Test verbindet die eigene Planung und Warteschlange mit dem originalen
-Server-Notifier und dem originalen Client-Ack. Vorhandene native Actor-Referenzen
-bleiben während der gesamten Probe gehalten. Die Reparaturwerte werden ausschließlich
-in eigene Testobjekte unter beiden nativen Besitzersperren kopiert. Vor den
-Benachrichtigungen sind beide Sperren freigegeben; die Callbacks prüfen das erneut.
+The test combines your own planning and queue with the original server notifier and the original client alignment. Existing native Actor references are maintained throughout the sample. The repair values are copied exclusively into own test objects under both native owner locks. Before the notifications, both blocks are released; The callbacks are checking this again.
 
-Beide Testrepräsentationen erhalten unabhängig ihre korrekten Item-/Sockelwerte.
-Danach laufen die Benachrichtigungen mit **Delta 0 und leerer Entfernungsliste**.
-Der positive Standard-Updater bleibt für Reparatur ungeeignet, weil er Sockel
-verbrauchen kann. Delta 0 repariert selbst ebenfalls nichts.
+Both test representations independently receive their correct item/socket values. Then the notifications run with **Delta 0 and empty distance list**. The standard positive updater remains unsuitable for repair because it can consume bases. Delta 0 also does not repair anything.
 
-| Originalfunktion | RVA | Bytes | Ausführung |
+|Original function|RVA|Bytes|Implementation|
 |---|---|---:|---|
-| Server-Equipment-Notifier | `0x2adfda0` | 1.429 | Repaired-/unveränderte Zustände, Effektaufruf, optionaler Kind-Ereignisaufruf und Paketgrenze |
-| Ereignisinitialisierung | `0x20efb50` | 177 | Originale Feldinitialisierung; Laufzeitkonstanten als private Fixtures |
-| Client-Ack | `0x98fb70` | 773 | Delta, Sockellistenprüfung, Fehler und UI-Aufruf |
-| Destruktiver Sockel-Collector | `0x240e3f0` | 465 | Drei geprüfte Unwind-Fragmente; entfernt vorhandene endliche Sockel bei Haltbarkeit <= 0 |
+|Server-Equipment-Notifier|`0x2adfda0`|1,429|Repaired/unchanged states, effect call, optional child event call and packet boundary|
+|Event initialisation|`0x20efb50`|177|Original field initialisation; Runtime constants as private fixtures|
+|Client-Ack|`0x98fb70`|773|Delta, Base List Check, Error and UI Call|
+|Destructive socket collector|`0x240e3f0`|465|Three unwind fragments tested; removes existing finite bases in durability <= 0|
 
-Die aktuelle Server-VTable `0x5b28f80`, Slot `+0x190`, verweist auf `0x2adfda0`.
-Die vollständigen Funktionshashes stehen in `tests/registry_native.cpp`.
-Das gesamte Manifest umfasst 28 Codebereiche, 25 pdata-Fragmente und acht
-gezielte private TLS-Umleitungen. Originale C++-Cleanup-Handler werden nicht
-registriert; Fixture-Abhängigkeiten werfen keine Exceptions. Die nativen
-Repaired-Zweige benötigen aktiviertes AVX, das der Test vor Ausführung prüft.
+The current server VTable `0x5b28f80`, slot `+0x190`, refers to `0x2adfda0`. The full function hashes are in `tests/registry_native.cpp`. The entire manifest includes 28 code ranges, 25 pdata fragments and eight targeted private TLS redirects. Original C++ cleanup handlers are not registered; Fixture dependencies do not throw exceptions. The native repaired branches require activated AVX, which the test checks before execution.
 
-## Ergebnisse und Fehlerfälle
+## Results and error cases
 
-Sechs CTest-Suiten und MSVC Release `/W4 /WX` bestanden. Insgesamt **103 native
-Szenarien, 758 gezählte Aufrufe und 9.311 Prüfbedingungen**; dazu 1.537 Aktions-,
-385 Leser-, 25 Sperrgruppen- und 55 Quellenadapterbedingungen. Ohne EXE werden
-nur 84 Manifestbedingungen geprüft, keine Originalfunktionen ausgeführt.
+Six CTest suites and MSVC release `/W4 /WX` passed. Total **103 native scenarios, 758 counted calls and 9,311 test conditions**; 1,537 Action, 385 Reader, 25 Lock Group and 55 Source adapter conditions. Without EXE, only 84 manifest conditions are checked, no original functions are executed.
 
-15 neue Integrationsfälle:
+15 new integration cases:
 
-- Kaputtes Hauptitem, normal beschädigtes Item und reine Sockelreparatur.
-- No-Wear und unbegrenztes Hauptitem; keine erfundenen Broken→Repaired-Ereignisse.
-- Originaler Repaired-Zweig übergibt Zustandsart 3, richtigen Slot und Item an
-  den Effektprozessor. Optionale Kind-Ereignisse enthalten passende Kennung und
-  Fixture-Zeit; fehlendes Effektmerkmal überspringt den Prozessor.
-- Ausbleibende Paketlieferung, falsche Entfernungsliste und fehlender Clientslot.
-  Auch Fehlercode 0 bei fehlendem Slot erzeugt keinen Reparaturerfolg.
-- Unreparierter Client trotz UI-Aufruf; ein noch auf 0 stehender Sockel wird
-  bereits vor dem Listenfehler entfernt. Rückgabefehler bedeutet keine Rücknahme.
-- Fehlender Ereignisbeleg, geänderte Sitzung und doppelte Lieferung. Nur passende
-  Nachherbilder **und** vollständige Belege dürfen den Auftrag abschließen.
+- Captured main item, normally damaged item and pure base repair.
+- No-wear and unlimited main item; No invented Broken→Repaired events.
+- Original Repaired Branch passes Zustandsart 3, correct slot and item
+the effect processor. Optional child events include matching identifier and fixture time; missing effect feature skips the processor.
+- Missing package delivery, wrong distance list and missing client slot.
+Even error code 0 in the absence of a slot does not produce any repair success.
+- Unrepaired client despite UI call; a base still standing on 0
+Already removed before the list error. Return error does not mean return.
+- Missing event document, changed session and duplicate delivery. Only suitable
+Subsequent images **and** complete documents may complete the order.
 
-Nach Teilfehler oder Timeout bleibt die Warteschlange gesperrt, ohne Wiederholung
-oder spekulative Rücksetzung. Mengen, Identitäten, Sockelbelegung und übrige
-Itembytes werden für die erfolgreichen Fälle vollständig nachgeprüft.
+After partial error or timeout, the queue remains locked, without repetition or speculative resetting. Quantities, identities, base occupancy and other items are fully verified for successful cases.
 
-## Präzise Nachweisgrenze
+## Precise limit of detection
 
-**Dies ist weiterhin keine vollständige Spieltransaktion.** Transport bei
-`0x29ead70`, tatsächliche Effektverarbeitung bei `0x17b1d30`, Kind-Referenzliste,
-Uhr, Tabellenresolver, UI-Empfänger und Speicherfreigabe sind Testabhängigkeiten.
-Die Probe bestätigt die Aufrufentscheidung und Argumente dieser Schnittstellen,
-nicht ihre Wirkung im Spiel, einen echten Paketversand oder Persistenz.
-Auch die Callback-Zuordnung zu Auftragsnummern ist nur im privaten Test gegeben.
+**This is still not a complete game transaction.** Transport at `0x29ead70`, actual effect processing at `0x17b1d30`, child reference list, clock, table resolver, UI receiver and memory sharing are test dependencies. The sample confirms the call decision and arguments of these interfaces, not their effect in the game, a real package shipment or persistence. Also the callback assignment to order numbers is only given in the private test.
 
-Offen bleiben insbesondere:
+In particular, it remains open:
 
-- Engine-Thread, Managerleben, aktuelle Spielerbindung und Weltwechsel.
-- Echter Item-Schreibweg samt Engine-eigener Itemkopie/Lebensdauer; zwei rohe
-  Speicheränderungen und die hier gezeigte Ereignisfolge reichen nicht als Freigabe.
-- Slot-Invalidierung (`+0x198`), vollständige Effekt-/Kind-/Transportverarbeitung,
-  noch kaputte Nachherzustände und Inventarereignisse für mitgeführte Items.
-- Reale, eindeutig zugeordnete Bestätigungen; Eingabe, Loader und B0-Installation.
+- Engine thread, manager life, current player engagement and world change.
+- True item writing path including engine-owned item copy/lifetime; Two crude
+Memory changes and the sequence of events shown here are not sufficient as release.
+- Slot invalidation (`+0x198`), full effect/child/transport processing,
+still broken down poster states and inventory events for items carried on board.
+- Real, unambiguously assigned confirmations; Input, loader and B0 installation.
 
-Es wurden keine Spielprozesse oder Saves geöffnet und keine Installationsdateien
-geschrieben. Die Desktop-App wurde für diese Runtimeänderung nicht neu gebaut.
+No game processes or saves were opened and no installation files were written. The desktop app was not rebuilt for this runtime change.
 
-Reproduktion: `./runtime/repair/Test.ps1 -RegistryGameExe "C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert/bin64/CrimsonDesert.exe"`.
-Lokale Nachweise: `.local/repair-runtime-v11-build-test.log`,
-`.local/repair-runtime-v11-native-result.json`, `.local/repair-runtime-v11-validation.json`.
-Spätere manuelle Fälle: [TESTCHECKLISTE](../../TESTCHECKLISTE.md), insbesondere R01–R10.
+Reproduction: `./runtime/repair/Test.ps1 -RegistryGameExe "C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert/bin64/CrimsonDesert.exe"`. Local evidence: `.local/repair-runtime-v11-build-test.log`, `.local/repair-runtime-v11-native-result.json`, `.local/repair-runtime-v11-validation.json`. Later manual cases: [TESTCHECKLISTE](../../TESTCHECKLISTE.md), in particular R01–R10.

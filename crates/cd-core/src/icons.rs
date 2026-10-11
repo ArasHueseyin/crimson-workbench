@@ -117,7 +117,7 @@ impl IconCatalog {
     }
     fn read_icon(&self, hash: u32) -> Result<IconResult> {
         let Some(name) = self.strings.get(&hash) else {
-            return Ok(IconResult::unavailable("Iconreferenz nicht aufgelöst"));
+            return Ok(IconResult::unavailable("Icon reference unresolved"));
         };
         let normalized = name
             .trim_end_matches('\0')
@@ -134,7 +134,7 @@ impl IconCatalog {
         };
         let Some(entry) = self.entries.get(&filename) else {
             return Ok(IconResult::unavailable(
-                "Keine passende Icontextur im geprüften Archiv",
+                "No matching icon texture in the verified archive",
             ));
         };
         self.read_texture(entry)
@@ -151,11 +151,11 @@ impl IconCatalog {
         let mut icon = match entry.and_then(|(_, entry)| entry.as_ref()) {
             Some(entry) => self.read_portrait(entry),
             None => {
-                IconResult::unavailable("Kein eindeutig zugeordnetes Tierporträt im Spielarchiv.")
+                IconResult::unavailable("No uniquely assigned animal portrait in the game archive.")
             }
         };
         if icon.data_url.is_some() && illustrative.is_some() {
-            icon.caption = Some("Beispielbild derselben Tierart aus dem Spielarchiv. Fell, Farbe und Ausstattung dieser Variante können abweichen.".into());
+            icon.caption = Some("Example image of the same species from the game archive. Fur, color and equipment may differ for this variant.".into());
         }
         icon
     }

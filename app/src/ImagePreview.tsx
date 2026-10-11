@@ -5,9 +5,9 @@ import './picker-enhancements.css';
 export function ImagePreview({src,title,caption,fallback,onClose}:{src?:string;title:string;caption?:string;fallback?:ReactNode;onClose:()=>void}) {
   const dialog=useRef<HTMLDialogElement>(null);
   useEffect(()=>{const node=dialog.current;node?.showModal();return()=>{node?.close();};},[]);
-  return createPortal(<dialog ref={dialog} className="image-preview" aria-label={`Bildvorschau: ${title}`} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-    <div className="image-preview-content"><header><h2>{title}</h2><button type="button" className="icon-button" aria-label="Bildvorschau schließen" autoFocus onClick={onClose}><X size={24}/></button></header>
-      <div className="image-preview-stage">{src?<img src={src} alt={title} draggable={false}/>:fallback}</div>{caption&&<p>{caption}</p>}<small>Esc oder × zum Schließen</small>
+  return createPortal(<dialog ref={dialog} className="image-preview" aria-label={`Image preview: ${title}`} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="image-preview-content"><header><h2>{title}</h2><button type="button" className="icon-button" aria-label="Close image preview" autoFocus onClick={onClose}><X size={24}/></button></header>
+      <div className="image-preview-stage">{src?<img src={src} alt={title} draggable={false}/>:fallback}</div>{caption&&<p>{caption}</p>}<small>Esc or × to close</small>
     </div>
   </dialog>,document.body);
 }

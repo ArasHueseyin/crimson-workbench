@@ -1,124 +1,124 @@
-# Schwarzstern – Umsetzung vom 01.10.2026
+# Black Star – Implementation of 01.10.2026
 
-**Aktuelles Diagnose-/Beschwörungsupdate installiert, technische Prüfungen bestanden; uneingeschränkte Außenbeschwörung weiterhin unbestätigt.** Der Nutzer meldet nach dem Stadtflug-Update weiterhin ungefähr „Reittiere können hier nicht gerufen werden“. Die neue Version erkennt Schwarzstern zusätzlich während der früheren Beschwörungsaktion und erfasst den Fehlercode der Spielmeldung. Die gewünschte Beschwörungsdauer beträgt 1.000 Minuten. Installation und frühere Saveänderungen erfolgten bei geschlossenem Spiel.
+**Current diagnostic/invocation update installed, passed technical examinations; Unrestricted external summoning still unconfirmed.** After the city flight update, the user still reports approximately "mounts cannot be called here". The new version also detects Black Star during the previous summon action and captures the error code of the game message. The desired summoning time is 1,000 minutes. Installation and previous save changes took place when the game was closed.
 
-## Verhalten
+## Behaviour
 
-- **Praktisch unbegrenzte Ausdauer:** Nur Schwarzsterns Ausdauerregeneration wurde stark erhöht. Dies verhindert nicht zwingend jede sichtbare kurze Abnahme des Balkens; anhaltender Flug, Beschleunigung und Feueratem müssen im Spiel geprüft werden.
-- **Zusätzliche Beschwörungsorte draußen:** Schwarzstern wird anhand seiner Instanz und seines Charakterdatensatzes erkannt. Regions-, Navigations-, Voxel- und Plattform-Sperren werden im zugehörigen Aufruf umgangen. Die Erkennung umfasst nun auch die normale und die reservierte frühe Client-Beschwörungsaktion, über exakt belegte Charakter-/Instanzaufrufe. Dadurch gilt die Navigations-/Voxel-Freigabe auch bei späteren Aktionsprüfungen im selben Aufruf. Die abschließende Innenraum- und Platzierungsprüfung bleibt aktiv. Andere Reittiere behalten ihre Regeln. Ob diese Erweiterung die gemeldete Sperre behebt, muss im Spiel geprüft werden.
-- **Stadtflug und gesperrte Gebiete:** Die separate Regel `IsInTown() && !IsAboveRoad(Bird,20)` sowie die Prüfung `IsVehicleAllowedInEnteredRegion` werden für einen auf Schwarzstern reitenden Charakter oder Schwarzstern selbst freigegeben. Damit sind die vom Nutzer beschriebenen roten Gebiete als Testfälle für Beschwörung und Grenzüberflug abgedeckt; Erfolg in jedem dieser Gebiete ist noch im Spiel zu prüfen.
-- **Höhenbegrenzung:** Die gesonderte Prüfung `CheckVehicleAllowableHeight` wird für Schwarzstern freigegeben.
-- **Cooldown eine Sekunde:** Schwarzsterns eigener Grundwert wurde von 3600 auf 1 gesetzt. Zusätzlich wurde die im neuesten Save bereits gespeicherte Restzeit von 3.596.726 auf 1.000 Millisekunden gekürzt.
-- **Beschwörungsdauer 1.000 Minuten (16 Stunden 40 Minuten):** Der eigene Grundwert wurde von 600 auf 60.000 Sekunden erhöht. Die bereits aktive Beschwörung in Slot 1 hat ebenfalls 1.000 Minuten gespeicherte Restzeit erhalten.
+- **Practically unlimited endurance:** Only Schwarzstern's endurance regeneration was greatly increased. This does not necessarily prevent any visible short removal of the beam; sustained flight, acceleration and fire breath must be tested in the game.
+- **Additional summon locations outside:** Black Star is recognized by its instance and character dataset. Region, navigation, voxel and platform locks are bypassed in the associated call. The recognition now also includes the normal and the reserved early client summon action, via precisely occupied character/instance calls. As a result, the navigation/voxel release also applies to later action checks in the same call. The final interior and placement test remains active. Others mounts keep their rules. Whether this extension fixes the reported lock must be checked in-game.
+- **City Flight and Restricted Areas:** The separate rule `IsInTown() && !IsAboveRoad(Bird,20)` and the test `IsVehicleAllowedInEnteredRegion` are released for a black star riding character or black star itself. This covers the red areas described by the user as test cases for summoning and border crossing; Success in each of these areas is still at stake.
+- **Height limit:** The separate test `CheckVehicleAllowableHeight` is released for black stars.
+- **Cooldown one second:** Schwarzstern's own basic value was set from 3600 to 1. In addition, the remaining time already stored in the latest save has been reduced from 3,596,726 to 1,000 milliseconds.
+- ** summoning time 1,000 minutes (16 hours 40 minutes):** The own basic value has been increased from 600 to 60,000 seconds. The already active summon in slot 1 also received 1,000 minutes of stored remaining time.
 
-Das automatische Wegfliegen nach dem Absteigen/Landen bleibt ein eigener Mechanismus. Ungültige Spawnpositionen, geschlossene Räume, noch nicht geladene Weltbereiche und gesonderte Ablauf-/Questzustände können weiterhin Grenzen setzen. Die Verlängerung der Beschwörungsdauer verhindert andere Gründe für ein vorzeitiges Ende nicht. „Jeder beliebige Außenpunkt“ ist bisher nicht im Spiel nachgewiesen.
+Automatic flight away after descent/landing remains its own mechanism. Invalid spawn positions, enclosed spaces, not yet loaded world areas and separate expiration/quest states can still set limits. The extension of the summoning period does not prevent other reasons for a premature end. “Any outside point” has not yet been proven in the game.
 
-## Installation und Rückbau
+## Installation and dismantling
 
-Zusätzliche Datei:
+Additional file:
 
 `C:\Program Files (x86)\Steam\steamapps\common\Crimson Desert\bin64\CrimsonBlackstar.asi`
 
-SHA-256: `8e1b254874c27022f6746b01f0520b31ed3ee44447d2919dce15f090ed8a886f`, Größe 212.480 Bytes.
+SHA-256: `8e1b254874c27022f6746b01f0520b31ed3ee44447d2919dce15f090ed8a886f`, size 212,480 bytes.
 
-Der bereits vorhandene `winmm.dll`-Loader lädt sie beim nächsten normalen Spielstart. Die Erweiterung akzeptiert ausschließlich die geprüfte EXE `1.0.0.2976` mit SHA-256 `57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7`. Bei anderer Version oder abweichenden Zielbytes bleibt sie deaktiviert. Die EXE auf der Festplatte und alle bestehenden Modarchive wurden nicht verändert.
+The existing `winmm.dll` loader loads them at the next normal game start. The extension only accepts the tested EXE `1.0.0.2976` with SHA-256 `57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7`. In the case of another version or different target bytes, it remains deactivated. The EXE on the hard drive and all existing mod archives have not been changed.
 
-Das Laufzeitprotokoll entsteht neben der Erweiterung als `CrimsonBlackstar.log`:
+The runtime protocol is created next to the extension as `CrimsonBlackstar.log`:
 
-- `READY: Blackstar early summon action support ...`: vierzehn Hooks und ein Bedingungsslot installiert, Charakterdaten noch abzuwarten. Ältere READY-Zeilen bleiben im bestehenden Log erhalten.
-- `APPLIED: Blackstar stamina regeneration ...`: Schwarzsterns vollständig geladene Daten erkannt und geändert.
-- `APPLIED: Blackstar summon region restriction bypass ...`: die Beschwörungsfreigabe wurde erstmals verwendet.
-- `APPLIED: Blackstar town/regional flight/flight height restriction bypass`: die neue Flugfreigabe wurde erstmals für Schwarzstern verwendet.
-- `APPLIED: Blackstar summon navigation/voxel/platform ...`: eine zusätzliche Beschwörungsfreigabe wurde verwendet.
-- `REFUSED: Blackstar initial/spawn validator result ...`: eine verbliebene Zustands-/Platzierungsprüfung hat abgelehnt. Ort und sichtbare Spielmeldung zusammen mit diesem Ergebnis untersuchen.
-- `REFUSED: Blackstar common/server validator ...`: die zusätzliche gemeinsame/serverseitige Prüfung hat abgelehnt; ihre Antwort wird nur protokolliert.
-- `ATTEMPT: Blackstar ... frame event returned ...`: Ergebnis der früheren Beschwörungsaktion, höchstens 24 Zeilen pro Sitzung.
-- `GAME_ERROR: code=... caller=... BlackstarScope=...; stack: ...`: Fehlercode und Aufrufweg der Spielmeldung, höchstens 64 unterschiedliche Kombinationen pro Sitzung. Auch andere Spielmeldungen können enthalten sein. Alle Spielmeldungen werden unverändert weitergereicht; eine Meldung wird niemals in Erfolg umgewandelt.
-- `REFUSED` / `DISABLED`: unerwartete Daten oder Spielversion; die entsprechende Änderung wird nicht angewendet.
+- `READY: Blackstar early summon action support ...`: fourteen hooks and a condition slot installed, character data still await. Older READY lines remain in the existing log.
+- `APPLIED: Blackstar stamina regeneration ...`: Black Star's fully loaded data detected and modified.
+- `APPLIED: Blackstar summon region restriction bypass ...`: summon release was used for the first time.
+- `APPLIED: Blackstar town/regional flight/flight height restriction bypass`: the new flight clearance was used for black stars for the first time.
+- `APPLIED: Blackstar summon navigation/voxel/platform ...`: an additional summon release was used.
+- `REFUSED: Blackstar initial/spawn validator result ...`: a remaining Zustands/placement check has declined. Examine location and visible game message along with this result.
+- `REFUSED: Blackstar common/server validator ...`: the additional joint/server-side check has declined; Your response will only be logged.
+- `ATTEMPT: Blackstar ... frame event returned ...`: Result of the previous summon action, maximum 24 lines per session.
+- `GAME_ERROR: code=... caller=... BlackstarScope=...; stack: ...`: Error code and call path of the game message, maximum 64 different combinations per session. Other game messages may also be included. All match notifications will be forwarded unchanged; A message is never converted to success.
+- `REFUSED` / `DISABLED`: unexpected data or game version; the corresponding amendment shall not apply.
 
-Zum Rückbau bei **geschlossenem Spiel** nur `CrimsonBlackstar.asi` aus `bin64` entfernen oder außerhalb des Spielordners ablegen. Bestehende Schlafmods und `winmm.dll` behalten. Bereits gespeicherte Timer bleiben dabei erhalten; neue Beschwörungen verwenden wieder die ursprünglichen Grundwerte. Ein komplettes altes Savebackup sollte nicht über später erspielten Fortschritt kopiert werden. Für die Rücknahme ausschließlich der Verlängerung liegt die vorherige ASI zusätzlich im unten genannten neuen Backup; ein noch aktiver langer Timer wäre getrennt und gezielt anzupassen.
+For disassembly with **closed game** only remove `CrimsonBlackstar.asi` from `bin64` or place it outside the game folder. Keep existing sleep mods and `winmm.dll`. Already stored timers are retained; new incantations use the original basic values again. A complete old savebackup should not be copied over later earned progress. In addition, for the redemption of the renewal only, the previous ASI is in the new backup referred to below; an even active long timer would be separate and specifically adapted.
 
-## Save und Sicherung
+## Save and backup
 
-Die beiden früheren Saveänderungen betrafen den damals neuesten Stand:
+The two previous Save Changes concerned the then most recent:
 
 `%LOCALAPPDATA%\Pearl Abyss\CD\save\<Konto-ID>\slot1\save.save`
 
-Erste Änderung: `MercenaryClanSaveData._callMercenaryCoolTimeSaveList`, Eintrag für Schwarzstern (`_mercenaryNo = 1003255`), `_coolTimeLeft`.
+First change: `MercenaryClanSaveData._callMercenaryCoolTimeSaveList`, entry for black star (`_mercenaryNo = 1003255`), `_coolTimeLeft`.
 
-Neun Savedateien beziehungsweise Begleitdateien wurden vorab gesichert unter:
+Nine save files or accompanying files were backed up in advance under:
 
 `<Projektordner>\.local\blackstar-mod-20261001\backups\20260930T231256Z`
 
-HMAC und unabhängiger Decoder nach dem Schreiben erfolgreich. Der vollständige semantische Savevergleich zeigt genau die Änderung dieses Skalars. Nur die Bodybytes `1927537`, `1927538`, `1927539` unterscheiden sich. Alle anderen Bodybytes, Feldmasken, Reservierungsdaten und die Nonce stimmen. Fähigkeiten, Inventar, Questfortschritt, aktive Beschwörungsdauer, andere Slots und Lobbydateien wurden bei dieser ersten Änderung nicht verändert. Der Rücktausch des Skalars ergibt den Originalbody exakt.
+HMAC and independent decoder after writing successfully. The complete semantic save comparison shows exactly the change of this scalar. Only the bodybytes `1927537`, `1927538`, `1927539` differ. All other bodybytes, field masks, reservation dates and the nonce vote. Abilities, inventory, quest progression, active summoning time, other slots and lobby files were not changed on this first change. The reverse exchange of the scalar gives the original body exactly.
 
-**Anschließende Verlängerung auf 1.000 Minuten:** Das Feld `MercenaryClanSaveData._callMercenarySpawnDurationSaveList._spawnEndDurationLeft` desselben Schwarzstern-Eintrags (`_vehicleKey = 16984`) wurde von 596.726 auf 60.000.000 Millisekunden gesetzt. Der vollständige semantische Vergleich zeigt ausschließlich diese Änderung; im Body unterscheiden sich nur die vier Bytes `1927589` bis `1927592`. HMAC, unabhängiges Wiederöffnen, inverse Wiederherstellung des Originalbodys und Erhalt aller übrigen Felder wurden geprüft. Der Ein-Sekunden-Cooldown bleibt erhalten.
+**Subsequent extension to 1,000 minutes:** The field `MercenaryClanSaveData._callMercenarySpawnDurationSaveList._spawnEndDurationLeft` of the same black star entry (`_vehicleKey = 16984`) was set from 596,726 to 60,000,000 milliseconds. The full semantic comparison shows only this change; In the body, only the four bytes `1927589` to `1927592` differ. HMAC, independent reopening, inverse restoration of the original body and preservation of all remaining fields were tested. The one-second cooldown is maintained.
 
-Frische Sicherung vor der Verlängerung, einschließlich der vorherigen ASI und aller neun Save-/Begleitdateien:
+Freshness backup before renewal, including previous ASI and all nine save/accompany files:
 
 `<Projektordner>\.local\blackstar-mod-20261001\duration-1000m\backups\20260930T232129Z`
 
-Prüf- und Installationsberichte der Verlängerung: `.local/blackstar-mod-20261001/duration-1000m/`. Der damals installierte Slot 1 hatte SHA-256 `068f7fe02c759261ddd9d2108ea375333c0443909c83952862d996c46a95bd93`. 17 geschützte Dateien wurden nach dieser Installation unverändert verifiziert.
+Extension test and installation reports: `.local/blackstar-mod-20261001/duration-1000m/`. The slot 1 installed at that time had SHA-256 `068f7fe02c759261ddd9d2108ea375333c0443909c83952862d996c46a95bd93`. 17 protected files were verified unchanged after this installation.
 
-**Stadt-/Gebietsflug-Update:** Hier wurden keine Savedateien geändert. Alle neun aktuellen Save-/Begleitdateien, die vorherige ASI und das bisherige Laufzeitprotokoll wurden frisch gesichert unter:
+**City/territorial flight update:** No save files have been changed here. All nine current save/accompany files, the previous ASI and the previous runtime log were freshly backed up at:
 
 `<Projektordner>\.local\blackstar-mod-20261001\city-flight\backups\20260930T234228Z`
 
-19 geschützte Dateien wurden nach Austausch ausschließlich der ASI unverändert verifiziert. Der neueste Save bei dieser Installation war **Slot 2**. Prüf- und Installationsberichte: `.local/blackstar-mod-20261001/city-flight/`.
+19 protected files were verified unchanged after exchange exclusively of the ASI. The latest save in this installation was **Slot 2**. Test and installation reports: `.local/blackstar-mod-20261001/city-flight/`.
 
-**Frühe Beschwörungsaktion und Diagnose, 01.10.2026:** Das bisherige Laufzeitlog belegt das Laden des Stadtflug-Updates und die ausgeführten Stadt-/Regions-/Höhenfreigaben, enthält aber keine REFUSED-Zeile zur weiterhin gemeldeten Ablehnung. Daraus lässt sich die blockierende Prüfung noch nicht eindeutig bestimmen. Die früheren Client-Aktionen und die zusätzliche gemeinsame Prüfung sind nun erfasst. Besondere Gebiets-/Questzustände wurden nicht pauschal freigegeben.
+**Early summoning action and diagnosis, 01.10.2026:** The previous runtime log occupies the loading of the city flight update and the executed city/region/altitude clearances, but does not contain a REFUSED line for the continued reported rejection. From this, the blocking test cannot yet be clearly determined. The previous client actions and the additional joint audit are now recorded. Special Territorial/Quest Conditions were not released in a flat-rate manner.
 
-Frische Sicherung der vorherigen ASI, aller neun Save-/Begleitdateien und des bisherigen Logs:
+Freshness backup of the previous ASI, all nine save/accompanying files and the previous log:
 
 `<Projektordner>\.local\blackstar-mod-20261001\summon-precheck\backups\20261001T184027Z`
 
-Nur die ASI wurde ersetzt. Alle 19 geschützten Dateien, einschließlich sämtlicher Saves, sind unverändert verifiziert. Nachweise und Installationsbericht: `.local/blackstar-mod-20261001/summon-precheck/`. Die genaue Restursache und der Erfolg an den gemeldeten Außenstellen bleiben offen.
+Only the ASI has been replaced. All 19 protected files, including all saves, are verified unchanged. Evidence and installation report: `.local/blackstar-mod-20261001/summon-precheck/`. The exact residual cause and the success at the reported field offices remain open.
 
-## Technischer Nachweis
+## Technical demonstration
 
-Der native `CharacterLevelData`-Reader und der `DataDefinedDefaultStatData`-Reader wurden als private Codekopien mit den tatsächlichen Schwarzstern-Daten ausgeführt. Der Reader konsumiert exakt den belegten Leveldatensatz. Über `statusgroupinfo` (`1000001`) und `statusinfo` (`1000026`, `Stamina`) ist Regenerationseintrag 12 eindeutig zugeordnet.
+The native `CharacterLevelData` reader and the `DataDefinedDefaultStatData` reader were executed as private code copies with the actual black star data. The reader consumes exactly the occupied level data set. Above `statusgroupinfo` (`1000001`) and `statusinfo` (`1000026`, `Stamina`) regeneration entry 12 is clearly assigned.
 
-Im Charakterdatensatz ändert die Erweiterung nach erfolgreichem Laden nur:
+In the character record, the extension only changes after successful loading:
 
-- Charakterdatensatz `_callMercenaryCoolTime`, Laufzeitoffset `0x70`: 3600 → 1.
-- Charakterdatensatz `_callMercenarySpawnDuration`, Laufzeitoffset `0x78`: 600 → 60.000 Sekunden. Der native Reader liest an diesem Offset acht Bytes; 60.000.000 Millisekunden passen auch in einen vorzeichenbehafteten 32-Bit-Zeitwert.
-- Leveldaten → Regenerationseintrag 12 → `_regenStat`: 20 → 30.000.000. Maximum 300.000, Anfangswert 100.000 und sämtliche anderen Eigenschaften bleiben identisch.
+- Character dataset `_callMercenaryCoolTime`, runtime offset `0x70`: 3600 → 1.
+- Character dataset `_callMercenarySpawnDuration`, runtime offset `0x78`: 600 → 60,000 seconds. The native reader reads eight bytes at this offset; 60,000,000 Milliseconds also fit into a signed 32 bit time value.
+- Level data → Regeneration entry 12 → `_regenStat`: 20 → 30.000.000. Maximum 300,000, initial value 100,000 and all other properties remain identical.
 
-Ein zusätzlicher Resolverhook deckt bereits geladene Datensätze ab. Alle Layout-, Anzahl- und Ausgangswertprüfungen müssen stimmen. Die zusätzlichen Beschwörungsfreigaben gelten nur innerhalb eines threadlokalen Schwarzstern-Beschwörungsaufrufs. Geschachtelte Aufrufe für andere Reittiere und andere Threads erhalten keine Freigabe.
+An additional resolver hook covers already loaded data sets. All layout, number and initial value checks must be correct. The additional summon releases are only valid within a thread-local black star summon call. Nested calls to other mounts and other threads are not shared.
 
-Die neue Flugfreigabe liest den Akteur aus dem nativen Bedingungskontext (`+0x828`), löst den Charakterindex über die belegte Komponentenroute auf und prüft Charakterkey `1000799`. Bei einem Reiter wird der native Reittier-Lookup verwendet und seine temporäre Referenz auch bei einem Lesefehler wieder freigegeben. Die erste Beschwörungsprüfung verwendet den originalen Instanz-Lookup mit der Instanznummer als 64-Bit-Wert. Der Plattformtest erhält nur an seiner belegten Aufrufstelle eine private Datenkopie mit freigegebenem Flag; gemeinsame Gimmickdaten werden nicht umgeschrieben.
+The new flight clearance reads the actor from the native condition context (`+0x828`), resolves the character index via the occupied component route and checks character key `1000799`. For a tab, the native mount lookup is used and its temporary reference is also released in the event of a reading error. The first summon checker uses the original instance lookup with the instance number as 64 bit value. The platform test shall only receive a private data copy with a shared flag at its occupied call point; Common gimmick data is not rewritten.
 
-Die Höhenprüfung verwendet einen atomar ersetzten Vtable-Slot (`0x5949e48`) mit der originalen Funktion als Rückfall. Ihr AVX-Funktionsanfang ließ sich im Test nicht durch MinHook verlagern. Die Slotlösung ist separat getestet; abweichende Pointer werden nicht überschrieben. Alle vierzehn Codehooks, Helfer, Selektoraufrufe und der Originalslot werden vor der Aktivierung geprüft. Bei einer fehlgeschlagenen Installation werden die Codehooks zurückgenommen.
+The elevation check uses an atomically replaced Vtable slot (`0x5949e48`) with the original function as a relapse. Your AVX function start could not be shifted in the test by MinHook. The slot solution is tested separately; Deviating pointers are not overwritten. All fourteen codehooks, helpers, selector calls and the original slot are checked before activation. If the installation fails, the codehooks are taken back.
 
-Bestanden:
+Passed:
 
-- Originale Level-/Statreader auf echten Daten; exakte Grenzen und Ausdauerzuordnung.
-- Bytevergleich: nur die vorgesehenen Charakter-/Ausdauerfelder wechseln; Gesundheit, Maxima und andere Reittiere bleiben unverändert.
-- Zehn Fälle mit abweichenden Daten werden ohne Schreibzugriff zurückgewiesen, einschließlich falscher Dauer und unvollständig geänderter Datensätze.
-- Wiederholte Anwendung, geschachtelte Aufrufe, falsche Aufrufstellen und Threadtrennung.
-- MinHook kann die vierzehn verwendeten originalen Funktionsanfänge korrekt verlagern; Aktivieren und Entfernen der Hooks in privaten Kopien erfolgreich.
-- Beide frühen Auswahlwege, geschachtelte Aktionen, fehlende/fremde Auswahl, andere Threads und Wiederherstellung nach Ausnahme getestet. Die fünf originalen Aktionsargumente, Rückgabepointer und Fehlerausgabe bleiben erhalten. Für andere Reittiere bleiben die ursprünglichen „nein“-/„unbekannt“-Antworten erhalten.
-- Die Fehlerdiagnose bleibt auf 64 unterschiedliche Kombinationen begrenzt; im Test werden trotzdem alle 100 Spielmeldungen mit ihren Originalargumenten und Rückgaben weitergegeben.
-- Die originalen Stadt-, Regions- und Höhenprüfungen wurden in privaten Codekopien ausgeführt: erlaubte, verbotene und unbekannte Antworten korrekt zugeordnet.
-- Der originale Instanz-Lookup wurde mit echten Speicherstrukturen nachgestellt und ausgeführt: Schwarzstern, anderes Reittier und fehlende Instanz korrekt erkannt.
-- Abgrenzung gegen Wyvern, unberittene Spieler, andere Akteurtypen, andere Straßenparameter und fremde Aufrufstellen. Reittierreferenzen bleiben auch bei einem ausgelösten Lesefehler ausgeglichen.
-- Atomarer Bedingungsslot: virtuelle Ausführung, Zurückweisen fremder Pointer, Wiederherstellung des Originals und des schreibgeschützten Speichers geprüft.
-- Sieben verkürzte Eingaben werden vom originalen Statreader zurückgewiesen.
-- Vorhandener Loader lädt die neue Erweiterung zusammen mit beiden Schlafplugins; eine nicht unterstützte EXE wird vor Hookinstallation abgewiesen.
-- Nach Installation stimmen die Prüfsummen der bestehenden Inventararchive, der EXE, des Loaders und beider Schlafmods weiterhin.
+- Original level/statreaders on real data; Exact limits and endurance assignment.
+- Byte comparison: change only the intended character/endurance fields; Health, maxima and other mounts remain unchanged.
+- Ten cases with different data are rejected without write access, including incorrect duration and incompletely changed records.
+- Repeated application, nested calls, incorrect call points, and thread separation.
+- MinHook can correctly relocate the fourteen original functional beginnings used; Activate and remove the hooks in private copies successfully.
+- Both early selection paths, nested actions, missing/foreign selection, other threads, and recovery tested by exception. The five original action arguments, return pointers and error output are retained. For other mounts, the original "no"/"unknown" answers remain.
+- The error diagnosis is limited to 64 different combinations; Nevertheless, in the test, all 100 game reports are passed on with their original arguments and returns.
+- The original city, region and elevation checks were carried out in private code copies: allowed, forbidden and unknown answers correctly assigned.
+- The original instance lookup was recreated and executed with real memory structures: black star, other mount and missing instance correctly detected.
+- Demarcation against Wyvern, unmounted players, other types of actors, other road parameters and foreign call points. Mount references are also compensated for a triggered reading error.
+- Atomic condition slot: virtual execution, rejection of foreign pointer, restoration of the original and checked read-only memory.
+- Seven shortened inputs are rejected by the original Statreader.
+- Existing loader loads the new extension along with both sleep plugins; An unsupported EXE is rejected before hook installation.
+- After installation, the checksums of the existing inventory archives, the EXE, the loader and both sleep mods are still correct.
 
-Diese Tests ersetzen keinen Lauf im tatsächlichen Spielprozess. Insbesondere ist „jeder beliebige Außenpunkt“ damit nicht nachgewiesen.
+These tests do not replace a run in the actual gaming process. In particular, “any external point” is thus not proven.
 
-## Jetzt im Spiel testen
+## Test now in the game
 
-1. Normal über Steam starten und den neuesten Spielstand laden (**Slot 2** zum Zeitpunkt dieses Updates). Im Log die neue `READY`-Zeile mit `town/region/height` prüfen.
-2. Schwarzstern regulär verlassen beziehungsweise entlassen und erneut beschwören. Der Cooldown soll nach etwa einer Sekunde abgelaufen sein; bereits vorhandene Instanzen und laufende Animationen bleiben geschützt.
-3. Mehrere Minuten fliegen, beschleunigen und wiederholt Feueratem verwenden. Ausdauer soll praktisch nicht ausgehen; Lebenspunkte verhalten sich normal.
-4. In einem zuvor gesperrten, freien Außenbereich beschwören. Danach an Haus, Höhle und Innen-/Außenschwelle kontrollieren, dass geschlossene Räume weiterhin abgewiesen werden.
-5. Ein rotes Gebiet aus dem Screenshot aufsuchen: von außen über die Grenze fliegen, tief über einen Stadtbereich abseits einer Straße fliegen und anschließend auf freiem Boden im Gebiet neu beschwören. Bei einer Ablehnung den Ort und die genaue Meldung festhalten; die neue Erweiterung protokolliert zusätzlich den ablehnenden Validator.
-6. Bei anhaltendem Flug kontrollieren, dass die Beschwörung nach zehn Minuten weiterläuft. Speichern und Neuladen soll die verlängerte Restzeit erhalten; auch eine neue Beschwörung soll länger als zehn Minuten möglich sein. Ein tatsächlicher Lauf über volle 1.000 Minuten wurde nicht durchgeführt.
-7. Bei freiem Außenbereich die bisherige Höhenbegrenzung überschreiten und kontrollieren, dass sie kein Abwerfen mehr auslöst. Wyvern und Bodenreittiere behalten ihre bisherigen Regeln.
+1. Start normally via Steam and load the latest save (**slot 2** at the time of this update). In the log, check the new `READY` line with `town/region/height`.
+2. Black stars regularly leave or dismiss and summon again. The cooldown should have expired after about one second; Existing instances and ongoing animations remain protected.
+3. Fly for several minutes, accelerate and repeatedly use fire breath. Endurance should practically not go out; Life points behave normally.
+4. Invoke in a previously locked, free outdoor area. Afterwards check on the house, cave and indoor/outdoor threshold that closed rooms are still rejected.
+5. Visit a red area from the screenshot: fly from the outside over the border, fly deep over a city area off a road and then re-create on open ground in the area. In the event of a refusal, record the location and the exact report; the new extension additionally logs the rejecting validator.
+6. If the flight continues, check that the summoning continues after ten minutes. Storage and reloading should receive the extended remaining time; A new summoning should also be possible for longer than ten minutes. An actual run over full 1,000 minutes was not performed.
+7. When outdoors are open, exceed the previous height limit and check that it no longer triggers discarding. Wyverns and ground mounts retain their previous rules.
 
-Quellen der vorausgehenden Analyse: [Unlimited Dragon Flying](https://www.nexusmods.com/crimsondesert/mods/356?tab=description), [Flight Freedom](https://github.com/shin2344234/flight-freedom/tree/e8e53f8081a113fa1708632b883783cebe76a8a5). Umsetzung aus den lokalen Spieldaten; bestehende Fremdmodarchive wurden nicht installiert.
+Sources of the previous analysis: [Unlimited Dragon Flying](https://www.nexusmods.com/crimsondesert/mods/356?tab=description), [Flight Freedom](https://github.com/shin2344234/flight-freedom/tree/e8e53f8081a113fa1708632b883783cebe76a8a5). Implementation from local game data; Existing third party mod archives were not installed.
 
-Quellcode, private Fixtures und Prüfprotokolle: `.local/blackstar-mod-20261001/`. Die Befunde der vorherigen Analyse bleiben in `.local/blackstar-analysis-20261001/` erhalten.
+Source code, private fixtures and test logs: `.local/blackstar-mod-20261001/`. The results of the previous analysis are retained in `.local/blackstar-analysis-20261001/`.
