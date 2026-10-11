@@ -12,21 +12,13 @@ Var CWPowerShell
 Var CWInitialized
 Var CWShowErrors
 
-LangString CWTitle 1031 "Spielmodule mitinstallieren"
 LangString CWTitle 1033 "Install game modules"
-LangString CWDescription 1031 "Live-Items und Zusatzsockel sind in diesem Setup enthalten."
 LangString CWDescription 1033 "Live Items and Extra Sockets are included in this setup."
-LangString CWCheckbox 1031 "Live-Items und Zusatzsockel installieren (empfohlen)"
 LangString CWCheckbox 1033 "Install Live Items and Extra Sockets (recommended)"
-LangString CWInfo 1031 "Spiel und Workbench vorher schliessen. Unterstuetzt wird EXE 1.0.0.2976. Vorhandene fremde Mods werden nicht ersetzt. Windows kann Administratorrechte anfordern."
 LangString CWInfo 1033 "Close the game and Workbench first. Supports EXE 1.0.0.2976. Existing third-party mods will not be replaced. Windows may request administrator permission."
-LangString CWFolder 1031 "Crimson-Desert-Spielordner (enthaelt bin64):"
 LangString CWFolder 1033 "Crimson Desert game folder (contains bin64):"
-LangString CWBrowse 1031 "Auswaehlen..."
 LangString CWBrowse 1033 "Browse..."
-LangString CWInvalid 1031 "Bitte den Spielordner mit bin64\CrimsonDesert.exe auswaehlen oder die Spielmodule abwaehlen."
 LangString CWInvalid 1033 "Choose the game folder containing bin64\CrimsonDesert.exe, or deselect the game modules."
-LangString CWFailed 1031 "Die Workbench wurde installiert, aber die Spielmodule konnten nicht eingerichtet werden. Die konkrete Ursache steht im Fehlerdialog. Nach Behebung dieses Setup erneut ausfuehren."
 LangString CWFailed 1033 "Workbench was installed, but game module setup failed. See the error dialog for the cause. Resolve it and run this setup again."
 
 ; Tauri includes hooks before its standard pages. This is a page of the same

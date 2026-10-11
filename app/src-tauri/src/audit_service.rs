@@ -60,16 +60,16 @@ impl AuditService {
         let mut jobs = self
             .job
             .lock()
-            .map_err(|_| error("Prüfauftragssperre beschädigt"))?;
+            .map_err(|_| error("Audit job lock poisoned"))?;
         if let Some(job) = jobs.as_ref()
             && job
                 .snapshot
                 .lock()
-                .map_err(|_| error("Prüfstatus beschädigt"))?
+                .map_err(|_| error("Audit status poisoned"))?
                 .active()
         {
             return Err(error(
-                "Eine Inhaltsprüfung läuft bereits; gegebenenfalls abbrechen und auf ihr Ende warten.",
+                "A content audit is already running; cancel if needed and wait for it to finish.",
             ));
         }
         let initial = Snapshot {
@@ -84,23 +84,50 @@ impl AuditService {
         let cancel = Arc::new(AtomicBool::new(false));
         let state = snapshot.clone();
         let stop = cancel.clone();
-        std::thread::Builder::new().name("content-audit".into()).spawn(move ||{
-            let updates=state.clone();
-            let progress:Box<dyn FnMut(Progress)+Send>=Box::new(move |p|{if let Ok(mut s)=updates.lock(){
-                // Only publishing a successful Report can end the job. The last
-                // progress callback alone must not admit an overlapping worker.
-                if p.phase!="complete"{s.phase=p.phase;}s.progress=p;
-            }});
-            let result=std::panic::catch_unwind(std::panic::AssertUnwindSafe(||work(&stop,progress)));
-            if let Ok(mut s)=state.lock(){
-                if stop.load(Ordering::Acquire){s.phase="cancelled";s.report=None;s.error=Some("Inhaltsprüfung abgebrochen; kein vollständiger Bericht erstellt.".into());}
-                else {match result{
-                    Ok(Ok(report))=>{s.phase="complete";s.report=Some(report);},
-                    Ok(Err(e))=>{s.phase="failed";s.error=Some(e.to_string());},
-                    Err(_)=>{s.phase="failed";s.error=Some("Prüfprozess fehlgeschlagen; kein vollständiger Bericht erstellt.".into());},
-                }}
-            }
-        }).map_err(|e|error(e.to_string()))?;
+        std::thread::Builder::new()
+            .name("content-audit".into())
+            .spawn(move || {
+                let updates = state.clone();
+                let progress: Box<dyn FnMut(Progress) + Send> = Box::new(move |p| {
+                    if let Ok(mut s) = updates.lock() {
+                        // Only publishing a successful Report can end the job. The last
+                        // progress callback alone must not admit an overlapping worker.
+                        if p.phase != "complete" {
+                            s.phase = p.phase;
+                        }
+                        s.progress = p;
+                    }
+                });
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    work(&stop, progress)
+                }));
+                if let Ok(mut s) = state.lock() {
+                    if stop.load(Ordering::Acquire) {
+                        s.phase = "cancelled";
+                        s.report = None;
+                        s.error =
+                            Some("Content audit cancelled; no complete report created.".into());
+                    } else {
+                        match result {
+                            Ok(Ok(report)) => {
+                                s.phase = "complete";
+                                s.report = Some(report);
+                            }
+                            Ok(Err(e)) => {
+                                s.phase = "failed";
+                                s.error = Some(e.to_string());
+                            }
+                            Err(_) => {
+                                s.phase = "failed";
+                                s.error = Some(
+                                    "Audit process failed; no complete report created.".into(),
+                                );
+                            }
+                        }
+                    }
+                }
+            })
+            .map_err(|e| error(e.to_string()))?;
         *jobs = Some(Job { cancel, snapshot });
         Ok(initial)
     }
@@ -108,13 +135,13 @@ impl AuditService {
         let jobs = self
             .job
             .lock()
-            .map_err(|_| error("Prüfauftragssperre beschädigt"))?;
+            .map_err(|_| error("Audit job lock poisoned"))?;
         jobs.as_ref()
             .map(|j| {
                 j.snapshot
                     .lock()
                     .map(|s| s.clone())
-                    .map_err(|_| error("Prüfstatus beschädigt"))
+                    .map_err(|_| error("Audit status poisoned"))
             })
             .transpose()
             .map(|s| s.filter(|s| s.session == session))
@@ -123,14 +150,14 @@ impl AuditService {
         let jobs = self
             .job
             .lock()
-            .map_err(|_| error("Prüfauftragssperre beschädigt"))?;
-        let job = jobs.as_ref().ok_or_else(|| error("Kein Prüfauftrag"))?;
+            .map_err(|_| error("Audit job lock poisoned"))?;
+        let job = jobs.as_ref().ok_or_else(|| error("No audit job"))?;
         let s = job
             .snapshot
             .lock()
-            .map_err(|_| error("Prüfstatus beschädigt"))?;
+            .map_err(|_| error("Audit status poisoned"))?;
         if s.session != session || s.id != id {
-            return Err(error("Prüfauftrag ist veraltet"));
+            return Err(error("Audit job is stale"));
         }
         if s.active() {
             job.cancel.store(true, Ordering::Release);
@@ -148,7 +175,7 @@ impl AuditService {
         self.status(session)?
             .filter(|s| s.id == id && s.phase == "complete")
             .and_then(|s| s.report)
-            .ok_or_else(|| error("Kein vollständiger Bericht für diesen Auftrag"))
+            .ok_or_else(|| error("No complete report for this job"))
     }
 }
 impl Drop for AuditService {

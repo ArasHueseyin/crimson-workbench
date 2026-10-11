@@ -1,106 +1,52 @@
-# Reparatur 0.13.0 – Slot-Markierung und gehaltene Erfassung
+# Repair 0.13.0 – Slot marking and held capture
 
-Historischer Entwicklungsstand; ergänzt durch den
-[Feldschreiber 0.14.0](FIELD_WRITER_2949.md).
+historical stage of development; supplemented by the [Field recorder 0.14.0](FIELD_WRITER_2949.md).
 
-Stand 22.09.2026, Steam 25455892 / EXE 1.0.0.2949. EXE-Hash:
-`a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`.
-**Entwicklungsmodul; weiterhin keine installierbare Reparatur.** App v0.5.9 bleibt
-unverändert. Die Reparaturoption ist weiterhin gesperrt.
+Status: 22.09.2026, Steam 25455892 / EXE 1.0.0.2949. EXE hash: `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`. **Development module; still no installed repair.** App v0.5.9 remains unchanged. The repair option is still blocked.
 
-## Implementierung
+## Implementation
 
-`reader::HeldCapture` hält beide nativen Besitzerreferenzen und exklusiven
-Besitzersperren nach der Erfassung weiter. Planung und erneute Vorprüfung können
-damit innerhalb derselben ununterbrochenen Sperrphase stattfinden. Die bisherigen
-kurzen `capture_with_references`-Aufrufe verwenden denselben Weg, geben aber wie
-bisher alles vor der Rückkehr frei.
+`reader::HeldCapture` keeps both native owner references and exclusive owner locks after capture. Planning and re-examination can thus take place within the same uninterrupted blocking phase. The previous short `capture_with_references` calls use the same path, but as before, they release everything before returning.
 
-`refresh` verlangt den vom Host unabhängig beobachteten aktuellen Frame. Andere
-Weltgeneration, Katalogrevision, Imagebasis oder Build werden abgewiesen. Jeder
-Refresh prüft erneut Auswahl, vollständige Kennung, lebendige Besitzer,
-Sperrbindungen und das vollständige Itemabbild samt Kontrolllesen. Fehler löschen
-alte Ergebnisse und schließen die Besitzphase. Es gibt keine zweite ungeschützte
-Registry-Suche. `release_locks` beendet die Lesephase endgültig, hält die Referenzen
-aber bis `close`/Destruktion für nachfolgende Benachrichtigungen. Wiedererwerb und
-Nutzung auf einem anderen Thread sind ausgeschlossen.
+`refresh` requires the current frame independently observed by the host. Other world generation, catalogue revision, image base or build are rejected. Each refresh checks again selection, complete identifier, living owners, lock ties and the complete item image together with control reading. Errors delete old results and close the ownership phase. There is no second unprotected registry search. `release_locks` ends the reading phase finally, but keeps the references until `close`/Destruction for subsequent notifications. Re-acquisition and use on another thread are excluded.
 
-Dies ist eine synchrone Erfassung mit gehaltenen Besitzern, **noch kein nativer
-Schreiber**. Der Host muss Manager, Kontext und Katalog gültig halten,
-Weltübergänge ausschließen und auf dem bestätigten Engine-Thread mit passendem TLS
-laufen. Die Klasse erkennt solche Übergänge nicht selbst und darf keine Frames
-überspannen. Ein vorbereiteter Plan wird vor einer Anwendung weiterhin vollständig
-gegen die frischen Daten geprüft; getestet ist dies am vorhandenen privaten Backend.
+This is a synchronous capture with held owners, **not yet a native scribe**. The host must keep the manager, context and catalog valid, exclude world transitions and run on the confirmed engine thread with matching TLS. The class does not recognize such transitions itself and must not span any frames. A prepared plan will continue to be fully verified against the fresh data prior to application; This is tested on the existing private backend.
 
-## Neue native Nachweise
+## New native evidence
 
-Die Server-Ausrüstungs-VTable `0x5b28f80`, Eintrag `+0x198`, verweist auf
-`0x2ae0650`. Diese Funktion trägt den Slot in die Tabelle an Komponente `+0x1e8`
-ein. Der vollständige Weg einschließlich Kollisionen, verschobener Buckets und
-Neuaufbau der Tabelle läuft jetzt auf privaten Komponenten im eigenen Testprozess.
+The server equipment VTable `0x5b28f80`, entry `+0x198`, refers to `0x2ae0650`. This function enters the slot into the table of component `+0x1e8`. The complete path, including collisions, shifted buckets and rebuilding of the table, now runs on private components in the own test process.
 
-| Funktion | RVA | Vollständiger Codebereich |
+|Function|RVA|Complete code area|
 |---|---|---|
-| Slot-Markierung | `0x2ae0650` | `0x32` Bytes |
-| Insert-Sprung | `0x20cd620` | `0x5` Bytes |
-| Insert | `0xe1db910` | `0x20c` Bytes, drei pdata-Fragmente |
-| Platzsuche / Kollisionsverschiebung | `0x20cd9e0` | `0x287` Bytes, drei pdata-Fragmente |
-| Vergrößern / Rehash | `0x20cdc70` | `0x4be` Bytes |
-| Bucket-Verknüpfung | `0x411bc0` | `0x77` Bytes |
+|Slot marking|`0x2ae0650`|`0x32` Bytes|
+|Insert jump|`0x20cd620`|`0x5` Bytes|
+|Insert|`0xe1db910`|`0x20c` Bytes, three pdata fragments|
+|Place search / collision displacement|`0x20cd9e0`|`0x287` Bytes, three pdata fragments|
+|Enlarge / Rehash|`0x20cdc70`|`0x4be` Bytes|
+|Bucket linkage|`0x411bc0`|`0x77` Bytes|
 
-Alle Bereiche besitzen eigene SHA-256-Werte im
-[Manifest](tests/dirty_functions.inl). Die Platzsuche wird vollständig kopiert,
-einschließlich ihrer beiden hinteren Fragmente. Der bytegleiche Unwind-Alias
-`0x6106998` → `0x17147c54` wird nur für die exakt geprüfte Insert-Elternkette
-normalisiert. Die ursprünglichen TLS-Lesestellen `0xe1dba5f` und `0x20cdcb6`
-werden ausschließlich in den privaten Funktionskopien umgeleitet.
+All ranges have their own SHA-256 values in [Manifest](tests/dirty_functions.inl). The place search is completely copied, including its two rear fragments. The byte-identical Unwind alias `0x6106998` → `0x17147c54` is only normalized for the exactly tested insert parent chain. The original TLS reading locations `0xe1dba5f` and `0x20cdcb6` are redirected exclusively in the private functional copies.
 
-Der Testheap unterstützt jetzt die originale 32-Byte-Ausrichtung der Knoten.
-Schutzmarkierungen, eindeutiger Besitz der Payloads, ausgeglichene Freigaben,
-Slot-/Serienwerte sowie sämtliche Vorwärts-/Rückwärtsverkettungen werden geprüft.
-Kopierpuffer und Slot-Payloads bleiben getrennte Allokationen.
+The test heap now supports the original 32 byte orientation of the nodes. Protective markings, unique possession of the payloads, balanced releases, slot/series values and all forward/reverse chains are checked. Copy buffers and slot payloads remain separate allocations.
 
-## Ausgeführte Tests
+## Tests carried out
 
-- Sieben CTest-Suiten, MSVC Release mit `/W4 /WX` bestanden.
-- 519 Leser-/Referenzbedingungen, davon neue Fälle für gehaltene Erfassung,
-  Wiedererwerb, falschen Thread, Fehler-/Exception-Freigabe und Zustandswechsel.
-  Ein veralteter Batch mit einem erst später geänderten Item verändert im
-  privaten Backend auch die früheren Items nicht.
-- 16 neue native Slot-Fälle: leer, Einzeleintrag, Duplikate, verschobene
-  Kollisionsgruppen, 64 Einträge aufsteigend/absteigend, stark kollidierende und
-  hochbitige Slotwerte, jeweils beide TLS-Allokationswege. Hochbitige Werte sind
-  ein Hash-/ABI-Test, keine Freigabe solcher Ausrüstungsslots.
-- Alle 15 vorhandenen Ereignisfälle markieren jetzt den geänderten Slot unter
-  beiden Besitzersperren. Die originale Server-Benachrichtigung läuft danach auf
-  derselben privaten Komponente mit der nativen Nachherkopie. Die Empfänger prüfen,
-  dass der Eintrag vorhanden, die Sperren frei und die Referenzen noch gehalten sind.
-- Ein konkurrierender Thread kann nach Rückkehr aus `HeldCapture::open` keine
-  der beiden echten Windows-Besitzersperren erwerben. Refresh benötigt keinen
-  erneuten Sperr-/Referenzerwerb; Entsperren hält die Actor-Referenzen weiterhin.
+- Seven CTest suites, MSVC release with `/W4 /WX` passed.
+- 519 reader/reference conditions, including new cases for held capture,
+Reacquisition, wrong thread, error/exception release and Zustandchange. An outdated batch with a later changed item does not change the previous items in the private backend.
+- 16 new native slot cases: empty, single entry, duplicates, moved
+Collision groups, 64 entries ascending/descending, strongly colliding and high-bit slot values, both TLS allocation paths in each case. High-bit values are a hash/ABI test, not a release of such equipment slots.
+- All 15 existing event cases now mark the modified slot under
+Both owner locks. The original server notification then runs on the same private component with the native aftercopy. The consignees check that the entry is present, the blocks are clear and the references are still held.
+- A competing thread cannot return to `HeldCapture::open`
+of the two real Windows owner locks. Refresh does not require re-blocking/reference acquisition; Unlock keeps the actor references.
 
-Insgesamt **133 native Szenarien, 1.296 gezählte Aufrufe und 119.997 Bedingungen**.
-Der größere Bedingungszähler entsteht überwiegend durch erneute Prüfung aller
-Tabelleneinträge nach jeder Einfügung. Er entspricht nicht dieser Anzahl
-unabhängiger Szenarien. Manifest: 51 Codebereiche, 57 pdata-Fragmente und 26
-private TLS-Lesestellen; ohne EXE nur 306 Manifestbedingungen.
+Total **133 native scenarios, 1,296 counted calls and 119,997 conditions**. The larger condition counter is produced mainly by re-checking all table entries after each insertion. It does not correspond to this number of independent scenarios. Manifest: 51 code ranges, 57 pdata fragments and 26 private TLS readers; without EXE only 306 manifest conditions.
 
-## Weiterhin offene Integration
+## Continued open integration
 
-Die Slot-Markierung allein bestätigt weder UI-Aktualisierung noch Persistenz.
-Der spätere Verbraucher dieser Liste und ihre native Bereinigung sind noch nicht
-angebunden; die Probe räumt ihre privaten Allokationen selbst auf. Engine-Allocator
-und dessen Fehlerwege, Effektverarbeitung, Transport, UI und Teile der Kindobjekt-
-Verwaltung bleiben Testabhängigkeiten. Die Probe führt keine Allokationsfehler
-in fremdem Code herbei.
+The slot marking alone confirms neither UI update nor persistence. The subsequent consumer of this list and its native cleanup are not yet connected; The sample itself cleans up its private allocations. Engine Allocator and its error paths, effect processing, transport, UI and parts of the child object management remain test dependencies. The sample does not cause any allocation errors in a foreign code.
 
-Es fehlen der vollständige Schreib-/Ereignisweg für mitgeführte **und** ausgerüstete
-Items, eindeutige echte Rückmeldungen, Spieler-/Manager-/Thread-/Weltbindung,
-Eingabe, Loader und B0-Installation. `HeldCapture` ist keine solche Freigabe.
-Keine Ausführung im Spielprozess, keine Savezugriffe, keine Spielinstallation
-beschrieben. Rust-/Frontendcode wurde nicht geändert oder erneut getestet.
+There is no complete write/event path for ** and ** equipped items, clear real feedback, player/manager/thread/world binding, input, loader and B0 installation. `HeldCapture` is not such release. No execution in the game process, no save accesses, no game installation described. Rust-/Frontendcode has not been changed or re-tested.
 
-Nachweise: `.local/repair-runtime-v13-{build-test.log,native-result.json,validation.json}`.
-Vorgänger: [Itemkopien 0.12.0](ITEM_LIFECYCLE_2949.md).
-Spätere manuelle Abnahme: [TESTCHECKLISTE](../../TESTCHECKLISTE.md), insbesondere
-R02, R05, R06, R10 und R12; erst nach vollständiger Implementierung.
+Evidence: `.local/repair-runtime-v13-{build-test.log,native-result.json,validation.json}`. Predecessor: [Item copies 0.12.0](ITEM_LIFECYCLE_2949.md). Later manual acceptance: [TESTCHECKLISTE](../../TESTCHECKLISTE.md), in particular R02, R05, R06, R10 and R12; Only after full implementation.

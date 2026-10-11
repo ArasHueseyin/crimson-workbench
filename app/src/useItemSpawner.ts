@@ -14,7 +14,7 @@ export function useItemSpawner(session: number, game: string) {
   const [pending, setPending] = useState<SpawnRequest | null>(() => restore(storageKey));
   const [runtime, setRuntime] = useState<SpawnSnapshot | null>(null);
   const [result, setResult] = useState<SpawnSnapshot | null>(null);
-  const [message, setMessage] = useState('Live-Modul wird geprüft …');
+  const [message, setMessage] = useState('Checking live module …');
   const [sending, setSending] = useState(false);
   const active = useRef(true), latch = useRef(false), current = useRef(pending), lastResult = useRef<SpawnSnapshot | null>(null), generation = useRef(0);
   const terminal = (value: SpawnSnapshot) => {
@@ -33,7 +33,7 @@ export function useItemSpawner(session: number, game: string) {
         if (!alive || token !== generation.current) return;
         if (current.current) terminal(value); else { setRuntime(value); if (!lastResult.current) setMessage(value.message); }
       } catch (e) {
-        if (alive) { setRuntime(null); setMessage(current.current ? `${asError(e).message} Die Anfrage bleibt gespeichert; keine automatische Wiederholung.` : asError(e).message); }
+        if (alive) { setRuntime(null); setMessage(current.current ? `${asError(e).message} The request stays saved; no automatic retry.` : asError(e).message); }
       } finally { polling = false; }
     }
     void poll(); const timer = window.setInterval(() => void poll(), 2000);
@@ -48,7 +48,7 @@ export function useItemSpawner(session: number, game: string) {
       localStorage.setItem(storageKey, JSON.stringify(request)); current.current = request; setPending(request);
       const value = await api.spawnGrant(session, request); if (active.current && token === generation.current) terminal(value);
     } catch (e) {
-      if (active.current && token === generation.current) setMessage(`${asError(e).message}${current.current ? ' Ergebnis wird über dieselbe Anfrage-ID abgefragt.' : ''}`);
+      if (active.current && token === generation.current) setMessage(`${asError(e).message}${current.current ? ' Checking the result using the same request ID.' : ''}`);
     } finally { latch.current = false; if (active.current) setSending(false); }
   }
   async function cancel() {
@@ -59,7 +59,7 @@ export function useItemSpawner(session: number, game: string) {
     finally { latch.current = false; if (active.current) setSending(false); }
   }
   function acknowledge() {
-    if (sending) return; localStorage.removeItem(storageKey); current.current = null; setPending(null); lastResult.current = null; setResult(null); setMessage('Ergebnis geprüft. Verbindung wird neu abgefragt.');
+    if (sending) return; localStorage.removeItem(storageKey); current.current = null; setPending(null); lastResult.current = null; setResult(null); setMessage('Result checked. Refreshing connection.');
   }
   return { ready: runtime?.state === 'ready' && !pending && !sending, pending, result, message, sending, give, cancel, acknowledge };
 }

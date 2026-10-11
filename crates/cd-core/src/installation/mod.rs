@@ -135,7 +135,7 @@ fn classify_owned(policy: &crate::paths::PathPolicy, mut report: Inventory) -> R
                             && i.code == "size_mismatch"
                 })
             });
-            report.limitations.push("Workbench-Dateien werden anhand der eigenen Zulassung und Historie separat ausgewiesen. Dies ist eine Metadatenzuordnung, kein erneuter Inhaltsnachweis der Overlays. Für einen neuen Vanilla-Inhaltsbericht muss die Registry im Originalzustand sein.".into());
+            report.limitations.push("Workbench files are listed separately using their approval and history. This maps metadata without rechecking overlay contents. The registry must be original for a new vanilla content report.".into());
         }
         Ok(None) => {}
         Err(e) => report.issue("workbench_ownership_unavailable", None, e.to_string()),
@@ -157,11 +157,11 @@ fn inspect_with(game: &Path, steam_roots: &[PathBuf]) -> Result<Inventory> {
         registry_matches_observed_build:None, depots:Vec::new(), executables:Vec::new(),
         groups:Vec::new(), files:Vec::new(), managed_files:Vec::new(), managed_registry:false, foreign_files:Vec::new(),foreign_approval:None, issues:Vec::new(),
         limitations:vec![
-            "Dateinamen und Größen sind geprüft; Dateiinhalte der Archive und Startprogramme wurden nicht gehasht.".into(),
-            "Lokale Steam-Depotlisten sind nicht unabhängig authentifiziert. Auch ein passender Cache bestätigt kein Vanilla.".into(),
-            "Momentaufnahme ohne Spielsperren. Gleich große Änderungen und Änderungen während oder nach der Prüfung können unbemerkt bleiben.".into(),
-            "EXE-Liste umfasst Depot- und Verzeichnisfunde innerhalb der Installation; externe Startpfade und der tatsächliche Ladevorgang sind nicht verifiziert.".into(),
-            "Diese Dateiliste erteilt keine Live-Freigabe. Live-B0 prüft Herkunftsbestätigung, Basis und Quellen separat. Steam-Dateiprüfung nur nach dem Spielen manuell ausführen.".into(),
+            "Filenames and sizes checked; archive and launcher contents were not hashed.".into(),
+            "Local Steam depot lists are not independently authenticated. A matching cache does not confirm vanilla files.".into(),
+            "Snapshot without game locks. Changes of the same size and changes during or after the check may go unnoticed.".into(),
+            "EXE list covers depot entries and files found inside the installation; external launch paths and the actual loading process are not verified.".into(),
+            "This file list does not authorize live changes. Live B0 checks origin confirmation, baseline and sources separately. Run Steam file verification manually after closing the game.".into(),
         ],
     };
     let mut disk = BTreeMap::new();
@@ -218,14 +218,10 @@ fn inspect_with(game: &Path, steam_roots: &[PathBuf]) -> Result<Inventory> {
                 state,
                 Some(path.clone()),
                 match state {
-                    "missing" => {
-                        "In den Depotlisten vorhanden, auf dem Datenträger nicht gefunden."
-                    }
-                    "type_mismatch" => {
-                        "Datei und Verzeichnis stimmen nicht mit der Depotliste überein."
-                    }
-                    "size_mismatch" => "Dateigröße weicht von der Depotliste ab.",
-                    _ => "Verknüpfung oder besonderer Dateityp; nicht verfolgt und nicht geprüft.",
+                    "missing" => "Present in depot lists but not found on disk.",
+                    "type_mismatch" => "File/directory type does not match the depot list.",
+                    "size_mismatch" => "File size differs from the depot list.",
+                    _ => "Link or special file type; not followed or checked.",
                 },
             );
         }
@@ -265,14 +261,14 @@ fn inspect_with(game: &Path, steam_roots: &[PathBuf]) -> Result<Inventory> {
                     report.issue(
                         "required_group_missing",
                         Some(group.name.clone()),
-                        "Erforderliche registrierte Archivgruppe fehlt.",
+                        "Required registered archive group missing.",
                     );
                 }
                 if installed && !in_depots && report.depot_comparison_available {
                     report.issue(
                         "group_outside_depots",
                         Some(group.name.clone()),
-                        "Installierte Registry-Gruppe fehlt in den gewählten Depotlisten.",
+                        "Installed registry group missing from selected depot lists.",
                     );
                 }
                 report.groups.push(GroupInfo {
@@ -301,7 +297,7 @@ fn inspect_with(game: &Path, steam_roots: &[PathBuf]) -> Result<Inventory> {
             report.issues.push(Issue {
                 code: "unregistered_group",
                 path: Some(group.into()),
-                message: "Archivgruppe ist nicht in der gelesenen Registry registriert.".into(),
+                message: "Archive group is not registered in the loaded registry.".into(),
             });
         }
     }

@@ -104,13 +104,13 @@ fn blank(source: &ObjectBlock, class: &str, shape: &[Shape]) -> Result<ObjectBlo
                 && w.sentinel2 == u32::MAX
         })
     {
-        return Err(bad("Unbestätigtes Layout für den Reittier-Basiseintrag."));
+        return Err(bad("Unverified mount base entry layout."));
     }
     let mut out = source.clone();
     out.mask_bytes.fill(0);
     for (index, f) in out.fields.iter_mut().enumerate() {
         let Some(&(_, ty, kind, size, aux)) = shape.iter().find(|s| s.0 == f.name) else {
-            return Err(bad("Unbekanntes Feld im Reittier-Basiseintrag."));
+            return Err(bad("Unknown field in mount base entry."));
         };
         if f.field_index as usize != index
             || f.type_name != ty
@@ -119,7 +119,7 @@ fn blank(source: &ObjectBlock, class: &str, shape: &[Shape]) -> Result<ObjectBlo
             || f.meta_aux != aux
             || source.fields.iter().filter(|x| x.name == f.name).count() != 1
         {
-            return Err(bad("Geändertes Feldformat im Reittier-Basiseintrag."));
+            return Err(bad("Changed field format in mount base entry."));
         }
         f.start = 0;
         f.end = 0;
@@ -137,7 +137,7 @@ fn blank(source: &ObjectBlock, class: &str, shape: &[Shape]) -> Result<ObjectBlo
                 ..
             } = &mut f.value
             else {
-                return Err(bad("Fehlende Inline-Struktur im Reittier-Basiseintrag."));
+                return Err(bad("Missing inline structure in mount base entry."));
             };
             if !f.present
                 || *child_reserved != 0
@@ -147,9 +147,7 @@ fn blank(source: &ObjectBlock, class: &str, shape: &[Shape]) -> Result<ObjectBlo
                 || *child_type_index as u32 != child.class_index
                 || *child_type_name != child.class_name
             {
-                return Err(bad(
-                    "Unbestätigte Inline-Struktur im Reittier-Basiseintrag.",
-                ));
+                return Err(bad("Unverified inline structure in mount base entry."));
             }
             let (expected, child_shape) = if class == "MercenarySaveData" {
                 ("ExperienceLevelSaveData", LEVEL)
@@ -177,9 +175,9 @@ fn scalar(o: &mut ObjectBlock, name: &str, value: ScalarValue) -> Result<()> {
         .fields
         .iter_mut()
         .find(|f| f.name == name)
-        .ok_or_else(|| bad("Basisfeld fehlt."))?;
+        .ok_or_else(|| bad("Base field missing."))?;
     if f.meta_kind != 0 {
-        return Err(bad("Basisfeld ist kein Skalar."));
+        return Err(bad("Base field is not a scalar."));
     }
     f.present = true;
     f.absent_marker = false;
@@ -221,7 +219,7 @@ pub(super) fn verify(o: &ObjectBlock) -> Result<()> {
             f.name == "_isInitialize" && matches!(f.value, FieldValue::Scalar(ScalarValue::Bool(0)))
         })
     {
-        return Err(bad("Basiseintrag enthält unerwarteten Tierzustand."));
+        return Err(bad("Base entry contains unexpected animal state."));
     }
     let level = o.fields.iter().find(|f| f.name == "_levelData").unwrap();
     let FieldValue::Locator {
@@ -232,12 +230,12 @@ pub(super) fn verify(o: &ObjectBlock) -> Result<()> {
     };
     for f in &level.fields {
         if f.present && f.meta_kind != 4 {
-            return Err(bad("Kopierte Levelwerte im Basiseintrag."));
+            return Err(bad("Copied level values in base entry."));
         }
         if let FieldValue::Locator { child: Some(c), .. } = &f.value
             && c.fields.iter().any(|f| f.present)
         {
-            return Err(bad("Kopierte Tageszähler im Basiseintrag."));
+            return Err(bad("Copied daily counters in base entry."));
         }
     }
     Ok(())

@@ -73,7 +73,7 @@ pub(crate) fn known_for_game(game: &Path) -> crate::Result<&'static KnownBuild> 
         .and_then(known_for_version)
         .ok_or_else(|| {
             crate::Error::UnsupportedBuild(format!(
-                "EXE-Version {version:?}; unterstützt: 1.0.0.2944, 1.0.0.2949, 1.0.0.2976"
+                "EXE version {version:?}; supported: 1.0.0.2944, 1.0.0.2949, 1.0.0.2976"
             ))
         })
 }

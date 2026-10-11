@@ -1,63 +1,31 @@
-# Native Formatportierung für Phase 1
+# Native format port for phase 1
 
-Ergänzung Phase 2: `ItemRecord.stat_keys` sammelt tatsächliche Statusreferenzen
-aus `enchant_data_list` und `sharpness_data.stat_data`. Key-Wrapper behalten in
-getrackten Feldern ihren Typnamen (z. B. `ItemKey`) statt nur `u32`; Werte und
-Bytebereiche bleiben unverändert. So entstehen Links ausschließlich aus
-typisierten Referenzen. Der zusätzliche Stringinfo-Parser im Core ist eine eigene
-Implementierung nach der MIT-Formatdokumentation aus dem gleichen Ursprungscommit;
-31.812 reale Strings und beide Dateien bestehen ihren Roundtrip. Details unter
-[DESKTOP.md](DESKTOP.md).
+Phase 2: `ItemRecord.stat_keys` collects actual status references from `enchant_data_list` and `sharpness_data.stat_data`. Key wrappers retain their type name in tracked fields (e.g. `ItemKey`) instead of just `u32`; Values and byte ranges remain unchanged. This creates links exclusively from typed references. The additional Stringinfo parser in the core is a proprietary implementation according to the MIT format documentation from the same original commit; 31,812 real strings and both files pass their round trip. Details under [DESKTOP.md](DESKTOP.md).
 
-`vendor/crimson-format` ist eine interne Rust-Crate ohne Python, ausgelieferte C-ABI,
-GUI oder Apply-Funktion. Sie stellt ausschließlich lesende Dateizugriffe und
-Serialisierung in Speicher bereit. Der aufrufende `cd-core` muss vor Benutzung
-die bekannten Build-/Tabellenhashes prüfen und darf Parsererfolg nicht mit einem
-Vanilla-Nachweis gleichsetzen.
+`vendor/crimson-format` is an internal Rust crate without Python, shipped C-ABI, GUI or Apply function. It provides only read file accesses and serialization in memory. The calling `cd-core` must check the known build/table hashes before use and must not equate parser success with a vanilla proof.
 
-## Herkunft und Entscheidung
+## Origin and decision
 
-Format- und Itembasis: [bbfox0703/crimson-rs, Commit
-b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0](https://github.com/bbfox0703/crimson-rs/tree/b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0),
-Commitzeit 2026-09-18 16:51:44 +08:00. Copyright 2026 Tommy Tran, MIT;
-der vollständige Lizenztext steht in
-[vendor/crimson-format/LICENSE](../vendor/crimson-format/LICENSE).
+Format and item base: [bbfox0703/crimson-rs, Commit b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0](https://github.com/bbfox0703/crimson-rs/tree/b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0), commit time 2026-09-18 16:51:44 +08:00. Copyright 2026 Tommy Tran, MIT; The full license text is in [vendor/crimson-format/LICENSE](../vendor/crimson-format/LICENSE).
 
-Der Referenzbuild und der aktuelle 2.03-Itemparser funktionieren. Die unveränderte
-Git-Dependency besitzt jedoch keine `rlib`-Ausgabe und keine öffentliche Rust-
-Core-API. Deshalb wurde die in Phase 0 dokumentierte begrenzte MIT-Portierung
-gewählt, keine neue externe Fork-/Veröffentlichungsabhängigkeit geschaffen.
-Es wurde kein fremder Manager eingebunden und kein Spielinhalt übernommen.
+The reference build and the current 2.03 itemparser are working. However, the unchanged Git-Dependency has no `rlib` output and no public Rust core API. Therefore, the limited MIT port documented in phase 0 was chosen, no new external fork/publish dependency was created. No foreign manager was involved and no game content was taken over.
 
-Übernommen/adaptiert wurden ausschließlich:
+Adopted/adapted were exclusively:
 
-- `src/binary/{mod,primitives,arrays,types}.rs`: primitive Typen, strukturierte
-  BinaryRead/BinaryWrite und vollständige Bytefeldbereiche.
-- `src/item_info/{mod,keys,item,structs}.rs`: typisierte 2.03-Itemstruktur.
-- `src/crypto/checksum.rs`, `src/crypto/chacha20.rs`: Jenkins und PAZ-ChaCha20.
-- Der lesende Partial-Kompressionsabschnitt aus `src/binary/paz.rs`:
-  Header-LZ4 und DDS-Mip-Varianten; seine upstream Formatquellenhinweise bleiben
-  erhalten. Keine PAZ-Builder-/Filesystem-Schreibfunktionen wurden übernommen.
-- Ergänzung vom 03.10.2026: `src/save/` derselben MIT-Revision für Header,
-  ChaCha/HMAC, Kompression, TOC und strukturierte Save-Objekte einschließlich
-  Serialisierung in Speicher. Zusätzliche Lizenzkopie:
-  [LICENSE-save](../vendor/crimson-format/LICENSE-save). HMAC-Fehler werden vor
-  der Dekompression abgewiesen, Datei- und Nutzdatenlängen sind auf 128 MiB
-  begrenzt; überzählige Dateibytes werden abgewiesen. Der aufrufende Core muss
-  unbekannte Bereiche und fehlende exakte Roundtrips vor Schreiboperationen
-  ablehnen. Die permanente Stallregistrierung ist eine getrennte, vom Nutzer
-  beauftragte Erweiterung; der geplante allgemeine Save-Tracker bleibt lesend.
+- `src/binary/{mod,primitives,arrays,types}.rs`: primitive types, structured
+BinaryRead/BinaryWrite and full bytefield ranges.
+- `src/item_info/{mod,keys,item,structs}.rs`: Typed 2.03 item structure.
+- `src/crypto/checksum.rs`, `src/crypto/chacha20.rs`: Jenkins and PAZ-ChaCha20.
+- The reading partial compression section from `src/binary/paz.rs`:
+header LZ4 and DDS mip variants; its upstream format source notes are retained. No PAZ builder/file system writing functions were taken over.
+- Addition of 03.10.2026: `src/save/` same MIT revision for headers,
+ChaCha/HMAC, compression, TOC and structured save objects including serialization in memory. Additional license copy: [LICENSE-save](../vendor/crimson-format/LICENSE-save). HMAC errors are rejected before decompression, file and user data lengths are limited to 128 MiB; Surplus file bytes are rejected. The calling core must reject unknown areas and missing exact round trips before write operations. Permanent stable registration is a separate extension commissioned by the user; The planned general save tracker remains reading.
 
-`archive.rs`, `items.rs`, `localization.rs` sind eigene begrenzte Fassaden und
-Containerleser auf Basis der in [ARCHIVES.md](research/ARCHIVES.md) belegten
-Formate. PAMT/PAPGT werden strukturell gelesen und mit erhaltenen Namens-/Trie-
-Puffern neu serialisiert; `serialize_registry` und `serialize_group` sind keine
-Rückgabe des eingelesenen Bytevektors. Die SHA-256-Build-/Localehashes kommen aus
-der Workbench-/Verifier-Schicht, nicht aus den 32-Bit-Spielchecksummen.
+`archive.rs`, `items.rs`, `localization.rs` are own limited facades and container readers based on the formats occupied in [ARCHIVES.md](research/ARCHIVES.md). PAMT/PAPGT are read structurally and re-serialized with obtained name/trie buffers; `serialize_registry` and `serialize_group` are not returns of the read-in byte vector. The SHA-256 build/localehashes come from the Workbench/verifier layer, not the 32 bit game checksums.
 
-## Öffentliche Schnittstellen
+## Public interfaces
 
-Alle fehlschlagenden Methoden liefern `std::io::Result`.
+All failing methods yield `std::io::Result`.
 
 ```rust
 Archive::open(root: impl AsRef<Path>) -> Result<Archive>
@@ -81,100 +49,54 @@ Paloc::serialize_payload() -> Result<Vec<u8>>
 Paloc::serialize() -> Result<Vec<u8>>
 ```
 
-`ItemRecord` enthält Schlüssel, internen Namen, Typ/Tier/Kategorie, Stackzahl,
-Name/Beschreibungsreferenzen, erste Iconreferenz, zehn Inventory-Keys und
-Bodyoffset/-länge. `LocalizableText.index` ist der direkte numerische PALOC-
-String-Key. Lokal stimmen beispielsweise Item2200s Namensindex
-`9448928051312 = (2200 << 32) | 0x70` und Beschreibungsindex
-`9448928051313 = (2200 << 32) | 0x71`. Beschreibungen dürfen nicht mit dem
-Namensnamespace aufgefüllt werden.
+`ItemRecord` contains keys, internal name, type/tier/category, stack number, name/description references, first icon reference, ten inventory keys and body offset/length. `LocalizableText.index` is the direct numerical PALOC string key. For example, Item2200's name index `9448928051312 = (2200 << 32) | 0x70` and description index `9448928051313 = (2200 << 32) | 0x71` are local. Descriptions must not be filled with the namenamespace.
 
-Rohfelder werden je angefordertem Item decodiert, damit der normale Index nicht
-über eine Million Feldobjekte im Speicher hält. Jedes `RawField` trägt Pfad,
-absolute Bodyoffsets, Typbezeichnung, tatsächliche Hexbytes und dekodierten Wert.
-Große u64/i64-Werte werden im Rohfeldwert als Dezimalstring ausgegeben, um
-JavaScript-Präzisionsverlust zu verhindern. Nichtendliche f32 werden als Text
-angezeigt; die exakten Bits bleiben in `raw_hex`. `interpretation="unknown"`
-kennzeichnet unbekannte Felder und die bekannte Upstream-Vermutung zum Quickslot-
-Flag. `upstream_named` bedeutet ausdrücklich keine bestätigte Gameplaysemantik.
+Raw fields are decoded for each item requested so that the normal index does not hold more than one million field objects in memory. Each `RawField` carries path, absolute body offsets, type designation, actual hexbytes, and decoded value. Large u64/i64 values are output as a decimal string in the raw field value to prevent JavaScript precision loss. Non-final f32s are displayed as text; The exact bits remain in `raw_hex`. `interpretation="unknown"` identifies unknown fields and the known upstream conjecture of the Quickslot flag. `upstream_named` expressly does not mean confirmed gameplay semantics.
 
-Die optionale `RawTable::parse(body, header, key_width, count_width)`-Fassade prüft
-nur explizit vorgegebene Indexbreiten, Schlüssel/Offsets und erhaltene opaque
-Records. Ihr Byteerhalt ist **kein** Beleg für ein verstandenes Body-Schema und
-keine Editorfreigabe. cd-core besitzt zusätzlich seine eigene buildversionierte
-Indexbeschreibung für die anderen erfassten Tabellen.
+The optional `RawTable::parse(body, header, key_width, count_width)` facade only checks explicitly given index widths, keys/offsets and obtained opaque records. Your byte content is **no** proof of a understood body scheme and no editor release. cd-core also has its own build versioned index description for the other recorded tables.
 
-## Härtungen gegenüber der Vorlage
+## Hardening compared to the original
 
-- Geprüfte Addition vor Slicezugriffen; Count-, Offset-, Header- und tatsächlich
-  vorhandene PAZ-Dateilängen werden validiert.
-- Ein File/entpackter Payload ist auf 128 MiB begrenzt, PAMT/PAPGT auf 16 MiB,
-  ein Itemrecord auf 4 MiB; generische Arrayreservierungen auf 16 MiB pro Array.
-  Aufgelöste Archivpfade haben zusammen maximal 16 MiB, ein Pfad maximal
-  4096 Bytes/256 Trie-Schritte. PALOC nimmt maximal 250.000 Einträge an.
-- Tries werden iterativ mit Zyklenerkennung gelesen. Verzeichnisdurchquerung,
-  absolute virtuelle Pfade, NUL/Steuerzeichen und Windows-Laufwerkssyntax werden
-  abgelehnt; kanonisierte reale Lesepfade müssen unter der Game-Root liegen.
-- `extract` vertraut nicht auf vom Aufrufer manipulierte `ArchiveEntry`-Offsets:
-  Metadaten werden erneut aus dem gegen PAPGT geprüften PAMT gelesen/verglichen.
-- Codecs 0/1/2/3 werden explizit behandelt; QuickLZ und unbekannte Codecs sowie
-  ICE/AES werden bei Extraktion abgewiesen. Enumeration darf sie diagnostisch
-  anzeigen. Zlib-Ausgabe ist auf erwartete Länge plus ein Prüfbyte begrenzt.
-- ChaCha20 verwendet fallible Seek-/Keystream-Funktionen. DDS-Dimensionen,
-  Mipanzahl und Größenmultiplikationen sind begrenzt/geprüft.
-- Upstreams allokierte/geleakte Ersatzstrings wurden durch `Cow<str>` ersetzt.
-  Nicht-UTF-8-Bytes bleiben für den Writer erhalten. Optional-Tags werden original
-  aufbewahrt, statt jeden von Null verschiedenen Tag zu 1 zu normalisieren.
-- Jeder Itemrecord muss den im Header verzeichneten Key und Bereich exakt
-  erfüllen und bereits beim Laden einen echten typisierten Writer-Roundtrip
-  bestehen. Keine Ankersuche, keine verworfenen Records, keine Restbytes.
-- Der Tracker der Itemfelder muss jedes Byte genau einmal abdecken. Ein
-  Lücken-/Überlappungsfehler wird statt eines unvollständigen Exports gemeldet.
-- PALOC prüft Magic, Headerpadding, Größen, LZ4 und den gesamten Listenbereich.
-  Sein Payload wird tatsächlich neu serialisiert. Für unveränderte Container
-  wird der ursprüngliche LZ4-Block aufbewahrt; identische Neukompression wird
-  nicht behauptet. In Phase 1 existiert keine PALOC-Mutationsschnittstelle.
+- Tested addition before slice accesses; Count, offset, header, and actually
+Existing PAZ file lengths are validated.
+- A file/unpacked payload is limited to 128 MiB, PAMT/PAPGT to 16 MiB,
+an item record on 4 MiB; Generic array reservations on 16 MiB per array. Together, resolved archive paths have a maximum of 16 MiB, one path has a maximum of 4096 bytes/256 trie steps. PALOC takes a maximum of 250,000 entries.
+- Tries are read iteratively with cycle recognition. directory crossing,
+absolute virtual paths, NUL/control characters and Windows drive syntax are rejected; Canonized real reading paths must be below the game root.
+- `extract` does not rely on `ArchiveEntry` offsets manipulated by the caller:
+Metadata is read/compared again from the PAMT checked against PAPGT.
+- Codecs 0/1/2/3 are explicitly treated; QuickLZ and unknown codecs as well as
+ICE/AES are rejected on extraction. Enumeration may display it diagnostically. Zlib output is limited to expected length plus one test byte.
+- ChaCha20 uses fallible seek/keystream functions. DDS dimensions;
+Mip number and size multiplications are limited/tested.
+- Upstream’s allocated/leaked replacement strings were replaced by `Cow<str>`.
+Non-UTF 8 bytes are preserved for the writer. Optional tags are kept original instead of normalizing each tag from zero to 1.
+- Each item record must exactly match the key and area recorded in the header.
+and already pass a real typed writer round trip when loading. No anchor search, no discarded records, no restbytes.
+- The tracker of the item fields must cover each byte exactly once. One
+Gap/overlap errors are reported instead of an incomplete export.
+- PALOC checks Magic, header padding, sizes, LZ4 and the entire list area.
+His payload is actually being re-serialized. For unchanged containers, the original LZ4 block is kept; Identical recompression is not claimed. In phase 1, there is no PALOC mutation interface.
 
-Auf Dateiebene wird nur `File::open`, `metadata`, `seek`, `read` und
-`canonicalize` verwendet. Produktionscode enthält weder `File::create` noch
-Dateischreiben. Synthetische Tests erzeugen ausschließlich temporäre Testarchive.
-Kein Save-Reader/-Writer wurde in diese Crate importiert.
+At the file level, only `File::open`, `metadata`, `seek`, `read` and `canonicalize` are used. Production code does not contain `File::create` or file writing. Synthetic tests produce only temporary test archives. No save reader/writer was imported into this crate.
 
 ## Verifikation
 
-`cargo clippy -p crimson-format --all-targets -- -D warnings` ist ohne Warnungen bestanden. 15 eigene synthetische Tests bestanden: verschlüsseltes LZ4-Archiv durch
-PAPGT/PAMT/PAZ bis zum Klartext, echter Metadaten-Roundtrip, manipulierte Entry-
-Offsets, abgeschnittene echte Chunklänge, falsche Checksummen, Trie-Zyklen,
-Pfad-/Codecfehler, Headergrenzen, unlesbare Items, PALOC-LZ4 und Raw-UTF-8-Erhalt,
-Optionaltags, riesige Counts und DDS-Dimensionen. Keine übernommenen Live-Tests,
-die bei fehlenden Fixtures still als Erfolg zählen.
+`cargo clippy -p crimson-format --all-targets -- -D warnings` passed without warnings. 15 passed own synthetic tests: encrypted LZ4 archive by PAPGT/PAMT/PAZ up to plain text, real metadata round trip, manipulated entry offsets, truncated real chunk length, incorrect checksums, trie cycles, path/codec errors, header limits, unreadable items, PALOC-LZ4 and Raw-UTF-8 retention, optional tags, huge counts and DDS dimensions. No adopted live tests, which count silently as a success in the absence of fixtures.
 
-Explizite native Realdatei-Verifikation am 19.09.2026, ausschließlich lesend:
+Explicit native real file verification at 19.09.2026, only reading:
 
-- 6.816 Items; 6.465.724 Bodybytes und 54.530 Headerbytes byteidentisch durch
-  Parser/Writer.
-- Alle **1.763.837 Feldranges** sämtlicher Items vollständig und ohne Überlappung.
-- `meta/0.papgt` und `0008/0.pamt` durch strukturierte Writer byteidentisch.
-- Deutsches Item-PALOC: 13.575 Einträge; Payload und erhaltener Originalcontainer
-  byteidentisch.
-- Alle 15 registrierten Item-Sprachnamespaces erfolgreich mit der nativen
-  Archiv-/PALOC-Fassade gelesen, geprüft und als reine Hash-Metadaten in
-  `crates/cd-core/schemas/steam-25381195.locales.json` erfasst.
+- 6,816 Items; 6,465,724 Bodybytes and 54,530 Headerbytes byte-identical by
+Parser/Writer.
+- All **1,763,837 field ranges** of all items completely and without overlap.
+- `meta/0.papgt` and `0008/0.pamt` by structured writers byte-identical.
+- German Item PALOC: 13,575 Entries; Payload and original container received
+byte-identical.
+- All 15 registered item language namespaces successfully with the native
+Archive/PALOC facade read, checked and recorded as pure hash metadata in `crates/cd-core/schemas/steam-25381195.locales.json`.
 
-`cargo run -p crimson-format --example verify_formats` verlangt `CD_GAME_DIR`
-explizit und prüft die aktuellen Dateien; fehlt die Variable, schlägt der
-explizite Verifier fehl. `fingerprint_locales` gibt nur Metadaten auf stdout aus.
-Die eigentlichen optionalen Realdatei-Tests und `.env`-Ladung werden von cd-core
-koordiniert. Kein Beispiel schreibt in die Installation oder öffnet Saves.
+`cargo run -p crimson-format --example verify_formats` explicitly requests `CD_GAME_DIR` and checks the current files; If the variable is missing, the explicit verifier fails. `fingerprint_locales` only outputs metadata on stdout. The actual optional real file tests and `.env` loading are coordinated by cd-core. No example writes into the installation or opens saves.
 
-Nicht nachgewiesen: weitere Itemschemata/Builds, alle Partialtexturvarianten,
-QuickLZ/AES/ICE, komplette PAZ-Chunkchecksummen über alle großen Archive, Apply
-oder Savefortschritt. Linux-Quellcode ist plattformneutral; ein tatsächlicher
-Linux-Lauf ist durch Windows-Builds nicht bewiesen.
+Not proven: other item schemas/builds, all partial texture variants, QuickLZ/AES/ICE, complete PAZ chunk checksums over all large archives, Apply or Save progress. Linux source code is platform neutral; An actual Linux run is not proven by Windows builds.
 
-Phase 5 ergänzt `item_mods.rs` als eigene begrenzte Fassade über den vorhandenen
-Item-Reader/Writer (Stats/Buffs, seit v0.5.1 neue Enchant-Zeilen aus Originalstufen,
-Stacks und Reparaturlisten). Kopien erhalten vollständige Zeileninhalte und
-erneuern die nullwertigen Trenner. Die Fassade hat keine Dateisystem-Schreib-API. `cd-core`
-prüft Status-/Buffreferenzen, Build, experimentelle Stackfreigabe und B0.
-Weitere Reader sind eigene Implementierungen; [Nachweise](research/ADVANCED_TABLES.md).
+Phase 5 adds `item_mods.rs` as its own limited facade over the existing item reader/writer (Stats/Buffs, since v0.5.1 new enchant lines from original stages, stacks and repair lists). Copies receive complete line contents and renew the zero-valued separators. The facade does not have a file system writing API. `cd-core` checks status/buff references, build, experimental stack release and B0. Other readers are their own implementations; [Evidence](research/ADVANCED_TABLES.md).

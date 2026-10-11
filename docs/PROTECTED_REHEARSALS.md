@@ -1,95 +1,51 @@
-# Geschützte Projektproben – v0.4.3
+# Protected workspace rehearsals – v0.4.3
 
-Diese Schutzschicht wird von der Desktop-Probe und `mod-recover` für neue
-v3-Proben verwendet. Diese Proben erreichen ausschließlich markierte
-Projektordner unter `.local/rehearsals/<id>`. Seit v0.4.8 verwendet der getrennte
-[Live-Adapter](LIVE_APPLY.md) dieselbe Schutzschicht mit expliziter Zulassung.
+This protective layer is used by the desktop sample and `mod-recover` for new v3 samples. These samples reach only marked project folders under `.local/rehearsals/<id>`. Since v0.4.8 the separate [Live-Adapter](LIVE_APPLY.md) uses the same protective layer with explicit permission.
 
-Seit v0.4.6 ergänzt eine [Sicherungs-/Wiederherstellungsansicht](BACKUP_RECOVERY.md)
-den Ablauf: existierende Sicherung und Historie prüfen, Rücknahme anzeigen und
-unter erneut gehaltenen Sperren exakt diese Vorschau ausführen. Fehlende Backups
-werden in diesem neuen Ablauf niemals neu angelegt.
+Since v0.4.6, a [Safeguard/restoration view](BACKUP_RECOVERY.md) supplements the process: check existing backup and history, display cancellation and execute exactly this preview under renewed locks. Missing backups are never recreated in this new process.
 
-## Reihenfolge und gehaltene Sperren
+## Sequence and locks held
 
-1. Die Probe kopiert unsere eigene ausführbare Datei nach
-   `probe/workbench-guard-probe.exe` und erzeugt `probe/source.bin` als ausdrücklich
-   synthetische Update-Testdatei. Keine Spiel-EXE und keine Original-PAZ wird kopiert.
-2. `protection.json` enthält Größen und vollständige SHA-256-Hashes der erfassten
-   Quellen sowie den Hash der ursprünglichen Registry. Der Marker `rehearsal.json`
-   bindet dieses Manifest durch seinen Hash. Der einzige akzeptierte Herkunftstyp
-   ist `project-copy-only`; daraus kann keine Vanilla-Freigabe entstehen.
-3. Vor Anlegen des Engine-Locks oder Backups prüft die Sitzung die bekannten
-   ausführbaren Pfade gegen die Windows-Prozessliste. Kandidaten werden über ihren
-   tatsächlichen, kanonisierten Imagepfad abgeglichen; Junction-/Pfadaliase werden
-   aufgelöst. Ein nicht zuverlässig abfragbarer Kandidat sperrt die Sitzung.
-4. Die Sitzung hält EXE-Handles ohne Sharing. Für unveränderte Quelldateien ist
-   nur Read-Sharing erlaubt. Root, `meta` und alle Quell-Elternordner werden mit
-   Lesezugriff ohne Delete-Sharing gehalten. Reparse-Points, Hardlinks und falsche
-   Dateitypen werden vor und nach Öffnen über den tatsächlichen Handle geprüft.
-5. Vollständige Quellhashes werden aus den gehaltenen Handles geprüft. Nach dem
-   Erwerb aller Sperren erfolgt erneut eine Prozessprüfung. Erst dann öffnet der
-   private Transaktionskern seine Historie und erstellt/verifiziert das Backup.
-6. Auch `.workbench` und `baseline.papgt` werden gehalten; der Backuphash wird
-   nochmals geprüft. Planung, Apply, Reapply, Restore und Recovery behalten die
-   Sperren bis zum Ende der Sitzung. Vor den Schreibgrenzen werden Prozessstatus
-   und Handle-Eigenschaften erneut kontrolliert. Ein Fehler gibt die Sperren
-   nicht vorzeitig frei; die gesamte Sitzung muss beendet werden.
+1. The sample copies our own executable file
+`probe/workbench-guard-probe.exe` and generates `probe/source.bin` as an explicitly synthetic update test file. No game EXE and no original PAZ will be copied.
+2. `protection.json` contains sizes and complete SHA 256 hashes of the captured
+Sources as well as the hash of the original registry. The marker `rehearsal.json` binds this manifest by its hash. The only accepted origin type is `project-copy-only`; No vanilla release can occur from this.
+3. Before creating the engine lock or backup, the session checks the known
+Executable paths against the Windows process list. Candidates are matched via their actual, canonized image path; Junction/pathal aliases are dissolved. An unreliably questionable candidate blocks the session.
+4. The session holds EXE handles without sharing. For unchanged source files,
+Only read-sharing is allowed. Root, `meta` and all source parent folders are held with read access without delete sharing. Reparse points, hardlinks and incorrect file types are checked before and after opening via the actual handle.
+5. Complete source hashes are checked from the handles held. After the
+Acquisition of all blocks is again a process check. Only then does the private transaction core open its history and create/verify the backup.
+6. Also `.workbench` and `baseline.papgt` are held; The backup hash is
+re-examined. Planning, Apply, Reapply, Restore and Recovery keep the locks until the end of the session. Before the write limits, process status and handle properties are checked again. An error does not prematurely release the locks; The entire session must be closed.
 
-Die Prozessabfragen lesen keine Prozessspeicher und beenden kein Programm.
-In der tatsächlichen Desktop-Probe wird die kopierte EXE nicht gestartet.
-Nur automatisierte Tests starten unsichtbar eigene Test-EXEs und schließen
-anschließend exakt ihre eigenen Kindprozesse.
+The process queries do not read any process memory and do not terminate any program. In the actual desktop sample, the copied EXE is not started. Only automated tests invisibly start their own test EXEs and then close exactly their own child processes.
 
-## Nachgewiesene Fehlerfälle
+## Detected error cases
 
-Die neue Testsuite prüft tatsächliches Windows-Verhalten mit eigenen Dateien:
+The new test suite checks actual Windows behavior with your own files:
 
-- Paralleler Start während Apply/Reapply/Restore gesperrt, nach Freigabe möglich.
-- Bereits laufende Kopie vor State-/Backuperstellung erkannt.
-- Quell-/Backupwrites und Umbenennung geschützter Elternordner gesperrt.
-- Fehler in Prozessprüfungen vor/nach Handle-Erwerb: keine Backupanlage,
-  alle erworbenen Handles wieder freigegeben.
-- Schutz bleibt bei injiziertem Transaktionsabbruch und abgelehnter Recovery aktiv.
-- Update vor Recovery und nach abgeschlossenem Apply: neue Quelldateien und
-  Registry sowie altes Backup bleiben erhalten. Kein Restore über einen neuen Build.
-- Manipuliertes Schutzmanifest, Downgrade eines v3-Markers auf v2, beschädigtes
-  Backup, Hardlinks, Pfadausbruch und behauptete Vanilla-Herkunft werden abgewiesen.
+- Parallel start during Apply/Reapply/Restore locked, possible after release.
+- Already running copy recognized before state/backuper creation.
+- Source/Backupwrites and renaming of protected parent folders blocked.
+- errors in process checks before/after acquiring handle: no backup system,
+All purchased handles are released again.
+- Protection remains active with injected transaction cancellation and rejected recovery.
+- Update before recovery and after the Apply is complete: new source files and
+Registry as well as old backup remain. No restoration of a new build.
+- Manipulated protective manifest, downgrade of a v3 marker to v2, damaged
+Backup, hardlinks, path breakout and claimed vanilla origin are rejected.
 
-Zwei ursprüngliche Annahmen wurden durch diese Tests widerlegt und korrigiert:
-Ein exklusiver Read-Handle allein erkennt bereits laufende Images nicht, und
-ein reiner Attributzugriff hält keine wirksame Umbenennungssperre. Zusätzlich
-mussten beide Seiten des Prozesspfadvergleichs kanonisiert werden.
-Die Implementierung verwendet deshalb Prozessabgleich **und** gehaltene
-Lesehandles. Primärdokumentation:
-[CreateFileW und Sharing](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew),
-[QueryFullProcessImageNameW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamew).
+Two original assumptions have been refuted and corrected by these tests: An exclusive read handle alone does not recognize already running images, and a pure attribute access does not hold an effective renaming lock. In addition, both sides of the process path comparison had to be canonized. The implementation therefore uses process matching ** and ** held read handles. Primary documentation: [CreateFileW and Sharing](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew), [QueryFullProcessImageNameW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamew).
 
-## Updateprobe und Wiederherstellung
+## Update sample and recovery
 
-Nach den zwei Apply/Reapply/Restore-Zyklen und dem Recovery-Test wird ausschließlich
-die synthetische Quelldatei geändert. Recovery muss diese Abweichung ablehnen,
-ohne die Registry zu überschreiben. Anschließend erhält die Probe ihre ursprünglichen
-synthetischen Bytes zurück und Recovery wird erneut geprüft. Bei einem Abbruch
-während dieses absichtlichen Updateversuchs kann die Probe als geändert zurückbleiben;
-sie bleibt zur Diagnose erhalten und kann durch eine neue Probe ersetzt werden.
-Es wird kein unbekannter Zustand automatisch als neue Basis angenommen.
+After the two Apply/Reapply/Restore cycles and the recovery test, only the synthetic source file is changed. Recovery must reject this deviation without overwriting the registry. Subsequently, the sample is returned to its original synthetic bytes and recovery is checked again. If discontinued during this intentional update attempt, the sample may be left as changed; it remains for diagnosis and can be replaced by a new sample. No unknown Zustand is automatically accepted as a new base.
 
-Bestehende v2-Proben bleiben über den bisherigen Kernel wiederherstellbar und
-werden nicht stillschweigend aufgewertet. Neue v3-Proben müssen immer ihr passendes
-Schutzmanifest und ihre Quellen besitzen. Ein nachträglich umbenannter oder
-geänderter Quellpfad wird nicht durch einen anderen Dateihash ersetzt.
+Existing v2 samples remain recoverable via the previous kernel and are not tacitly upgraded. New v3 samples must always have their appropriate protective manifesto and sources. A renamed or changed source path will not be replaced by another file hash.
 
-## Grenzen vor einer Live-Freigabe
+## Limits before a live release
 
-Die Windows-Schutzschicht ist jetzt in die **Projekttransaktion** integriert.
-Noch offen sind unabhängig bestätigte vollständige Spiel-Basishashes, ein daraus
-abgeleitetes vollständiges Verzeichnis aller relevanten Originalarchive und
-Startpfade, der Live-Backup-/Updateworkflow und die In-game-Abnahme.
-Nicht erfasste ausführbare Kopien außerhalb der bekannten Startpfade und ein
-feindlich veränderter Rechner sind kein bewiesener Schutzumfang.
+The Windows protection layer is now integrated into the **project transaction**. Still open are independently confirmed full game base hashes, a derived complete directory of all relevant original archives and launch paths, the live backup/update workflow and in-game acceptance. Uncaptured executable copies outside the known starting paths and a hostilely altered computer are not a proven scope of protection.
 
-Neue geschützte Proben verlangen Windows und haben keinen ungesicherten Ersatzpfad
-auf anderen Plattformen. Die bisherigen v2-Proben bleiben separat les-/wiederherstellbar.
-Getestete Abbruchpunkte sind weiterhin kein vollständiger Stromausfallnachweis.
-Spiel und Saves wurden durch diese Arbeit weder gesperrt noch verändert.
+New protected samples require Windows and do not have an unsecured replacement path on other platforms. The previous v2 samples remain separately readable/recoverable. Tested breakpoints are still not a complete power failure proof. Spiel and Saves were neither blocked nor altered by this work.

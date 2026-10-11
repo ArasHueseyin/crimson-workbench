@@ -1,132 +1,62 @@
 # Reparatur: lesender Spieladapter 0.3.0
 
-Aktuelle Ergänzung 0.9.0: Der geschützte Pfad erfasst ausschließlich gehaltene
-Besitzer und durchsucht die Registry nicht erneut. Seine Pflichtprüfungen und
-die gemeinsame native Probe stehen in [PINNED_CAPTURE_INTEGRATION](PINNED_CAPTURE_INTEGRATION.md).
-Die folgenden Adressen beschreiben weiterhin den historischen Build 2944.
-Aktuelle 2949-Adressen und native Vergleichstests: [INVENTORY_2949](INVENTORY_2949.md).
+Current addition 0.9.0: The protected path captures only held owners and does not search the registry again. His mandatory exams and the common native sample are in [PINNED_CAPTURE_INTEGRATION](PINNED_CAPTURE_INTEGRATION.md). The following addresses continue to describe the historical build 2944. Current 2949 addresses and native comparison tests: [INVENTORY_2949](INVENTORY_2949.md).
 
-Stand 21.09.2026, Steam 25381195 / EXE 1.0.0.2944. Ein eigener Leser für die
-aktuelle Datenstruktur ist implementiert. Er liefert getrennte, besessene
-Item-/Sockelabbilder an die Reparaturplanung. **Keine Spieltransaktion, kein
-Loader und kein Zugriff auf das laufende Spiel.**
+Status: 21.09.2026, Steam 25381195 / EXE 1.0.0.2944. A separate reader for the current data structure is implemented. It delivers separate, owned item/socket images to repair planning. **No game transaction, no loader and no access to the current game.**
 
-## Erfassung
+## Recording
 
-`repair_reader.h`, `src/reader.cpp` und `src/reader_win.cpp` bilden die statische
-Bibliothek `crimson_repair_reader.lib`. `LocalMemory` liest ausschließlich den
-aufrufenden Prozess, prüft Seitengrenzen und fängt Fehler der eigenen Leseoperation
-ab. Es gibt keine PID-Auswahl, keinen Prozesshandle und keine Schreibschnittstelle.
-Die Tests verwenden ausschließlich ihr eigenes Prozess-/Fixturespeicherabbild.
+`repair_reader.h`, `src/reader.cpp` and `src/reader_win.cpp` form the static library `crimson_repair_reader.lib`. `LocalMemory` only reads the calling process, checks side boundaries and intercepts errors of its own read operation. There is no PID selection, no process handle, and no write interface. The tests only use their own process/fixture memory image.
 
-Der Clientanker führt zum aktuell ausgewählten Charakter. Der Leser sucht dessen
-Kennung gezielt in der Server-Registry; er durchsucht weder den Heap noch alle
-Charaktere. Die vollständige Kennung muss übereinstimmen. Typprüfung,
-Possessor-Rückverweis und Komponentenbesitz sind zusätzliche konservative
-Prüfungen. Eine Übereinstimmung von Iteminhalten genügt nicht als Spieleridentität.
+The client anchor leads to the currently selected character. The reader searches for its identifier specifically in the server registry; He does not search the heap or all the characters. The full identifier must match. Type testing, possessor reference and component ownership are additional conservative tests. A match of item contents is not sufficient as a player identity.
 
-Erfasst werden nur der Character-Container und ausgerüstete Items. Andere
-Container werden anhand ihres Typs übersprungen, ohne ihre Itemdaten zu lesen.
-Leere Slots, Mengen <= 0 und die Ausschlussliste des Inventargetters werden
-berücksichtigt. Inventarslots sind zusammenhängende `0xc8`-Byte-Einträge;
-Ausrüstungseinträge umfassen `0xd0` Bytes einschließlich Slottag. Sockeldaten
-werden getrennt kopiert; gespeicherte Pointer werden nie von der Aktion dereferenziert.
+Only the character container and equipped items are recorded. Other containers are skipped by their type without reading their item data. Empty slots, quantities <= 0 and the exclusion list of the inventory getter are taken into account. Inventory slots are contiguous `0xc8` byte entries; Equipment entries include `0xd0` bytes including slot tag. base data shall be copied separately; saved pointers are never dereferenced by the action.
 
-UID, Position und Haltbarkeits-/Sockeldaten müssen in beiden Repräsentationen
-zusammenpassen. Doppelte IDs/Slots, unlesbare Bereiche, unbekannte Definitionen,
-ungeeignete Geometrie oder fehlende Spielerkennung verwerfen die gesamte Ausgabe.
-Alle gelesenen Bereiche werden vor Veröffentlichung erneut gelesen und verglichen.
-**Dieser Vergleich ersetzt keine Engine-Sperre** und erkennt insbesondere keine
-unbemerkten A→B→A-Wechsel zwischen den Lesezeitpunkten.
+UID, position and durability/socket data shall fit together in both representations. Duplicate IDs/slots, unreadable areas, unknown definitions, inappropriate geometry or lack of game recognition discard the entire output. All read areas are read and compared again before publication. **This comparison does not replace any engine lock** and in particular does not detect any unnoticed A→B→A changes between the reading times.
 
-Budgets: 128 Inventarcontainer, 64 Ausrüstungseinträge, zusammen 2.048 vorhandene
-Items je Repräsentation, 64 Sockelplätze je Item, 65.536 Registry-Buckets/-Indizes,
-31 Einträge je Registry-Bucket, insgesamt 16 MiB und 65.536 Leseoperationen
-einschließlich Kontrolllesen. Dies sind lokale Verarbeitungsgrenzen, keine
-behaupteten maximalen Spiel-/Save-Kapazitäten.
+Budgets: 128 inventory containers, 64 equipment entries, together 2,048 existing items per representation, 64 base slots per item, 65,536 registry buckets/indices, 31 entries per registry bucket, total 16 MiB and 65,536 read operations including control read. These are local processing limits, not claimed maximum game/save capacities.
 
-## Statischer Nachweis im aktuellen Build
+## Static proof in the current build
 
-Vollständiger EXE-SHA-256:
-`6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`.
-Alle Code-/Globaladressen sind RVAs. Die Quell-EXE wurde ausschließlich gelesen.
+Full EXE-SHA-256: `6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`. All code / global addresses are RVAs. The source EXE was only read.
 
-| Pfad | Befund und Grenze |
+|Path|Finding and limitation|
 |---|---|
-| Clientglobal `0x6d691b0` → `+0x30` → Manager `+0x50` | Statisch belegter Client-Kontext; Konstruktion bei `0xacf5f0`, Zugriff u. a. über `0x8b4480`. Die benachbarte globale Adresse `0x6d691b8` ist kein austauschbarer Serveranker. |
-| Serverglobal `0x6d696c0` → `+0x48` | Serverseitiger Equipment-Aufrufer `0x2a94c40` benutzt diesen Manager für `0x2a82730`. |
-| Server-Registry `0x2a82730` | Handleprüfung, Schlüssel `handle & 0xfffff`, Bucketwahl per Modulo, 256-Byte-Buckets; Key/Index ab `+8`, Node-Key `+4`, Charakterpointer `+8`. Erwirbt echte Engine-Zugriffe; im Test nur durch Stubs vertreten. |
-| Actor `+0x60`, `+0x68`, `+0xa0` | Vollständige Kennung, Komponenten und Possessor; Possessor `+0xd0` muss zurückweisen. Komponenten: Inventar `+0xb8`, Ausrüstung `+0x38`. Besitzprüfung zusätzlich über Komponente `+8`. |
-| Inventargetter `0x212f4a0` | Holder `+0x18` Pointerarray, `+0x20` Anzahl; Bucket `+0x10` Typ, `+0x0c` signed Slotgrenze, `+0` zusammenhängende Items. Ausschlussliste `+0x20/+0x28`, 12-Byte-Records mit Itemkey am Anfang. |
-| Holdergetter `0x212a0f0` | Actor-/Possessor-/Komponentenpfad; je Charakterdefinition direkt oder über besessenen Actor. Native Tests prüfen direkte, umgeleitete und fehlende Besitzer. |
-| Equipment-Wrapper `0x20c90e0` | Komponente `+0x90` → Tabelle `+8/+0x10`; Stride `0xd0`, Slottag `+0xc8`. |
+|Clientglobal `0x6d691b0` → `+0x30` → Manager `+0x50`|Static client context; Construction at `0xacf5f0`, access and a. above `0x8b4480`. The adjacent global address `0x6d691b8` is not an interchangeable server anchor.|
+|Serverglobal `0x6d696c0` → `+0x48`|Server-side equipment caller `0x2a94c40` uses this manager for `0x2a82730`.|
+|Server-Registry `0x2a82730`|Handling test, key `handle & 0xfffff`, bucket selection by modulo, 256-Byte buckets; Key/Index off `+8`, Node key `+4`, character pointer `+8`Acquires real engine accesses; represented in the test only by stubs.|
+|Actor `+0x60`, `+0x68`, `+0xa0`|Full identifier, components and possessor; Possessor `+0xd0` must reject. Components: inventory `+0xb8`, equipment `+0x38`. Ownance examination additionally via component `+8`.|
+|Inventargetter `0x212f4a0`|Holder `+0x18` Pointer array, `+0x20` Number; Bucket `+0x10` type, `+0x0c` signed slot limit, `+0` contiguous items. Exclusion list `+0x20/+0x28`, 12 byte records with itemkey at the beginning.|
+|Holdergetter `0x212a0f0`|Actor/Possessor/Component path; for each character definition directly or via owned actor. Native tests check direct, diverted and missing owners.|
+|Equipment-Wrapper `0x20c90e0`|Component `+0x90` → Table `+8/+0x10`; Stride `0xd0`, Slottag `+0xc8`.|
 
-Die Auswahl der Typ-Tags 1/4/9 berücksichtigt Hinweise der MIT-Referenz
-[Trinity, Commit 70c9a00](https://github.com/XeTrinityz/Trinity/tree/70c9a00dd6e10b2081d706a837756844c11f5c2b)
-zu alternativen Protagonisten. Der aktuelle Typgetter wurde isoliert ausgeführt;
-Tag allein identifiziert keinen aktiven Spieler. Echte Charakterwechsel und die
-Zulässigkeit der zusätzlichen Besitzprüfungen in allen Spielzuständen sind noch
-nicht nachgewiesen. Kein fremder Resolver-/Hookcode wurde übernommen.
+The selection of type tags 1/4/9 takes into account clues from the MIT reference [Trinity, Commit 70c9a00](https://github.com/XeTrinityz/Trinity/tree/70c9a00dd6e10b2081d706a837756844c11f5c2b) to alternative protagonists. The current type getter has been executed in isolation; Day alone does not identify an active player. Real change of character and the admissibility of the additional possession tests in all game states have not yet been proven. No foreign resolver/hook code has been adopted.
 
-## Native Vergleichsprobe
+## Comparative native sample
 
-| Funktion | Länge | SHA-256 |
+|Function|Longitude|SHA-256|
 |---|---:|---|
-| Inventargetter `0x212f4a0` | 226 | `959437d3eff481d79aa0d6e9bb4ead3bc54ab2f408d80cddcf689c3b33506c9d` |
-| Holdergetter `0x212a0f0` | 127 | `e4b46826485c932d72fb7c175b0e4c3943c8dee8e6cd01a5378ab170f17162c5` |
-| Registrylookup `0x2a82730` | 542 | `df6ba99ef13614b5a8b8cbcd7c200127a176788905134ff9b445a91c6cf43c68` |
-| Actor-Typgetter samt Sprungtabelle `0x466060` | 88 | `5f31dba7c7e552dc6983e9288297f246d87d5fb9bfb90506e905b121ecc916a8` |
+|Inventargetter `0x212f4a0`|226|`959437d3eff481d79aa0d6e9bb4ead3bc54ab2f408d80cddcf689c3b33506c9d`|
+|Holdergetter `0x212a0f0`|127|`e4b46826485c932d72fb7c175b0e4c3943c8dee8e6cd01a5378ab170f17162c5`|
+|Registrylookup `0x2a82730`|542|`df6ba99ef13614b5a8b8cbcd7c200127a176788905134ff9b445a91c6cf43c68`|
+|Actor Type Getter with jump table `0x466060`|88|`5f31dba7c7e552dc6983e9288297f246d87d5fb9bfb90506e905b121ecc916a8`|
 
-Die unveränderte Inventarfunktion und der eigene Leser erhalten dieselben
-künstlichen Container. Gültige, negative/zu große, leere, verbrauchte und
-ausgefilterte Slots liefern nach gemeinsamer Presence-Normalisierung identische
-Ergebnisse. Der native Getter kann für ein leeres Item weiterhin dessen Slotpointer
-liefern; der aufrufende Pfad muss Key und Menge prüfen. Der eigene Leser gibt
-für solche Einträge bereits Adresse 0 zurück und lehnt zusätzliche Mehrdeutigkeiten ab.
+The unchanged inventory function and the own reader receive the same artificial containers. Valid, negative/too large, empty, used and filtered out slots give identical results after joint presence normalization. The native getter can still deliver its slot pointer for an empty item; the calling path must check the key and the set. The own reader already returns address 0 for such entries and rejects additional ambiguities.
 
-Der Inventargetter besteht aus vier `pdata`-Fragmenten. Der Testhost registriert
-alle vier und erhält die geprüften `UNW_FLAG_CHAININFO`-Verweise auf den ersten
-Prolog. Ein absichtlich unzugänglicher Slot im eigenen Testprozess bestätigt auch
-die Exception-Rückkehr durch diese Kette. Kein Fault wurde im Spiel ausgelöst.
+The inventory getter consists of four `pdata` fragments. The test host registers all four and receives the checked `UNW_FLAG_CHAININFO` references to the first prologue. A deliberately inaccessible slot in the own test process also confirms the exception return through this chain. No fault was triggered in the game.
 
-Zwölf native Registryfälle prüfen Hash-/Indexzugriff, ungültige Handles,
-leere/falsche Einträge, Typablehnung, Zugriffablehnung und balancierte Lockaufrufe.
-**Die Lock- und Actor-Zugriffsmethoden sind nichtwerfende Test-Stubs.** Der Test
-beweist deren aufgerufene ABI, nicht die Implementierung einer echten Engine-Lease.
-Das Ergebnis kann trotz ungültiger Lease einen Actorpointer enthalten: Das
-Validitätsbyte `+0x10` muss ausgewertet werden. Der Testhost ruft keine Methoden
-der vom Spielcode in die Ausgabe geschriebenen VTable-Adressen auf.
+Twelve native registry cases check hash/index access, invalid handles, blank/false entries, type rejection, access rejection, and balanced lock calls. **The lock and actor access methods are non-throwing test stubs.** The test proves their called ABI, not the implementation of a real engine lease. The result can contain an actor pointer despite an invalid lease: The validity byte `+0x10` must be evaluated. The test host does not call methods of the VTable addresses written to the output by the game code.
 
-## Ergänzung 0.6.0
+## Supplement 0.6.0
 
-`capture_with_references` besitzt beide nativen Referenzen während der Erfassung
-und gibt sie erst nach den Inventarsperren zurück. Unter den Sperren prüft es
-zusätzlich vollständige Kennung sowie Alive-/Zerstörungszustand. Geschützte
-Erwerbsquellen und Engine-TLS müssen noch vom Spielhost angebunden werden.
-[Referenzvertrag und aktuelle Prüfung](REFERENCE_INTEGRATION.md).
+`capture_with_references` has both native references during capture and returns them only after the inventory locks. Under the locks, it additionally checks full identifier as well as Alive/Destruction state. Protected sources of purchase and engine TLS must still be connected by the game host. [Reference contract and current audit](REFERENCE_INTEGRATION.md).
 
-## Verbleibende Integration
+## Remaining integration
 
-Ergänzung 0.5.0: `capture_with_locks` hält während der Erfassung beide vom Host
-gebundenen Besitzer-Sperren. Originale Lock-Methoden sind separat mit echten
-Windows-SRW-Sperren auf privaten Testobjekten geprüft. Der Lebensdauerschutz
-der Besitzer bleibt Voraussetzung des Hosts und ist noch nicht integriert.
-Beim Rücksprung sind die Sperren frei. [Aktueller Sperrvertrag](LOCK_INTEGRATION.md).
-Die oben beschriebenen Registryproben behalten ihre Test-Stubs.
+Add 0.5.0: `capture_with_locks` keeps both host-bound owner locks during capture. Original lock methods are tested separately with real Windows SRW locks on private test objects. The lifetime protection of the owners remains a prerequisite of the host and is not yet integrated. During the rebound, the locks are free. [Current Non-Proliferation Agreement](LOCK_INTEGRATION.md). The registry samples described above retain their test stubs.
 
-Vor Nutzung im Spiel braucht der Leser einen Host, der den vollständigen Build
-und die ursprünglichen/aktiven Tabellen verifiziert, echte Engine-Leases hält
-und bei jedem Lade-/Weltwechsel eine neue Epochennummer liefert. `Frame` enthält
-diese Hostwerte; der Leser erfindet sie nicht und prüft selbst keine Datei-Hashes.
-Die Übereinstimmung der vollständigen Client-/Server-Charakterkennung und der
-Item-IDs ist konservativ verlangt, für alle echten Übergänge aber noch unbewiesen.
+Before use in the game, the reader needs a host that verifies the full build and the original/active tables, holds real engine leases, and delivers a new epoch number every time the load/world changes. `Frame` contains these host values; the reader does not invent them and does not check file hashes himself. The matching of the full client/server character recognition and the item IDs is conservatively required, but still unproven for all real transitions.
 
-Danach fehlt weiterhin der bestätigte Engine-Commit: Haltbarkeit ändern,
-Inventar-/Equipment-Ereignisse und abgeleitete Effekte aktualisieren, Ergebnis
-bestätigen und Persistenz dem Spiel überlassen. Ein Vergleichslesen oder ein
-doppelter Rohspeicherwrite erfüllt diesen Vertrag nicht. Bedieneingabe, Loader
-und B0-Installation sind ebenfalls noch offen; `installable` bleibt `false`.
+After that, the confirmed engine commit is still missing: change durability, update inventory/equipment events and derived effects, confirm result and leave persistence to the game. A comparison reading or a duplicate raw storage writing does not fulfill this contract. Operating input, loader and B0 installation are also still open; `installable` remains `false`.
 
-Historischer Stand 0.3.0: 124 Leserprüfungen, 1.377 Aktionsprüfungen und insgesamt 116 native Aufrufe mit
-1.387 Prüfbedingungen bestanden. Reproduktion: [README](README.md).
-Vollständiger Commitvertrag: [ACTION_INTEGRATION.md](ACTION_INTEGRATION.md).
+Historical status 0.3.0: 124 Reader checks, 1,377 Action checks and total 116 native calls with 1,387 check conditions passed. Reproduction: [README](README.md). Full Commitment Contract: [ACTION_INTEGRATION.md](ACTION_INTEGRATION.md).

@@ -1,90 +1,40 @@
-# Besitzer-Sperren und geschützte Erfassung 0.5.0
+# Owner lock and protected capture 0.5.0
 
-Historischer Stand. Die direkte Erfassung gehaltener Besitzer und die gemeinsame
-Probe mit den Sperrfunktionen des neuen Builds stehen in
-[Modul 0.9.0](PINNED_CAPTURE_INTEGRATION.md).
+Historical status. The direct capture of held owners and the common sample with the lock functions of the new build are in [Modul 0.9.0](PINNED_CAPTURE_INTEGRATION.md).
 
-Stand 22.09.2026. Separates Entwicklungsmodul; kein installierbarer Mod.
-Die Workbench bleibt v0.5.8. Alle Ausführungsproben verwenden eigene Testobjekte.
+Status: 22.09.2026. Separate development module; Not an installable mod. The Workbench remains v0.5.8. All execution samples use their own test objects.
 
-## Implementiert
+## Implemented
 
-`crimson_repair_lease.lib` fasst bis zu zwei vom Host gebundene Sperren zusammen.
-Es prüft alle Bindungen vor dem ersten Aufruf, sortiert nach Objektadresse und
-versucht exklusiven Zugriff ohne Warten. Ist die zweite Sperre belegt, wird die
-erste sofort freigegeben. Identische Bindungen werden einmal gehalten;
-widersprüchliche Bindungen desselben Objekts werden abgewiesen. Freigabe erfolgt
-in umgekehrter Reihenfolge und erhält eine schon vorhandene äußere Rekursion.
+`crimson_repair_lease.lib` combines up to two locks bound by the host. It checks all bindings before the first call, sorts by object address and tries exclusive access without waiting. If the second lock is occupied, the first lock is released immediately. Identical bonds are held once; Contradictory ties of the same object are rejected. Release takes place in the reverse order and receives an already existing external recursion.
 
-Die Gruppe ist weder kopierbar noch verschiebbar und gehört zu ihrem
-Erstellungsthread. Öffentliche Aufrufe auf einem anderen Thread werden abgewiesen.
-Eine noch gehaltene Gruppe auf einem fremden Thread zu zerstören ist ein
-Programmierfehler und beendet den Host mit `std::terminate`; fremde Windows-
-Sperren dürfen dort nicht freigegeben werden.
+The group is neither copyable nor displaceable and belongs to its creation thread. Public calls on another thread will be rejected. Destroying a still held group on a foreign thread is a programming error and terminates the host with `std::terminate`; Foreign Windows locks must not be released there.
 
-`capture_with_locks` verbindet dies mit dem bestehenden Inventarleser. Der Host
-liefert bereits gegen Freigabe geschützte Client-/Server-Besitzer und geprüfte
-Methodenbindungen. Der Leser vergleicht deren Sperrzeiger an `Actor+8` vor und
-unter den Sperren, erfasst beide Inventare samt Kontrolllesen und prüft die
-aktuell aufgelösten Besitzer erneut. Fehler verwerfen das private Ergebnis.
-Beim Rücksprung sind beide Sperren frei: Das Ergebnis ist eine Datenkopie,
-keine fortbestehende Schreibberechtigung.
+`capture_with_locks` combines this with the existing inventory reader. The host already delivers client/server owners protected against release and tested method bindings. The reader compares their blocking pointers to `Actor+8` before and under the blocks, records both inventories together with control reading and checks the currently dissolved owners again. Mistakes discard the private outcome. When you jump back, both locks are free: the result is a data copy, not a continuing write permission.
 
-## Nachweis am gepinnten Build
+## Proof of pinned build
 
-Steam 25381195, EXE 1.0.0.2944, SHA-256
-`6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`.
-Adressen sind RVAs. `WindowsRWLockBase`-VTable `0x5719fe0` und
-`WindowsRWLock<2,0>`-VTable `0x55856e8`: Freigabe bei `+0x20`, Try bei `+0x28`.
-`false` wählt exklusiven Zugriff, `true` gemeinsamen Lesezugriff. Die native
-Struktur enthält SRWLOCK bei `+0x10`, Besitzer-Thread bei `+0x28`, Rekursion bei
-`+0x2c`. Eine `NullRWLock`-Bindung wäre kein Nachweis gegenseitigen Ausschlusses.
+Steam 25381195, EXE 1.0.0.2944, SHA-256 `6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`. Addresses are RVAs. `WindowsRWLockBase`-VTable `0x5719fe0` and `WindowsRWLock<2,0>`-VTable `0x55856e8`: Release at `+0x20`, Try at `+0x28`. `false` selects exclusive access, `true` shared read access. The native structure contains SRWLOCK at `+0x10`, owner thread at `+0x28`, recursion at `+0x2c`. A `NullRWLock` bond would not be proof of mutual exclusion.
 
-| Funktion | Bytes | SHA-256 |
+|Function|Bytes|SHA-256|
 |---|---:|---|
-| Try `0x1371c20` | 174 | `45f3b9499ce28442b126fd0941aa5711d1cc1a58e19a7d3893330d83ac430c90` |
-| Release `0x1371bf0` | 40 | `b43c0aebed083eebd4ce7e824ed7acb44bec3f81d92a8ab52cd1be3981a5740a` |
+|Try `0x1371c20`|174|`45f3b9499ce28442b126fd0941aa5711d1cc1a58e19a7d3893330d83ac430c90`|
+|Release `0x1371bf0`|40|`b43c0aebed083eebd4ce7e824ed7acb44bec3f81d92a8ab52cd1be3981a5740a`|
 
-Im privaten Try-Funktionsabbild wird ausschließlich der neun Byte große
-TLS-Lesezugriff bei `0x1371c4f` auf private Daten je Testthread umgeleitet.
-Alle übrigen Try-Bytes und der vollständige Release-Code bleiben bytegleich.
-Der Testhost verändert weder TEB noch echte Engine-TLS-Daten. Die ursprünglichen
-Importaufrufe verwenden echte Windows-SRW-Funktionen und `GetCurrentThreadId`
-auf eigenen Lock-Objekten. Die Unwind-Registrierung entfernt den nicht nutzbaren
-Spiel-Cleanup-Handler der privaten Kopie. Dies ist keine Ausnahmeprüfung eines
-vollständig geladenen Spielmoduls.
+In the private try function image, only the nine-byte TLS read access at `0x1371c4f` is redirected to private data per test thread. All remaining try-bytes and the full release code remain byte-identical. The test host does not change TEB or real engine TLS data. The original import calls use real Windows SRW features and `GetCurrentThreadId` on their own lock objects. Unwind registration removes the unusable game cleanup handler of the private copy. This is not an exceptional check of a fully loaded game module.
 
-Geprüft sind exklusiver Zugriff mit tatsächlichem Windows-Gegentest, Rekursion,
-ein konkurrierender Thread mit Rücknahme der ersten Sperre sowie ein vorhandener
-Leser, der den Schreibversuch ablehnt. Ältere Registry-/Ack-Proben verwenden
-weiterhin ihre dokumentierten Lock-Stubs.
+Tested are exclusive access with actual Windows countertest, recursion, a competing thread with revocation of the first lock, and an existing reader who rejects the writing attempt. Older registry/ack samples continue to use their documented lock stubs.
 
-## Ergänzung seit 0.6.0
+## Supplement since 0.6.0
 
-Die Referenzverwaltung und deren Einbindung in den Leser sind inzwischen
-entwickelt. Geschützte Live-Quellen und konkrete Hostbindungen fehlen weiterhin.
-[Aktueller Referenzvertrag](REFERENCE_INTEGRATION.md).
+The reference management and its integration into the reader have now been developed. Protected live sources and specific host bindings are still missing. [Current reference agreement](REFERENCE_INTEGRATION.md).
 
-## Grenze des ursprünglichen Stands 0.5.0
+## Limit of the original level 0.5.0
 
-Eine gehaltene Inventarsperre ersetzt keine gültige Actor-Referenz. Der getrennte
-Actor-Zugriffspfad `0x1436bf0` prüft die vollständige Kennung und verwendet je nach
-Engine-TLS direkte Referenzzähler oder eine Registrierung im Thread. Im normalen
-Pfad kommen die eingebettete Sperre `Actor+0x18`, Zustandsflags, Alive-Feld und
-Referenzregistrierung hinzu. Diese Lebensdauerverwaltung ist noch nicht in den
-Host integriert. Ein Pointervergleich oder selbst erfundener Zähler genügt nicht.
+A held inventory lock does not replace a valid actor reference. The separate actor access path `0x1436bf0` checks the full identifier and uses direct reference counters or a thread registration depending on the engine TLS. In the normal path, the embedded lock `Actor+0x18`, Zustandsflags, Alive field and reference registration are added. This lifetime management is not yet integrated into the host. A pointer comparison or self-invented counter is not enough.
 
-Der künftige Host muss Lebensdauer, aktuelle Methodentabellen, initialisierten
-Engine-Thread, Sitzung und Besitzereignung selbst belegen. Es fehlen außerdem
-der vollständige Änderungsweg einschließlich Spielereignissen, deren Zuordnung
-zum Auftrag, Bedieneingabe, Loader und B0-Installation. Die Bibliotheken liefern
-keinen Live-Resolver für Lock-Bindungen und verändern keine Itemdaten im Spiel.
+The future host must itself occupy lifetime, current method tables, initialized engine thread, session and owner suitability. It also lacks the complete change path including game events, their assignment to the job, operator input, loader and B0 installation. The libraries do not provide a live resolver for lock bindings and do not change items in the game.
 
-## Prüfung
+## Test test
 
-Vier CTest-Suiten, MSVC Release `/W4 /WX`: bestanden. 1.481 Aktionsbedingungen,
-163 Leserbedingungen, 25 Gruppenbedingungen; nativer Host insgesamt 140 Aufrufe
-und 2.408 Bedingungen. Leserproben verhindern Itemzugriff ohne beide Sperren und
-prüfen auch geänderte Besitzeranker, falsche Bindungen und Fehler beim Erfassen.
-Nachweise: `.local/repair-runtime-v5-build-test.log` und
-`.local/repair-runtime-v5-validation.json`. Kein Spielprozess-/Save-Zugriff.
+Four CTest suites, MSVC Release `/W4 /WX`: passed. 1,481 Action Conditions, 163 Reader Conditions, 25 Group Conditions; native host total 140 views and 2,408 conditions. Reader samples prevent item access without both locks and also check for changed owner anchors, false bindings and errors when captured. Evidence: `.local/repair-runtime-v5-build-test.log` and `.local/repair-runtime-v5-validation.json`. No game process/save access.

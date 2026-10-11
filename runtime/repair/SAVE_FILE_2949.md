@@ -1,111 +1,62 @@
-# Dateischreibhelfer auf privaten Puffern – Modul 0.21.0
+# File Writer on Private Buffers – Module 0.21.0
 
-Stand: 23.09.2026. Steam 25455892 / EXE 1.0.0.2949, SHA-256
-`a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`.
-**34 zusätzliche native Szenarien bestanden.** Alle Dateioperationen einschließlich
-Flush und Close sind eigene Callbacks; der Handle ist nur eine private Zahl.
-Keine Save-Dateien oder laufenden Spielobjekte wurden verwendet.
+Status: 23.09.2026. Steam 25455892 / EXE 1.0.0.2949, SHA-256 `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`. **34 passed additional native scenarios.** All file operations including flush and close are callbacks of their own; The handle is just a private number. No save files or running game objects were used.
 
-Historischer Nachweis 0.21.0. Die native Pufferaufbereitung und Kompression sind
-inzwischen separat in [SAVE_ENCODING_2949.md](SAVE_ENCODING_2949.md) geprüft.
-Nachgelagerte Verarbeitung und tatsächliche Dateioperationen bleiben offen.
+Historical evidence 0.21.0. The native buffer preparation and compression are now tested separately in [SAVE_ENCODING_2949.md](SAVE_ENCODING_2949.md). Downstream processing and actual file operations remain open.
 
-## Ausgeführter Originalcode
+## Original exported code
 
-| Funktion | RVA / vollständige Länge | Ausführung |
+|Function|RVA / full length|Implementation|
 |---|---|---|
-| Einen vorgemerkten Eintrag schreiben | `0x2358700 / 0x2c9` | Vorbereitung, Öffnen, Schreiben, Flush, Bereinigung und Fehlerzweige |
-| Bytepuffer leeren/freigeben | `0x1373a40 / 0x8e` | Ursprünglichen Payload nach Erfolg sowie verbliebene Testpuffer freigeben |
-| Dateiobjekt-String freigeben | `0x394db0 / 0x8e` | Nur der tatsächlich vom Test verwendete leere Sentinelzweig |
+|Write a pre-marked entry|`0x2358700 / 0x2c9`|Preparation, opening, writing, flushing, cleaning and branches of error|
+|Empty/release byte buffer|`0x1373a40 / 0x8e`|Release original payload after success as well as remaining test buffer|
+|Share file object string|`0x394db0 / 0x8e`|Only the empty sentinel branch actually used by the test|
 
-Drei zusätzliche Funktionshashes und pdata-Einträge, vier private TLS-Ersetzungen.
-Gesamtmanifest: **91 Codebereiche, 118 pdata-Fragmente, 55 TLS-Stellen**. Die
-TLS-Stelle des Stringdestruktors und der Heap-Pfad für lange formatierte Namen
-sind gebunden, aber in diesen Fällen nicht durchlaufen. Sprachspezifische
-Exception-Cleanup-Handler des Spiels werden weiterhin nicht registriert.
+Three additional functional hashes and pdata entries, four private TLS replacements. Total manifest: **91 code ranges, 118 pdata fragments, 55 TLS locations**. The TLS location of the string destructor and the heap path for long formatted names are bound, but in these cases do not pass through. Language-specific exception cleanup handlers of the game will still not be registered.
 
-Der Schreibhelfer erhält `(Handler, Verzeichnis, Eintrag)`. Der Handler verweist
-bei `+0x10` auf seinen Besitzer; dessen String bei `+0x78` wird an den Encoder
-weitergegeben. Eintragsname und dieser String können inline oder extern liegen.
-Der vorgemerkte Bytepuffer liegt am Eintrag bei `+0x120`.
+The write assistant gets `(Handler, Verzeichnis, Eintrag)`. The trader refers to his owner at `+0x10`; its string at `+0x78` is passed on to the encoder. Entry names and this string can be inline or external. The pre-marked byte buffer is at `+0x120` at the entry.
 
-## Geprüfte Fälle
+## Cases under review
 
-**26 Direktfälle:** 13 Varianten in beiden privaten TLS-Allokationsmodi:
+**26 Direct cases:** 13 Variants in both private TLS allocation modes:
 
-- regulärer Ablauf mit inline Strings sowie mit beiden externen Strings;
-- Vorbereitungsfehler ohne und mit bereits angelegtem temporärem Puffer;
-- Öffnungsfehler, Schreibfehler und Öffnungsfehler mit simuliertem Resthandle;
-- fehlgeschlagener Flush, fehlgeschlagenes Close und beide zusammen;
-- leere Ausgabe ohne Allokation sowie leere Ausgabe mit reserviertem Puffer;
-- 4.096 Byte Nutzdaten, bytegenau an den Schreibempfänger übergeben.
+- regular flow with inline strings as well as with both external strings;
+- preparation error without and with already applied temporary buffer;
+- opening errors, writing errors and opening errors with simulated residual handle;
+- failed flush, failed close and both together;
+- empty output without allocation and empty output with reserved buffer;
+- 4,096 Byte payload data, passed to the write receiver with byte precision.
 
-**Acht Integrationsfälle:** Erfolg, Öffnungsfehler, Schreibfehler und Flushfehler
-in beiden Allokationsmodi mit dem originalen
-[Speicherdispatcher](SAVE_BACKEND_2949.md). Eine eigene Brücke übergibt genau
-einen Eintrag. Sie ersetzt noch den originalen Queue-/Backup-/Umbenennungsweg.
+**Eight integration cases:**Success, opening error, spelling error and flush error in both allocation modes with the original [Storage dispatchers](SAVE_BACKEND_2949.md). A separate bridge passes exactly one entry. It replaces the original queue/backup/renaming path.
 
-Geprüft werden Argumente, Aufrufreihenfolge, Ergebnisse, unveränderte Besitzer,
-Pufferinhalt und Schutzbytes sowie vollständige Freigabe. Der originale Clear
-setzt Zeiger, Kapazität und Länge zurück, lässt das Allokatortag `0xff` erhalten.
-Die vorbereitende Testfunktion verändert den Eingabepuffer nicht. Der Nachweis,
-dass er bei Öffnungs-/Schreibfehlern erhalten bleibt, gilt für **diese Bindung**;
-der echte Encoder kann den Eingabepuffer vorher ändern, siehe unten.
+It reviews arguments, call order, results, unchanged owners, buffer content and protection bytes, and full release. The original Clear resets the pointer, capacitance and length, giving the allocation tag `0xff`. The preparatory test function does not change the input buffer. The proof that it is retained in case of opening/writing errors applies to **this binding**; The real encoder can change the input buffer beforehand, see below.
 
-## Warum Erfolg noch keine Speicherung bestätigt
+## Why success does not yet confirm storage
 
-Bei erfolgreichem Öffnen und Schreiben beziehungsweise leerer Ausgabe:
+In the case of successful opening and writing or empty output:
 
-1. Flush wird aufgerufen; sein Ergebnis beeinflusst den Ablauf nicht.
-2. Der originale Clear gibt den vorgemerkten Payload frei.
-3. Close wird aufgerufen; sein Ergebnis beeinflusst den Erfolg ebenfalls nicht.
-4. Der Helfer gibt true zurück. Der verbundene Dispatcher setzt seinen
-   Erfolgsstatus und löscht Dirty auch beim simulierten Flushfehler.
+1. Flush is called; its outcome does not affect the process.
+2. The original Clear releases the pre-registered payload.
+3. Close is called; Its outcome does not affect success either.
+4. The helper returns the truth. The associated dispatcher sets his
+Success status and deletes dirty even in the simulated flush error.
 
-Bei Öffnungs-/Schreibfehlern liefert der Helfer false und ruft keinen Flush auf.
-Der Dispatcher erhält dann Dirty und löscht einen vorherigen Erfolgsstatus.
-Temporäre Ausgabeallokationen werden auch nach Vorbereitungsfehlern freigegeben.
+In case of opening/writing errors, the helper delivers false and does not call a flush. The dispatcher then gets dirty and deletes a previous success status. Temporary output allocations are also released after preparation errors.
 
-Das sind Aussagen über Originalcode mit privaten Empfängern. Es wurde weder
-ein echter Schreibvorgang noch ein Datenträgerabschluss bestätigt. Der produktive
-Reparaturadapter erhält dadurch keine Freigabe, diese Bool-Rückgabe als
-korrelierte Erfolgsmeldung zu verwenden.
+These are statements about original code with private recipients. Neither a real write process nor a disk closure was confirmed. As a result, the productive repair adapter does not receive approval to use this bool return as a correlated success message.
 
-## Nächste Bindungen, bisher nur statisch gelesen
+## Next bindings, previously only statically read
 
-`0x235c750 / 0x31a` bereitet den Dateipuffer vor. Ein Flag bei Eintrag `+0xa4`
-entscheidet über einen zusätzlichen Verarbeitungsschritt. Bei gesetzter Maske `0x02`
-ruft der Code `0x12c61e0` auf und ersetzt anschließend den ursprünglichen Payload;
-`0x235c040` ist ein weiterer Verarbeitungsschritt. Erst danach werden Längen
-bei `+0xaa`/`+0xae` gesetzt und ein 128-Byte-Header plus Nutzdaten ausgegeben.
-Die genaue Kodierung und deren Fehler-/Besitzsemantik müssen noch nativ geprüft
-werden. Insbesondere ist ein Fehler vor dem Dateiöffnen kein allgemeiner Beleg
-für unveränderte vorgemerkte Nutzdaten.
+`0x235c750 / 0x31a` prepares the file buffer. A flag at entry `+0xa4` decides on an additional processing step. When the mask is set `0x02`, the code calls `0x12c61e0` and then replaces the original payload; `0x235c040` is another processing step. Only then are lengths set at `+0xaa`/`+0xae` and a 128 byte header plus useful data output. The exact coding and its error/possession semantics still have to be tested natively. In particular, an error before the file is opened is not a general proof for unchanged pre-recorded useful data.
 
-`0x12b7dd0 / 0xe3` ist der nachgelagerte Schreibwrapper. Nach erfolgreichem
-`WriteFile` vergleicht er die tatsächlich geschriebene mit der angeforderten
-Bytezahl; eine Teilmenge wird als Fehler behandelt. Auch dieser Wrapper und
-seine Benachrichtigung sind bisher nur statisch gelesen.
+`0x12b7dd0 / 0xe3` is the downstream write wrapper. After successful `WriteFile`, he compares the actually written with the requested byte number; a subset is treated as an error. Also this wrapper and its notification are so far only statically read.
 
-Weitere offene Punkte: vollständige Serialisierung aus ItemSaveData, ursprüngliche
-Queue-/Backup-/Umbenennungslogik, gültiger Zeitpunkt und Thread, belastbarer
-Abschlussbeleg zum Reparaturauftrag sowie Spielhost und Installation.
+Other open points: complete serialization from ItemSaveData, original queue/backup/renaming logic, valid time and thread, reliable proof of completion for the repair order, and game host and installation.
 
-## Ergebnis und spätere Spieltests
+## Result and later in-game tests
 
-MSVC Release `/W4 /WX` und **neun CTest-Suiten** bestanden. Insgesamt **352 native
-Szenarien, 4.095 Aufrufe und 142.649 Bedingungen**. Produktionssuiten unverändert:
-35 Schreibszenarien/202 Bedingungen, 43 Transaktionsszenarien/273 Bedingungen.
-Das Testergebnis meldet `save_file_io=private_callbacks`, `save_disk_commit=false`,
-`engine_commit=false`, `live_installable=false`.
+MSVC Release `/W4 /WX` and **nine CTest Suites** passed. Total **352 native scenarios, 4,095 calls and 142,649 conditions**. Production suites unchanged: 35 Writing scenarios/202 Conditions, 43 Transaction scenarios/273 Conditions. The test result reports `save_file_io=private_callbacks`, `save_disk_commit=false`, `engine_commit=false`, `live_installable=false`.
 
-Später gelten [R06 und R14](../../TESTCHECKLISTE.md): reparierte Haupt-/Sockelwerte
-und Färbungen vor/nach Reparatur sowie nach regulärem Speichern und normalem
-Spielneustart vergleichen. Technische Fehlerfälle werden hier im Testprogramm
-simuliert; der Nutzer soll keine Stromausfälle oder Save-Beschädigungen erzeugen.
-Die Reparatur bleibt in App v0.5.9 gesperrt.
+Later [R06 and R14](../../TESTCHECKLISTE.md) apply: compare repaired main/socket values and colorings before/after repair as well as after regular saving and normal game restart. Technical error cases are simulated here in the test program; the user should not generate power outages or save damage. The repair remains locked in app v0.5.9.
 
-Quellen: [native Probe](tests/save_file_native.inl),
-[Funktionsmanifest](tests/registry_native.cpp), [Unwindprüfung](src/pe.cpp).
-Nachweise: `.local/verify_save_file_v21.py`, `.local/repair-runtime-v21-save-file.json`,
-`.local/repair-runtime-v21-{build-test.log,native-result.json,validation.json}`.
+Sources: [native Probe](tests/save_file_native.inl), [Functional manifest](tests/registry_native.cpp), [Wind test](src/pe.cpp). Evidence: `.local/verify_save_file_v21.py`, `.local/repair-runtime-v21-save-file.json`, `.local/repair-runtime-v21-{build-test.log,native-result.json,validation.json}`.

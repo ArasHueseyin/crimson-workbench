@@ -1,115 +1,23 @@
-# Reittiere auswählen und im Stall registrieren
+# mounts select and register in the stable
 
-Stand 04.10.2026: Erweiterung für zusätzliche Tierarten fertig gebaut und an
-privaten Savekopien geprüft und bei geschlossenem Spiel/Workbench installiert.
-Desktop-EXE, 37 unveränderte Dateien einschließlich aller 13 Saves, 23 Sicherungen
-und die bestehende Desktop-Verknüpfung sind unabhängig zurückgeprüft. Die neue
-Route erzeugt einen **Basiseintrag** aus dem Schema des ausgewählten Saves.
-Sie ist als **Spieltest offen** gekennzeichnet: Die Strukturprüfung bestätigt
-keine erfolgreiche Initialisierung, Sichtbarkeit, Beschwörung oder Reitfunktion
-im Spiel. Die ältere Erweiterung für zugewiesene Vorlagentiere und Porträts ist
-bereits installiert.
+Status: 04.10.2026: Extension for additional animal species finished and tested on private save copies and installed when the game/Workbench is closed. Desktop EXE, 37 unchanged files including all 13 saves, 23 backups and the existing desktop shortcut are independently checked back. The new route generates a **base entry** from the scheme of the selected save. It is marked as **in-game test open**: The structural check does not confirm successful initialization, visibility, summoning or riding function in the game. The older extension for assigned template animals and portraits is already installed.
 
-**Neue Basiseinträge:** Auch ohne ein gespeichertes Tier derselben Familie
-werden Rotfederraptor, Elefant, beide Riesenleguane, Wölfe, erwachsene Kamele
-und weitere normale Reittierfamilien auswählbar. Die geprüfte private Kopie
-von Konto <Konto-ID>, Slot 0 zeigt 288 statt 219 hinzufügbare Einträge. 24
-separate verschlüsselte Kandidaten, darunter alle 13 erwachsenen
-Kamelvarianten, bestehen vollständigen Rückvergleich, neue Nummern und
-Doppelsperre. Kamelkälber und Nutzvieh erhalten keinen Basiseintrag.
+**New basic entries:** Even without a stored animal of the same family, red feather raptor, elephant, both giant iguanas, wolves, adult camels and other normal mount families can be selected. The verified private copy of account <account ID>, slot 0 shows 288 instead of 219 addable entries. 24 separate encrypted candidates, including all 13 adult camel variants, pass full back comparison, new numbers and double lock. Camel calves and livestock shall not be given a basic entry.
 
-Der Basiseintrag enthält eine frische Tiernummer, den ausgewählten
-Charakterschlüssel, leere Level-/Tageszählerstrukturen, Kliffs Besitzkennung
-und ein explizit falsches Initialisierungsflag. Die Initialisierung durch das
-Spiel ist beabsichtigt, aber noch nicht beobachtet. HP, Ausrüstung, Spawnposition,
-Namen, Arbeitszustände und aktive Beschwörungsflags eines anderen Tiers werden
-nicht übernommen. Es werden weder alte 170-Byte-Vorlagen noch fremde Klassen-
-oder Feldindizes eingespielt. Die 44 aktuellen Mercenary-Felder und die beiden
-verschachtelten Klassen werden nach Namen und Typ geprüft; abweichende Layouts
-sperren die Route. Eine bereits passende gesunde Familienvorlage hat Vorrang
-und behält den bisherigen Klonweg.
+The basic entry contains a fresh animal number, the selected character key, empty level/day counter structures, Kliff’s ownership identifier and an initialization flag explicitly set to false. The initialization by the game is intended, but not yet observed. HP, equipment, spawn position, names, working conditions and active summoning flags of another animal are not adopted. Neither old 170 byte templates nor foreign class or field indices are recorded. The 44 current Mercenary fields and the two nested classes are checked by name and type; Deviating layouts block the route. An already suitable healthy family template has priority and retains the previous cloning path.
 
-**Noch zu prüfen:** Zunächst nur eine gewünschte exotische Variante registrieren,
-denselben Save laden und Stall/Sonderreittiermenü, Herbeirufen und Reiten prüfen.
-Erst nach erfolgreichem Speichern und Neuladen weitere Varianten ergänzen.
-Eine Sicherung von Save und Lobby wird vor jeder Registrierung angelegt.
-Quests, Tierwissen und Reitfähigkeiten werden nicht zusätzlich freigeschaltet;
-solche Voraussetzungen oder nicht reitbare Tiermodelle können eine Nutzung
-weiterhin verhindern. Die Desktop-Installation selbst vergibt keine Tiere.
-Nachweise: `.local/mount-family-investigation-20261004/`.
+**To be checked:** At first only register a desired exotic variant, load the same save and check stall/special mount menu, call-out and riding. Only after successful storage and reloading will further variants be added. A backup from Save and Lobby is created before each registration. Quests, animal knowledge and riding skills are not additionally unlocked; Such prerequisites or non-ridable animal models may still prevent their use. The desktop installation itself does not forgive animals. Evidence: `.local/mount-family-investigation-20261004/`.
 
-In der Workbench unter **Reittiere** den gespeicherten Spielstand auswählen,
-nach Name oder ID suchen und eine Tierart wählen. Die Auswahl zeigt Beschreibung,
-Besitzstatus und ob eine Registrierung für diesen Spielstand möglich ist.
-**Im Stall registrieren** fügt genau ein Tier hinzu. Das Spiel muss dazu
-vollständig geschlossen sein; für eine Live-Stallregistrierung gibt es noch
-keinen geprüften nativen Aufruf.
+In the Workbench under **mounts** select the stored save, search by name or ID and select an animal species. The selection shows description, ownership status and whether registration for this save is possible. **Register in the stable** adds exactly one animal. The game must be completely closed for this purpose; For a live stable registration, there is not yet a verified native call.
 
-**Vorherige Erweiterung 04.10.2026, installiert und unabhängig geprüft; Spielabnahme steht aus:**
-Die Anzeige nennt die hinzufügbaren Tiere, bereits registrierte Tierarten und
-fehlende Vorlagen. Familienfilter zeigen die verfügbare Anzahl. Mit **Nur
-hinzufügbare Reittiere** werden ungeeignete Einträge ausgeblendet. Bei einem
-älteren Konto ohne Vorlage hilft **Neuesten Spielstand auswählen**.
-Eine gesunde Vorlage darf einen Namen tragen und einem Charakter zugewiesen
-sein. Nur bei der neuen Kopie werden Name, Charakterzuweisung, letzter
-Beschwörungsstatus und Hauptreittierstatus weggelassen. Die bestätigten Typen
-und Präsenzbits werden geprüft. Das Original samt Name und Zuweisung bleibt
-unverändert. Fremde Aufgabenfelder, Fütterungstimer, fehlende Lebenspunkte und
-unbekannte Feldformate sperren eine Vorlage weiterhin.
-In der neu geprüften Kopie von Konto <Konto-ID>, Slot 1 sind 219 Tiere hinzufügbar
-(210 Pferde, sieben Bären, zwei Löwen). Für andere Familien fehlt dort weiterhin
-eine geeignete Vorlage.
-Der dort zugewiesene Zirkuslöwe ist nun eine geeignete Vorlage für zwei weitere
-Löwen. Die vorherige Version zeigt in diesem Stand nur 217 verfügbare Arten.
-Die Verfügbarkeit wird für den jeweils gewählten Save neu ermittelt. Für eine
-fehlende Familie zuerst ein gesundes Tier im Spiel registrieren und speichern;
-auch dann muss dessen Datensatz die geprüften Vorlagenregeln erfüllen.
-Nach der Installation wurde der neue zuletzt gespeicherte Stand rein lesend
-geprüft: Konto <Konto-ID>, Slot 0, mit denselben 219 verfügbaren Arten
-(210 Pferde, sieben Bären, zwei Löwen). Es wurden dabei keine Tiere vergeben.
+**Previous extension 04.10.2026, installed and independently tested; in-game validation is pending:** The display indicates the animals that can be added, already registered animal species and missing templates. Family filters show the available number. **Only addable mounts** hides unsuitable entries. For an older account without a template helps to select **Latest save**. A healthy template may have a name and be assigned to a character. Only the new copy omits name, character assignment, last summon status, and main mount status. The confirmed types and presence bits are checked. The original, including name and assignment, remains unchanged. Foreign task fields, feeding timers, missing life points and unknown field formats continue to block a template. In the newly verified copy of account <Account-ID>, slot 1, 219 animals can be added (210 horses, seven bears, two lions). For other families, there is still no suitable template. The circus lion assigned there is now a suitable template for two more lions. The previous version shows only 217 available species in this version. The availability is recalculated for the selected save. For a missing family first register and save a healthy animal in the game; even then, its data set must meet the tested template rules. After the installation, the new last saved stand was checked purely reading: account <account ID>, slot 0, with the same 219 available species (210 horses, seven bears, two lions). No animals were awarded.
 
-89 Tierporträts sind über den vollständigen internen Charakternamen eindeutig
-zugeordnet; zusätzliche Archiv-Namensschemata werden erkannt. 210 weitere
-Varianten zeigen ausdrücklich beschriftete Beispielbilder derselben Tierart.
-Fell, Farbe und Ausstattung können abweichen. Die Auswahl verwendet dafür
-bestätigte Arten-/Rassenpräfixe, keine pauschale Fahrzeugfamilie: Ein Hirsch in
-der Pferde-Fahrzeugfamilie bekommt beispielsweise kein Pferdebild.
-299 der 322 Einträge haben damit ein aus dem Spielarchiv dekodiertes Bild.
-Sichtbare Listeneinträge laden ihre Bilder bei Bedarf; gemeinsame Texturen
-werden einmal dekodiert und ohne Variantenbeschriftung zwischengespeichert.
-23 Einträge haben weiterhin keine passende Zuordnung. Bei mehrdeutigen
-gleichrangigen Zuordnungen bleibt
-ein ausdrücklich als allgemein beschriftetes Tiersymbol. Das große Bild rechts
-lässt sich anklicken und mit **Esc** oder **×** wieder schließen. Namen, Tierart
-und ID lassen sich weiterhin suchen; **Regex-Suche** ergänzt optionale Suchmuster.
+89 Animal portraits are clearly assigned via the full internal character name; Additional archive naming schemes are recognized. 210 further variants show expressly labeled example images of the same animal species. Fur, color and equipment may differ. The selection uses confirmed species/race prefixes, not a blanket vehicle family: A deer in the horse-vehicle family, for example, does not receive a horse picture. 299 of the 322 entries thus have an image decoded from the game archive. Visible list entries load their images as needed; common textures are decoded once and temporarily stored without variant inscription. 23 Entries still have no matching assignment. In the case of ambiguous assignments of equal rank, an animal symbol expressly labeled as general remains. The large image on the right can be clicked on and closed again with **Esc** or **×**. Names, species and ID can still be searched; **Regex search** complements optional search patterns.
 
-Der Katalog enthält 322 normale Reittiere des geprüften Builds 2976. Nur Tiere
-mit einer bestätigten Fahrzeugfamilie und entweder einer passenden gesunden
-Vorlage oder dem geprüften aktuellen Basiseintrag-Layout sind hinzufügbar. Kanonen, Wagen,
-Sequenzobjekte und Sonderbeschwörungen werden ausgeschlossen. Bereits vorhandene
-Tierarten können nicht doppelt hinzugefügt werden. Die Verfügbarkeit hängt vom
-gewählten Spielstand ab. Die Vorlage liefert zunächst Level, Lebenspunkte und
-Ausrüstung; individuelle Eigenschaften werden nicht erfunden.
+The catalog contains 322 normal mounts of the tested build 2976. Only animals with a confirmed family and either a suitable healthy template or the tested current basic entry layout can be added. Cannons, wagons, sequence objects and special summons are excluded. Existing animal species cannot be added twice. Availability depends on the selected save. The template initially delivers levels, life points and equipment; Individual characteristics are not invented.
 
-Vor Änderungen werden `save.save` und `lobby.save` exklusiv gelesen, ihr HMAC
-geprüft und vollständig bytegenau neu serialisiert. Ein neues Stalltier erhält
-frische Tier- und Itemnummern. Danach muss das Entfernen dieses einen Tiers aus
-dem Kandidaten wieder exakt den ursprünglichen Savekörper ergeben. Der Lobby-
-Nummernzähler wird passend erhöht. Keine vorhandenen Quests, Fähigkeiten oder
-Inventare werden bearbeitet. Unbekannte Objektbereiche, beschädigte Dateien,
-fremde Änderungen, Verknüpfungen und nicht unterstützte Builds führen zur
-Ablehnung. Die Spiel-EXE bleibt während der Transaktion gegen einen Start gesperrt.
+Before changes, `save.save` and `lobby.save` are exclusively read, their HMAC checked and completely byte-accurately reserialized. A new animal is given fresh animal and item numbers. After that, the removal of this one animal from the candidate must again yield exactly the original Savebody. The lobby number counter is increased appropriately. No existing quests, abilities or inventories are edited. Unknown object areas, corrupted files, foreign changes, shortcuts, and unsupported builds result in rejection. The game EXE remains blocked during the transaction against a start.
 
-Originale, Kandidaten, Absicht und Ergebnis liegen unter
-`.local/mount-grants/<Anfrage-ID>/`. Die Workbench zeigt den Backupordner im
-Ergebnis. Bei verlorener Antwort dieselbe gespeicherte Anfrage prüfen; keine
-neue Anfrage auf Verdacht senden. Eine fertige Anfrage-ID kann nicht erneut
-ein Tier erzeugen. Bei Fehler zwischen beiden Dateiwechseln werden nur die
-geprüften Dateigenerationen zurückgesetzt; fremde Änderungen bleiben erhalten.
+Originals, candidates, intention and result are below `.local/mount-grants/<request-ID>/`. The Workbench shows the backup folder in the result. If the answer is lost, check the same stored request; Do not send a new request on suspicion. A finished request ID cannot generate an animal again. If there are errors between the two file changes, only the tested file generations are reset; Foreign changes will be retained.
 
-Nachweise der Erweiterung liegen in `.local/mount-catalog-expansion-20261004/`.
-Dabei wurden keine echten Saves bearbeitet und keine Tiere vergeben.
-Geprüft wurden synthetische Transaktionen einschließlich Zwischenfehler,
-fremder Änderung und Pfadablehnung sowie echte private Savekopien mit je einem
-neuen Bären, Pferd und Löwen, vollständiger Rückvergleich und erneutes Ablehnen derselben
-Tierart. Die Stallanzeige, Reiten, Speichern und Neuladen im Spiel sind noch offen.
+Evidence of the extension is in `.local/mount-catalog-expansion-20261004/`. No real saves were processed and no animals were awarded. Synthetic transactions including intermediate errors, foreign modification and path rejection as well as real private save copies with a new bear, horse and lion, complete back-testing and re-rejection of the same species were tested. The stable display, riding, saving and reloading in the game are still open.

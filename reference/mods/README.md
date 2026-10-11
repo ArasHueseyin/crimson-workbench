@@ -1,5 +1,3 @@
-# Private Referenzmods
+# Private reference mods
 
-Nexus-Archive oder entpackte Referenzmods können hier lokal abgelegt werden.
-Alle Inhalte außer dieser README sind von Git ausgeschlossen. Keine Modinhalte
-werden mit Crimson Workbench ausgeliefert. Der Ordner ist derzeit leer.
+Nexus archives or unpacked reference mods can be stored locally here. All content except this README is excluded from Git. No modes are shipped with Crimson Workbench. The folder is currently empty.

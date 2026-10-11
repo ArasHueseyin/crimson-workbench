@@ -1,113 +1,64 @@
-# Reparatur 0.17.0 – Client-Rückmeldung für mitgeführte Items
+# Repair 0.17.0 – Client feedback for items carried
 
-Stand 22.09.2026, Steam 25455892 / EXE 1.0.0.2949, SHA-256
-`a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`.
-**Entwicklungsmodul, weiterhin keine nutzbare Reparatur in der App.** Die
-Desktop-App bleibt v0.5.9. Keine Spielprozess-, Installations- oder Saveänderung.
+Status: 22.09.2026, Steam 25455892 / EXE 1.0.0.2949, SHA-256 `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`. **Development module, still no usable repair in the app.** The desktop app remains v0.5.9. No game process, installation or save change.
 
-## Neue Verbindung
+## New connection
 
-Der originale Inventar-Reparatur-Ack `0xa11ca0` ist jetzt in einer privaten
-Inventarroute des gemeinsamen Transaktionsadapters ausgeführt. Originale Itemkopien,
-Feldschreiber und Referenz-/Sperrfunktionen arbeiten dabei auf denselben eigenen
-Quellen. Der Serverteil dieser Inventarroute und ihr Abschluss bleiben eigene
-Testcallbacks; eine vollständige Engine-Transaktion wird damit nicht behauptet.
+The original Inventory Repair Ack `0xa11ca0` is now running in a private inventory route of the common transaction adapter. Original item copies, field recorders and reference/lock functions work on the same own sources. The server part of this inventory route and its completion remain its own test callbacks; A complete engine transaction is not claimed.
 
-Der Ack nimmt einen Inventarschlüssel, Slot und **absoluten 16-Bit-Hauptwert** an.
-Er übersetzt den Schlüssel, sucht den Inventarbesitzer, erwirbt dessen exklusive
-Sperre und prüft den Slot auf vorhandenes Item, gültigen Key und positive Menge.
-Nach dem Hauptwert-Store gibt er die Sperre frei und meldet der Oberfläche
-`Zielwert - vorheriger Wert` als 16-Bit-Differenz. Sockel werden weder verändert
-noch in dieser Meldung übertragen. Definitionen, Schlüsselübersetzung,
-Namensformatierung mit leerem Testnamen und Oberfläche sind begrenzte Testempfänger.
-Nichtleere Namen und deren native String-Allokationszweige sind hier nicht ausgeführt.
+The Ack assumes an inventory key, slot and **absolute 16-bit main value**. It translates the key, searches for the inventory owner, acquires its exclusive lock and checks the slot for existing item, valid key and positive amount. After the main value store, it releases the lock and reports the interface `Zielwert - vorheriger Wert` as 16-bit difference. Caps shall not be modified or transmitted in this message. Definitions, key translation, name formatting with empty test name and interface are limited test receivers. Non-empty names and their native string allocation branches are not listed here.
 
-Der gemeinsame Schreiber hat vor der Benachrichtigung bereits beide Zustandskopien
-aktualisiert. Der native Ack schreibt deshalb denselben Hauptwert und meldet in
-dieser Integrationsprobe Delta 0. Die tatsächliche Reaktion der Oberfläche auf
-Delta 0 bleibt offen; der UI-Testempfänger prüft ausschließlich die Aufrufdaten.
+The common writer has already updated both Zustandcopies before the notification. The native Ack therefore writes the same main value and reports delta 0 in this integration sample. The actual response of the surface to delta 0 remains open; the UI test receiver only checks the call data.
 
-## Warum eine Rückmeldung allein nicht genügt
+## Why feedback alone is not enough
 
-- **Keine UID-Prüfung:** Der Ack akzeptiert ein anderes vorhandenes Item im
-  gleichen Slot. Der native Direktfall weist dieses Verhalten nach; in der
-  Integration verweigert anschließend eine neue geschützte Erfassung den Erfolg.
-  Die spätere Spielroute braucht zusätzlich eine Identitätsprüfung vor Zustellung.
-- **Keine Zielwert-Zulassung:** Auch 0 und 65.535 werden unverändert geschrieben.
-  Nur der geprüfte eigene Reparaturplan darf den übergebenen Zielwert bestimmen.
-- **Keine Speicherung:** Der Ack ändert die Clientdarstellung und ersetzt weder
-  die Serveränderung noch den Persistenzauftrag oder dessen Bestätigung.
-- **Äußerer Paketstatus reicht nicht:** Der statisch geprüfte Paketverteiler
-  `0xbbee00` ruft den inneren Ack auf, setzt danach aber seinen äußeren Ergebniscode
-  unabhängig davon auf 0. Der Host darf diesen äußeren Erfolg nicht als Beleg
-  für eine erfolgreiche Reparatur verwenden. Dieser Verteiler wurde nicht ausgeführt.
+- **No UID check:** The Ack accepts another existing item in the
+Same slot. The native direct case demonstrates this behavior; in the integration, a new protected capture subsequently refuses success. The later game route also requires an identity check before delivery.
+- **No target value allowance:** Also 0 and 65,535 are written unchanged.
+Only the tested own repair plan may determine the transferred target value.
+- **No storage:** The alignment changes the client representation and does not replace
+the server change or the persistence order or its confirmation.
+- **External package status is not enough:** The statically tested package distributor
+`0xbbee00` calls the inner ack, but then sets its outer result code to 0 independently. The host must not use this external success as evidence of a successful repair. This distributor was not exported.
 
-## Buildbelege
+## Build documents
 
-| Bereich | RVA / Länge | SHA-256 |
+|Area|RVA/Length|SHA-256|
 |---|---|---|
-| Vollständiger nativer Client-Ack | `0xa11ca0` / `0x322` | `391c116f3606894b6a2a4de7623e51a56d8e05111099597c12a04b998486abe4` |
-| Statischer Paketverteiler-Anker | `0xbbee00` / `0x379` | `5ac29646aa893ceb1983e76c63425142ca493bfe464a398f663bfb5840a3505d` |
+|Complete native client ack|`0xa11ca0` / `0x322`|`391c116f3606894b6a2a4de7623e51a56d8e05111099597c12a04b998486abe4`|
+|Static packet distribution anchor|`0xbbee00` / `0x379`|`5ac29646aa893ceb1983e76c63425142ca493bfe464a398f663bfb5840a3505d`|
 
-RTTI `TrocTrRepairItemToInventoryAck`: vtable `0x5609728`, Methode `+0x10`
-führt zum Verteiler. Dieser verwendet Actor-Komponenten `+0xd8` für den
-Reparaturbaustein. Die Probe prüft diesen Zugriff bytegenau. Das ist kein
-Nachweis der tatsächlichen Lebensdauer einer geladenen Spielkomponente.
+RTTI `TrocTrRepairItemToInventoryAck`: vtable `0x5609728`, method `+0x10` leads to the distributor. This uses Actor components `+0xd8` for the repair component. The sample checks this access with precision. This is not proof of the actual life of a loaded game component.
 
-Der private Host hat jetzt 56 vollständig gepinnte Codebereiche, 70 pdata-
-Fragmente und 35 private TLS-Stellen. Die drei neuen TLS-Stellen liegen im Ack;
-unveränderte Bytes außerhalb der erlaubten Umleitungen werden geprüft.
+The private host now has 56 fully pinned code ranges, 70 pdata fragments and 35 private TLS locations. The three new TLS positions are in the corner; unchanged bytes outside the permitted diversions are checked.
 
-## Prüfung
+## Test test
 
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. Die bestehenden
-Produktionssuiten bleiben bei 43 Transaktionsszenarien/273 Bedingungen und
-35 Schreibszenarien/202 Bedingungen.
+Nine CTest suites and MSVC release `/W4 /WX` passed. The existing production suites remain at 43 transaction scenarios/273 conditions and 35 writing scenarios/202 conditions.
 
-**36 neue native Inventarereignisfälle:**
+**36 new native inventory event cases:**
 
-- 14 Direktfälle in beiden TLS-Allokationsmodi: beschädigt, Haltbarkeit 0,
-  bereits voller Wert, Zielwert 0/65.535, ungültige Übersetzung, fehlender
-  Container, negative/zu große Slots, ungültiger Key, Menge 0/-1, ausgeschlossene
-  Items und eine ausgetauschte UID. Die beiden Modi erreichen bei leerem Namen
-  keine String-Allokation; sie sind kein Test beider String-Allokationszweige.
-- Acht Integrationsfälle: normal, ausschließlich Sockel beschädigt, No-Wear,
-  fehlerhafte Containerübersetzung nach Feldschritt, UID-Wechsel, fehlende
-  Zustellung, fehlgeschlagener Abschluss und doppelte Rückmeldung.
-- Exakte Änderung ausschließlich des Hauptworts im Direktfall; Inventarmetadaten,
-  Sockel, UID, Menge und Serverdaten bleiben sonst unverändert.
-- Formatierung unter Client-Sperre, UI-Aufruf nach Freigabe, gehaltene Besitzer,
-  native Kopierlebensdauer und vollständige Bereinigung geprüft.
-- Alle Fehler nach dem Feldschritt erzeugen ein unklares Ergebnis ohne Replay.
-  Frische Daten und vollständige künstliche Belege sind für privaten Erfolg nötig.
+- 14 Direct cases in both TLS allocation modes: damaged, durability 0,
+Already full value, target value 0/65,535, invalid translation, missing container, negative/too large slots, invalid key, set 0/-1, excluded items and an exchanged UID. The two modes do not achieve string allocation when the name is empty; They are not a test of both string allocation branches.
+- Eight integration cases: normal, only base damaged, no-wear,
+incorrect container translation by field step, UID change, missing delivery, failed completion and duplicate feedback.
+- Exact change only of the main word in the direct case; inventory metadata;
+Base, UID, quantity and server data will otherwise remain unchanged.
+- formatting under client lock, UI call upon release, owner held,
+native copy lifetime and complete cleanup checked.
+- All errors after the field step produce an unclear result without replay.
+Fresh data and complete artificial evidence are necessary for private success.
 
-Gesamt **222 native Szenarien, 3.526 gezählte Aufrufe, 125.524 Bedingungen**.
-Viele Bedingungen sind wiederholte Tabellenprüfungen, keine unabhängigen Fälle.
+Total **222 native scenarios, 3,526 counted calls, 125,524 Conditions**. Many conditions are repeated table checks, not independent cases.
 
-## Weitere Erkenntnis zum Sockel-Speicherweg
+## Further knowledge on the socket storage path
 
-Die nur lesende Analyse findet `sql->updateItemSocket` im Helper `0x2aefef0`
-(Länge `0x1d6`, SHA-256
-`0b47ab9486b4a2f8de6a5efe1b5ff3146c420ac2cf3cabe36f169998b1178490`).
-Die belegten Aufrufer `0x2ae91a0` und `0x2aea3a0` übergeben dort eine 32-Bit-
-ItemInfo-Kennung und den Sockelindex. Die Haltbarkeit steht separat im temporären
-24-Byte-Datensatz bei `+0x10`; die SQL-Übergabe liest dessen Kennung bei `+0x14`.
-Anschließend setzt `0x240e310` Key und Haltbarkeit im 6-Byte-Sockeldatensatz.
+The read-only analysis finds `sql->updateItemSocket` in the helper `0x2aefef0` (length `0x1d6`, SHA-256 `0b47ab9486b4a2f8de6a5efe1b5ff3146c420ac2cf3cabe36f169998b1178490`). The occupied callers `0x2ae91a0` and `0x2aea3a0` pass a 32 bit ItemInfo identifier and the base index there. The durability is separate in the temporary 24 byte dataset at `+0x10`; the SQL handover reads its identifier at `+0x14`. Subsequently, `0x240e310` sets key and durability in the 6 byte socket dataset.
 
-Dieser SQL-Helper ist damit **kein belegter Speicheraufruf für Sockelhaltbarkeit**.
-Er wird nicht als vermeintliche Reparatur eingebunden. Daraus folgt noch keine
-Aussage, ob oder wo andere Speicherwege Sockelhaltbarkeit sichern bzw. beim
-Laden neu initialisieren. Das muss anhand der tatsächlichen Schreib-/Lesepfade
-weiter belegt werden; Save-Dateien werden dafür nicht geöffnet.
+This SQL helper is therefore **not a busy memory call for base durability**. It is not included as a supposed repair. There is no indication from this as to whether or where other storage paths ensure base durability, i.e. Re-initialize when loading. This must be further proven by the actual read/write paths; Save files are not opened for this.
 
-## Offen
+## Open
 
-Konkrete serverseitige Inventarmeldungen und Persistenz, vollständige Sockel-
-Persistenz-/Ladesemantik, echte UI-/Effekt-/Transportverarbeitung und zugeordnete
-Auftragsbelege. Danach bleiben Spielhost/Thread/TLS/Weltwechsel, Eingabe, Loader
-und B0-Einbau. Allgemeine NPC-Respawnzeiten bleiben ebenfalls ein Restpunkt von Phase 5.
+Concrete server-side inventory reports and persistence, full base persistence/load semantics, real UI/effect/transport processing and assigned order receipts. After that, game host/thread/TLS/world change, input, loader and B0 build-in remain. General NPC respawn times also remain a residual point of phase 5.
 
-[Native Inventarproben](tests/inventory_events_native.inl),
-[Phasenstand](../../PHASENSTATUS.md), [Testcheckliste](../../TESTCHECKLISTE.md).
-Nachweise: `.local/repair-runtime-v17-{build-test.log,native-result.json,validation.json}`.
-Recherche: `.local/repair-runtime-v17-{rtti,socket-references,callers}.json`.
+[Native inventory samples](tests/inventory_events_native.inl), [Phasenstand](../../PHASENSTATUS.md), [Testcheckliste](../../TESTCHECKLISTE.md). Evidence: `.local/repair-runtime-v17-{build-test.log,native-result.json,validation.json}`. Research: `.local/repair-runtime-v17-{rtti,socket-references,callers}.json`.

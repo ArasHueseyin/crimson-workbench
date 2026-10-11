@@ -86,7 +86,7 @@ fn decode(raw: &[u8]) -> Result<Vec<Setting>> {
         || Sha256::digest(&raw[48..]).as_slice() != &raw[16..48]
     {
         return Err(bad(
-            "Zusatzsockel-Datei fehlt, ist beschädigt oder hat eine unbekannte Version.",
+            "Extra sockets file is missing, damaged or has an unknown version.",
         ));
     }
     let version = u32::from_le_bytes(raw[8..12].try_into().unwrap());
@@ -96,7 +96,7 @@ fn decode(raw: &[u8]) -> Result<Vec<Setting>> {
         || raw.len() != 48 + count * 76
         || (version == 1 && count != 3)
     {
-        return Err(bad("Unbekannte Sockelversion oder ungültige Anzahl."));
+        return Err(bad("Unknown socket version or invalid count."));
     }
     let allow = allowed();
     let gear = gear_keys();
@@ -116,7 +116,7 @@ fn decode(raw: &[u8]) -> Result<Vec<Setting>> {
             || (version == 1 && TARGETS.get(i) != Some(&(uid, key, base)))
         {
             return Err(bad(
-                "Ungültige oder doppelte Gegenstandszuordnung für Zusatzsockel.",
+                "Invalid or duplicate item assignment for extra sockets.",
             ));
         }
         let mut gems = Vec::new();
@@ -132,7 +132,7 @@ fn decode(raw: &[u8]) -> Result<Vec<Setting>> {
                         .iter()
                         .any(|a| a.key == g.key && g.endurance <= a.endurance))
             {
-                return Err(bad("Ungültiger Sockelstein in Zusatzsockel-Datei."));
+                return Err(bad("Invalid socket stone in extra sockets file."));
             }
             gems.push(g);
         }
@@ -148,16 +148,14 @@ fn decode(raw: &[u8]) -> Result<Vec<Setting>> {
 fn change(raw: &[u8], request: &Request) -> Result<Vec<u8>> {
     let records = decode(raw)?;
     if hash_bytes(raw) != request.revision {
-        return Err(bad(
-            "Die Sockel wurden zwischenzeitlich geändert. Bitte neu einlesen.",
-        ));
+        return Err(bad("Sockets changed in the meantime. Please reload."));
     }
     let target = records
         .iter()
         .position(|t| t.uid.to_string() == request.uid)
-        .ok_or_else(|| bad("Unbekannter Gegenstand."))?;
+        .ok_or_else(|| bad("Unknown item."))?;
     if request.index >= 10 {
-        return Err(bad("Zusatzsockel muss zwischen 1 und 10 liegen."));
+        return Err(bad("Extra socket must be between 1 and 10."));
     }
     let endurance = if request.gem_key == 0 {
         0
@@ -165,7 +163,7 @@ fn change(raw: &[u8], request: &Request) -> Result<Vec<u8>> {
         allowed()
             .iter()
             .find(|a| a.key == request.gem_key)
-            .ok_or_else(|| bad("Dieses Item ist kein freigegebener Abyss-Sockelstein."))?
+            .ok_or_else(|| bad("This item is not a supported Abyss socket stone."))?
             .endurance
     };
     let mut out = raw.to_vec();
@@ -183,14 +181,14 @@ fn plain(path: &Path, directory: bool) -> Result<()> {
     {
         use std::os::windows::fs::MetadataExt;
         if m.file_attributes() & 0x400 != 0 {
-            return Err(bad("Verknüpfter Sockelpfad: keine Änderung."));
+            return Err(bad("Linked socket path: nothing changed."));
         }
     }
     if m.file_type().is_symlink()
         || m.is_dir() != directory
         || (!directory && crate::paths::link_count(path, &m)? != 1)
     {
-        return Err(bad("Kein regulärer Sockelpfad."));
+        return Err(bad("Socket path is not a regular file."));
     }
     Ok(())
 }
@@ -199,12 +197,12 @@ fn read(path: &Path, limit: usize) -> Result<Vec<u8>> {
     let mut f = File::open(path)?;
     let size = f.metadata()?.len();
     if size > limit as u64 {
-        return Err(bad("Sockeldatei überschreitet Größenlimit."));
+        return Err(bad("Socket file exceeds the size limit."));
     }
     let mut raw = Vec::new();
     (&mut f).take(limit as u64 + 1).read_to_end(&mut raw)?;
     if raw.len() as u64 != size {
-        return Err(bad("Datei wurde beim Einlesen geändert."));
+        return Err(bad("File changed while reading."));
     }
     Ok(raw)
 }
@@ -221,9 +219,7 @@ fn installed(game: &Path) -> Result<()> {
         1_048_576,
     )?);
     if digest != ASI && RELEASE_ASI != Some(digest.as_str()) {
-        return Err(bad(
-            "Die passende Zusatzsockel-Mod ist noch nicht installiert.",
-        ));
+        return Err(bad("The matching extra sockets mod is not installed yet."));
     }
     Ok(())
 }
@@ -292,7 +288,7 @@ pub fn snapshot(data: &GameData) -> Result<Snapshot> {
 fn stopped() -> Result<()> {
     if crate::apply::guard::game_running()? {
         return Err(bad(
-            "Crimson Desert läuft. Erst speichern und vollständig schließen, bevor Sockel geändert werden.",
+            "Crimson Desert is running. Save and fully close the game before changing sockets.",
         ));
     }
     Ok(())
@@ -319,7 +315,7 @@ fn game_guard(game: &Path) -> Result<File> {
     }
     if format!("{:x}", h.finalize()) != EXE {
         return Err(Error::UnsupportedBuild(
-            "Zusatzsockel unterstützen ausschließlich Build 1.0.0.2976.".into(),
+            "Extra sockets support only build 1.0.0.2976.".into(),
         ));
     }
     stopped()?;
@@ -347,35 +343,34 @@ pub fn add(
     let before = read(&path, LENGTH)?;
     let settings = decode(&before)?;
     if hash_bytes(&before) != request.revision {
-        return Err(bad("Die Sockeldatei wurde geändert. Bitte neu einlesen."));
+        return Err(bad("Socket file changed. Please reload."));
     }
     if settings.len() >= 256 {
-        return Err(bad("Höchstens 256 Gegenstandsinstanzen pro Konfiguration."));
+        return Err(bad("At most 256 item instances per configuration."));
     }
     let root = save_root;
     let (raw, _) = crate::mounts::files::read_pair(root, &request.save)?;
     if hash_bytes(&raw) != request.save_revision {
-        return Err(bad(
-            "Der Spielstand wurde geändert. Bitte die Ausrüstung neu einlesen.",
-        ));
+        return Err(bad("The save changed. Reload equipment."));
     }
     let items = crate::extra_sockets_candidates::parse(data, &raw)?;
     let item = items
         .iter()
         .find(|i| i.uid == request.uid)
-        .ok_or_else(|| bad("Dieser Gegenstand ist nicht im ausgewählten Spielstand vorhanden."))?;
+        .ok_or_else(|| bad("This item is not present in the selected save."))?;
     if !item.eligible {
-        return Err(bad(item.reason.clone().unwrap_or_else(|| {
-            "Dieser Gegenstand ist nicht unterstützt.".into()
-        })));
+        return Err(bad(item
+            .reason
+            .clone()
+            .unwrap_or_else(|| "This item is not supported.".into())));
     }
     let uid = item
         .uid
         .parse::<u64>()
-        .map_err(|_| bad("Ungültige Instanz-ID."))?;
+        .map_err(|_| bad("Invalid instance ID."))?;
     if settings.iter().any(|r| r.uid == uid) {
         return Err(bad(
-            "Diese Instanz ist bereits erweitert. Es werden keine doppelten Zusatzsockel angelegt.",
+            "This instance is already expanded. Duplicate extra sockets will not be added.",
         ));
     }
     let mut after = before.clone();
@@ -391,9 +386,7 @@ pub fn add(
     commit(data, project, before, after, || {
         let (now, _) = crate::mounts::files::read_pair(root, &request.save)?;
         if now != raw {
-            return Err(bad(
-                "Spielstand während der Auswahl geändert; keine Sockelerweiterung.",
-            ));
+            return Err(bad("Save changed during selection; no socket expansion."));
         }
         Ok(())
     })
@@ -434,12 +427,12 @@ fn commit(
         verify()?;
         if read(&path, LENGTH)? != before {
             return Err(bad(
-                "Zusatzsockel-Datei seit Auswahl geändert. Keine Installation.",
+                "Extra sockets file changed since selection. Nothing installed.",
             ));
         }
         replace(&temp, &path)?;
         if read(&path, LENGTH)? != after {
-            return Err(bad("Zusatzsockel-Readback fehlgeschlagen."));
+            return Err(bad("Extra sockets readback failed."));
         }
         snapshot_raw(data, &after)
     })();

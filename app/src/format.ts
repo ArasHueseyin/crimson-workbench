@@ -1,7 +1,7 @@
 import type { RawField } from './types';
-export const count = (value: number) => value.toLocaleString('de-DE');
+export const count = (value: number) => value.toLocaleString('en-US');
 export function integer(value: string | number): string {
-  try { return BigInt(value).toLocaleString('de-DE'); } catch { return String(value); }
+  try { return BigInt(value).toLocaleString('en-US'); } catch { return String(value); }
 }
 export function plainText(text: string): string { return text.replace(/<[^>]*>/g, '').replace(/\\n/g, '\n').trim(); }
 export function fieldValue(value: unknown): string { return typeof value === 'string' ? value : JSON.stringify(value) ?? '—'; }

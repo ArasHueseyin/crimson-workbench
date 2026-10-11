@@ -1,133 +1,61 @@
-# B1/B2: zusätzliche Feldnachweise für Build 25381195
+# B1/B2: additional field evidence for build 25381195
 
-Stand 19.09.2026, Workbench v0.4.2. Eigene statische Auswertung der lokalen
-EXE und Vergleich mit den bereits hashgebundenen Tabellen. Kein Debugger am
-Spielprozess, kein Hook, kein Start/Stop, keine Saveauswertung. Spielbytes und
-Disassembly bleiben ausschließlich in ausgeschlossenen lokalen Arbeitsdateien.
+Status: 19.09.2026, Workbench v0.4.2. Own static evaluation of the local EXE and comparison with the already hash-bound tables. No debugger in the game process, no hook, no start/stop, no save evaluation. game bytes and Disassembly remain exclusively in excluded local work files.
 
-Untersuchte EXE: `bin64/CrimsonDesert.exe`, Version `1.0.0.2944`, SHA-256
-`6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`.
-Adressen unten sind virtuelle Adressen der Datei bei ImageBase `0x140000000`;
-sie werden nicht zur Laufzeit benutzt. Das Ergebnis ist ein Feldnachweis,
-keine Vanilla-Zertifizierung oder In-game-Abnahme.
+Investigated EXE: `bin64/CrimsonDesert.exe`, version `1.0.0.2944`, SHA-256 `6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`. addresses below are virtual addresses of the file at ImageBase `0x140000000`; they are not used for running time. The result is a field proof, not a vanilla certification or in-game acceptance.
 
-## Händler und täglicher Refresh
+## Dealer and daily refresh
 
-Readerbereiche `0x14151b9a0–0x14151bec7` (Stock) und
-`0x14151c09d–0x14151c3cf` (Store-Ausschnitt): Feldnamen in Fehlerpfaden,
-Lesegrößen und Reihenfolge lassen sich den vorhandenen Recordbytes zuordnen.
-`C` bezeichnet die gemessene Position des Stocklisten-Counts im Store.
+Reader ranges `0x14151b9a0–0x14151bec7` (stock) and `0x14151c09d–0x14151c3cf` (store section): field names in error paths, read sizes and order can be assigned to the existing record bytes. `C` denotes the measured position of the stock list count in the store.
 
-| Feld | Diskposition | Breite | Behandlung |
+|Feld|Diskposition|Width|Treatment|
 |---|---|---|---|
-| resetHour | C−17 | u32 | Erhalten, einschließlich Sentinel |
-| resetDay | C−13 | u32 | Nur bestätigte 3/7 auf 1; bestehende 1 unverändert |
-| buyableStockCount | C−9 | u32 | Bei neuen Verkaufsangeboten erhöhen |
-| sellableStockCount | C−5 | u32 | Erhalten |
-| Listenanzahl | C | u32 | Mit tatsächlicher Positionszahl neu schreiben |
-| maxRefillCount | Stock+18 | u32 | Bestehende Bestandsoption |
-| stockIndex | Stock+26 | u32 | Für neue Positionen fortlaufend; Bestand erhalten |
-| importantSaveIndex | Stock+30 | u32 | Oberhalb bisherigem Maximum; Lücken erhalten |
-| refillByResetStore | Stock+38 | u8 | Aus vorhandener normaler Vorlage erhalten |
-| isStockSellable / isStockBuyable | Stock+39/+40 | je u8 | Perspektive des Spielers: verkaufen / kaufen |
-| isRestoreItem | Stock+41 | u8 | Aus Vorlage erhalten |
-| Itemkey und Duplikat | Stock+43/+102 | je u32 | Beide gemeinsam ersetzen |
+|resetHour|C−17|u32|Preservation, including sentinel|
+|ResetDay|C−13|u32|Only confirmed 3/7 to 1; Existing 1 unchanged|
+|buyableStockCount|C−9|u32|Increase in new sales offers|
+|sellableStockCount|C−5|u32|Received|
+|List number|C|u32|Rewrite with actual position number|
+|maxRefillCount|Stock+18|u32|Existing stock option|
+|stockIndex|Stock+26|u32|Continuous for new positions; Maintained stock|
+|importantSaveIndex|Stock+30|u32|above the previous maximum; Gaining gaps|
+|refillByResetStore|Stock+38|u8|Obtained from existing normal template|
+|isStockSellable / isStockBuyable|Stock+39/+40|je u8|Player’s Perspective: Sell/Buy|
+|isRestoreItem|Stock+41|u8|Received from submission|
+|Itemkey and duplicate|Stock+43/+102|je u32|Replace both together|
 
-Alle 397 interpretierten Stores haben passende Buyable-/Sellable-Counts;
-alle 6.376 bestehenden Stock-Indizes entsprechen ihrer Listenposition.
-369 Stores besitzen Resetintervall 1, 3 oder 7. Die globale Tagesoption ändert
-genau **246** Records von 3/7 auf 1. 123 sind bereits täglich. 28 interpretierte
-Stores mit permanentem/unbekanntem Intervall und 39 opake Stores bleiben erhalten.
-Die acht September-Zusatzbytes sind **nicht** das Refreshfeld und bleiben roh.
+All 397 interpreted stores have matching buyable/sellable counts; all 6,376 existing stock indices correspond to their list position. 369 Stores have reset intervals 1, 3 or 7. The global day option changes exactly **246** Records from 3/7 to 1. 123 are already daily. 28 interpreted stores with permanent/unknown interval and 39 opaque stores are preserved. The eight September additional bytes are **not** the refresh field and remain raw.
 
-Eine getrennte Plausibilisierung liefert der Modautor von
-[Daily Store Refresh](https://www.nexusmods.com/crimsondesert/mods/3515):
-Seine Beschreibung nennt ebenfalls 246 normale 3-/7-Tage-Intervalle.
-Sie betrifft einen anderen Build und ersetzt unseren eigenen Feldnachweis nicht.
+The mod author of [Daily Store Refresh](https://www.nexusmods.com/crimsondesert/mods/3515) provides a separate plausibility check: his description also calls 246 normal 3-/7-day intervals. It affects another build and does not replace our own field proof.
 
-## Neue Artikel und Sortimente
+## New articles and assortments
 
-Nur eine bereits vorhandene, bedingungsfreie, auffüllbare Verkaufsposition
-desselben Händlers dient als Vorlage. Die Vorlage ist 127 Bytes lang, hat
-Flags `[1,0,1,0]` bei +38, Itemwertart 0 und keine optionale Bedingung,
-Zusatzbytes oder Effekte ab +110. Ihre Preisfaktoren und unbekannten Innenbytes
-bleiben erhalten. Es werden keine Spielbytes fest in den Programmcode eingebettet.
+Only an already existing, unconditional, top-up sell position of the same dealer serves as a template. The template is 127 bytes long, has flags `[1,0,1,0]` at +38, item value type 0 and no optional condition, additional bytes or effects from +110. Their pricing factors and unknown indoor bytes are preserved. No game bytes are permanently embedded in the program code.
 
-210 Händler besitzen eine solche Vorlage. Bei zwei Händlern sind bestehende
-importantSaveIndices nicht eindeutig; sie werden abgewiesen. Damit sind
-**208 Händler** für Ergänzungen freigegeben. Nicht fortlaufende Stock-Indizes
-oder widersprüchliche Counts sperren das Einfügen ebenfalls. Bestehende Records,
-Bedingungen, Preise und Save-Indizes werden nicht umnummeriert oder ersetzt.
-Eine vorhandene kaufbare Itemposition wird nicht dupliziert; eine bloße
-Ankaufsposition verhindert ein zusätzliches Verkaufsangebot nicht.
+210 Traders have such a template. For two traders, existing importantSaveIndices are not unique; They are rejected. Thus **208 merchants** are released for additions. Non-consecutive stock indices or conflicting counts also block insertion. Existing records, terms, prices and save indices will not be renumbered or replaced. An existing purchaseable item position is not duplicated; a mere long position shall not prevent an additional offer to sell.
 
-Auswahl aus allen 6.816 lokalisierten Items, auch komplette Auswahl, ist möglich.
-Neue Positionen erhalten Händlerausnahme, globalen Bestand oder standardmäßig
-999. Seit v0.4.3 kann `vendor_options` pro Händler die gemeinsame Artikelauswahl
-ersetzen oder mit einer leeren Liste unterdrücken. Separate Refresh-Ausnahmen
-erzwingen tägliches Auffüllen oder erhalten das Originalintervall. Explizite
-Ausnahmen gelten auch außerhalb der globalen Händlerauswahl; `null` erbt wieder
-die globale Einstellung einschließlich ihrer Auswahl. Bestandsausnahmen bleiben separat.
-Der Tabellenindex wird bei Recordwachstum neu aufgebaut. Echte Tests prüfen
-ein kleines Sortiment und alle Items bei Händler 3101 samt unveränderten
-anderen Records und Rücklesen des verschlüsselten Overlays.
+Selection from all 6,816 localized items, even complete selection, is possible. New positions receive trader exception, global stock or standard
+999. Since v0.4.3 `vendor_options` per merchant can the common article selection
+Replace or suppress with an empty list. Separate refresh exceptions force daily replenishment or get the original interval. Explicit exceptions also apply outside of global merchant selection; `null` inherits the global setting again, including its selection. Exceptions remain separate. The table index is rebuilt during record growth. Real tests check a small assortment and all items at merchants 3101 together with unchanged other records and retrieval of the encrypted overlay.
 
-Die Workbench begrenzt einen Plan auf 100.000 Kombinationen aus unterstütztem
-Händler und gewähltem Item sowie 9.999 Positionen je Händler. Dies sind
-Vorschau-/Parsergrenzen, keine empirisch belegten Engine-Maxima. Ein kompletter
-Katalog bei allen Händlern gleichzeitig ist damit noch nicht unterstützt.
-Sonderhändler, beliebige Itemarten, Preise, UI-Verhalten und persistenter
-Warenbestand benötigen weiterhin In-game-Prüfung.
+The Workbench limits a plan to 100,000 combinations of supported trader and selected item as well as 9,999 positions per trader. These are preview/parser limits, not empirically proven engine maxima. A complete catalogue at all retailers at the same time is therefore not yet supported. Special dealers, any types of items, prices, UI behavior and persistent inventory still require in-game testing.
 
-## Dropchancen und manuelle Garantien
+## Drop chances and manual guarantees
 
-Der Dropsetreader liegt bei `0x1414f9be0–0x1414f9e08`. Die Auswahlfunktion
-`0x1422cfd70–0x1422cffda` verwendet bei Rolltyp 0 pro Eintrag einen neuen
-Zufallswert im Bereich 0 bis 999.999 und prüft, ob dessen Rate größer ist.
-Typ 1 begrenzt erfolgreiche Einträge auf die Rollzahl. Typ 2 verwendet eine
-gewichtete kumulative Auswahl. Typen 1/2 werden deshalb **nicht** wie unabhängige
-Prozentchancen behandelt oder auf Typ 0 umgeschrieben.
+The dropset reader is at `0x1414f9be0–0x1414f9e08`. The selection function `0x1422cfd70–0x1422cffda` uses a new random value in the range 0 to 999,999 for roll type 0 and checks whether its rate is greater. Type 1 limits successful entries to the roll number. Type 2 uses a weighted cumulative selection. Types 1/2 are therefore treated **not** as independent percentage chances or rewritten to type 0.
 
-Der neue Modifier akzeptiert ausschließlich unbedingte Itemeinträge mit
-Rolltyp 0, passendem Itemduplikat, gültigen Mengen, Rate ≤ 1.000.000,
-unveränderten Null-/Sonderfeldern und Gesamtgewicht gleich Summe der Raten.
-Im gebundenen Build erfüllen **12.306 Sets** diese Kriterien. Alle haben auch
-positive Mindestmengen und sind für die manuelle Garantieauswahl geeignet.
-Die 32-Bit-Felder nach der 64-Bit-Rate werden nicht als zweite Chance verändert.
+The new modifier only accepts unconditional item inputs with roll type 0, matching item duplicate, valid quantities, rate ≤ 1,000,000, unchanged zero/special fields and total weight equals sum of rates. In the bound build, **12,306 Sets** meet these criteria. All also have positive minimum quantities and are suitable for manual warranty selection. The 32 bit fields after the 64 bit rate are not changed as a second chance.
 
-Berechnung: `min(original_rate × multiplier, 1_000_000)` mit breitem Integer;
-anschließend Gesamtgewicht neu summieren. Rolltyp, Rollzahl und alle anderen
-Felder bleiben erhalten. Menge und Chance werden gemeinsam aus dem Original
-neu berechnet. Einzelausnahmen haben Vorrang vor globalem Faktor/Auswahl;
-explizite Garantien setzen die Basisrate auf 1.000.000 und haben wiederum Vorrang
-vor Chancenfaktoren. Eine Garantie bei effektivem Mengenfaktor 0 wird abgewiesen.
+Calculation: `min(original_rate × multiplier, 1_000_000)` with wide integer; Then add the total weight again. Roll type, roll number and all other fields are retained. Quantity and opportunity are recalculated together from the original. Individual exceptions shall take precedence over global factor/selection; explicit guarantees set the base rate to 1,000,000 and in turn take precedence over opportunity factors. A guarantee with an effective quantity factor 0 is rejected.
 
-„Garantiert“ bezeichnet die Einzelchance **beim Auslösen dieses Sets**.
-Übergeordnete Ereignisse, Laufzeitmodifikatoren, weitere Spielbedingungen und
-Bosszuordnungen werden nicht geändert oder automatisch nachgewiesen. Bosssets
-müssen manuell ausgewählt werden. Zufallsauswahl und Ergebnisweitergabe sind
-statisch untersucht; eine gemessene Gameplaywirkung steht aus. Mengen und
-globale Chancen können auch Rezept-/Questbelohnungen betreffen.
+“Guaranteed” means the individual chance **when triggering this set**. Superordinate events, runtime modifiers, other game conditions and boss assignments are not changed or automatically proven. Boss sets must be selected manually. random selection and outcome transmission are statically examined; a measured gameplay effect is pending. Quantities and global opportunities can also affect recipe/quest rewards.
 
-## B0: Befund zum lokalen Steam-Cache
+## B0: Finding of the local Steam cache
 
-Für den installierten Build wurden ausschließlich die beiden zugeordneten
-Depotcache-Manifeste gelesen:
+For the installed build, only the two assigned Depotcache manifestos were read:
 
-- Depot 3321461, Manifest 1190168329432671189: 282 Einträge.
-- Depot 3321466, Manifest 4235648687492059552: 4 Einträge.
+- Depot 3321461, Manifest 1190168329432671189: 282 Entries.
+- Depot 3321466, Manifest 4235648687492059552: 4 Entries.
 
-Die Namen sind unverschlüsselt, Metadaten vorhanden; beide Signaturabschnitte
-haben jedoch Länge **0**. Ein Dateiabgleich mit diesen lokalen Hashes allein
-bestätigt nicht unabhängig deren Herkunft. Es wurde weder Steam-Verify noch
-ein Download oder ein vollständiger 152-GB-Archivhashlauf gestartet.
-Die Strukturerkennung wurde anhand des primären
-[SteamKit-DepotManifest-Readers](https://github.com/SteamRE/SteamKit/blob/master/SteamKit2/SteamKit2/Types/DepotManifest.cs)
-überprüft; kein Code daraus wurde übernommen und keine Abhängigkeit hinzugefügt.
-Live-Apply benötigt weiterhin eine vertrauenswürdig bestätigte Ausgangsbasis,
-verifizierte Live-Sicherung und integrierten Startschutz.
+The names are unencrypted, metadata is available; However, both signature sections have length **0**. File comparison with these local hashes alone does not confirm their origin. It did not start Steam-Verify, nor a download or a complete 152 GB archive hash run. Structure recognition was checked against the primary [SteamKit-DepotManifest-Readers](https://github.com/SteamRE/SteamKit/blob/master/SteamKit2/SteamKit2/Types/DepotManifest.cs); No code from it was adopted and no dependency added. Live Apply still requires a trusted confirmed baseline, verified livebackup and integrated launch protection.
 
-Lokale Belege: `.local/phase4-field-xrefs.json`,
-`.local/phase4-reader-evidence.txt`, `.local/phase4-drop-runtime.txt`,
-`.local/phase4-steam-manifest-inspection.json`,
-`.local/phase4-v3-rust-tests.log`, `.local/phase4-v3-native/result.json`.
+Local receipts: `.local/phase4-field-xrefs.json`, `.local/phase4-reader-evidence.txt`, `.local/phase4-drop-runtime.txt`, `.local/phase4-steam-manifest-inspection.json`, `.local/phase4-v3-rust-tests.log`, `.local/phase4-v3-native/result.json`.

@@ -1,112 +1,64 @@
-# Geschützter Referenzerwerb auf Build 2949 – Modul 0.8.0
+# Protected reference purchase on Build 2949 – Module 0.8.0
 
-Historischer Stand dieses Dokuments. Die Erweiterung um echte Besitzersperren
-und direkte Erfassung gehaltener Objekte ist in
-[Modul 0.9.0](PINNED_CAPTURE_INTEGRATION.md) dokumentiert.
+Historical status of this document. The extension with real owner locks and direct capture of held objects is documented in [Modul 0.9.0](PINNED_CAPTURE_INTEGRATION.md).
 
-Stand 22.09.2026. Neuer isolierter Ausführungsnachweis für Steam 25455892 /
-EXE 1.0.0.2949. **Weiterhin kein installierbarer Reparaturmod.**
-Die Workbench bleibt v0.5.9; die Reparatur bleibt in der App gesperrt.
+Status: 22.09.2026. New isolated proof of execution for Steam 25455892 / EXE 1.0.0.2949. **Further no installable repair mod.** The Workbench remains v0.5.9; The repair remains locked in the app.
 
-## Gemeinsamer Erwerbsweg
+## Joint pathway
 
-`repair-registry-native.exe` verbindet den vorhandenen `registry::Source`-Adapter
-und `reference::Pair` mit Kopien der aktuellen Client-/Server-Lookups, den
-konkreten Normal-/User-Actor-Referenzmethoden und der PaPtr-Freigabe. Alle Manager,
-Actors, Buckets, Knoten und Belege gehören ausschließlich dem eigenen Testprozess.
+`repair-registry-native.exe` combines the existing `registry::Source` adapter and `reference::Pair` with copies of the current client/server lookups, the concrete normal/user-actor reference methods and the PaPtr release. All managers, actors, buckets, nodes and receipts belong exclusively to the own test process.
 
-Die Registry-Lookups werden nicht mehr durch künstliche Erwerbs-Callbacks ersetzt.
-Der Test führt beide geschützten Suchen mit vollständiger Kennung aus. Ihre
-virtuellen Referenzaufrufe werden gemessen und an die unveränderten nativen
-Normal-/User-Wrapper weitergeleitet. Diese wählen unterschiedliche Parameter:
-NormalActor verwendet die Zustandsmaske `0x10`, UserActor die Art `4`.
-Die passenden Referenzmethoden und der tatsächliche Actor-Release laufen gemeinsam.
+The registry lookups will no longer be replaced by artificial purchase callbacks. The test performs both protected searches with full identifier. Your virtual reference calls are measured and forwarded to the unchanged native normal/user wrappers. These select different parameters: NormalActor uses the Zustandsmaske `0x10`, UserActor uses the type `4`. The appropriate reference methods and the actual Actor release run together.
 
-Die originale WindowsRWLock-Acquire-/Release-Implementierung verwendet echte
-Windows-SRW-Imports an privaten Sperrobjekten. Die Registry fordert Lesesperren
-an. Im Test muss ein Schreibversuch während des Referenzerwerbs scheitern und
-danach wieder möglich sein. Vier zusätzliche Threadfälle halten die Registry
-exklusiv: Der Lookup wartet; eine Entfernung während dieser Sperre wird danach
-beachtet. Beim zweiten fehlenden Besitzer wird die erste Referenz zurückgegeben.
+The original WindowsRWLock Acquire/Release implementation uses real Windows SRW imports on private lock objects. The registry requests read locks. In the test, a write attempt must fail during the acquisition of reference and then be possible again. Four additional thread cases keep the registry exclusive: The lookup is waiting; a distance during this lock is then observed. For the second missing owner, the first reference is returned.
 
-## Build- und Ausführungsgrenzen
+## Build and execution limits
 
-Der Dateileser besitzt zwei ausdrücklich getrennte Build-Selektoren. Der alte
-Host verwendet weiter ausschließlich den ursprünglichen Hash und lehnt die neue
-EXE ab. Nur der neue Registry-Test wählt 2949. Unbekannte EXEs bleiben gesperrt.
+The file reader has two explicitly separate build selectors. The old host continues to use only the original hash and rejects the new EXE. Only the new registry test selects 2949. Unknown EXEs remain blocked.
 
-15 vollständige Codebereiche sind zusätzlich zum vollständigen EXE-Hash gepinnt.
-Neun davon besitzen exakt geprüfte pdata-Grenzen und erhalten ihre originalen
-Stack-Unwind-Codes. Bekannte sprachspezifische Cleanup-Handler werden nur im
-privaten Testhost entfernt; die getesteten Abhängigkeiten werfen nicht.
-Die kurzen Leaf-/Tail-Wrapper und der Typhelfer samt Sprungtabelle haben getrennt
-geprüfte Größen. Die konkreten Actor-Release-Slots sind an fünf VTables kontrolliert.
+15 full code ranges are pinned in addition to the full EXE hash. Nine of them have exactly tested pdata boundaries and receive their original Stack Unwind codes. Known language-specific cleanup handlers are removed only in the private test host; The tested dependencies do not throw. The short Leaf/Tail Wrapper and the Type Helper including the jump table have separately tested sizes. The specific Actor release slots are controlled on five VTables.
 
-Vier neun Byte lange GS-Lesezugriffe der Referenzmethoden werden durch
-register- und flagserhaltende LEA-Anweisungen auf einen privaten TLS-Vektor
-umgeleitet. Alle übrigen Funktionsbytes bleiben unverändert. Die Registry nutzt
-`shared=true`; der exklusive TLS-Zweig der Lock-Acquire-Funktion wird nicht
-ausgeführt. Host-TEB/TLS wird nicht verändert. Code liegt auf privaten RX-Seiten,
-Daten auf schreibgeschützten Seiten; keine Seite ist zugleich schreibbar und ausführbar.
+Four nine-byte long GS reading accesses of the reference methods are redirected to a private TLS vector by register- and flag-maintaining LEA instructions. All other function bytes remain unchanged. The registry uses `shared=true`; the exclusive TLS branch of the lock-acquire function is not executed. Host-TEB/TLS is not changed. code is on private RX pages, data on read-only pages; No page can be written and executed at the same time.
 
-## Bestandene Prüfungen
+## Passed tests
 
-- Sechs CTest-Suiten und MSVC Release mit `/W4 /WX`.
-- **30 native Szenarien, 263 native Aufrufe, 3.490 Prüfbedingungen.**
-- Normal-/User-Varianten; beide direkten Referenzmodi und registrierter Modus;
-  vollständige Kennung einschließlich Generationsbits; gültige hohe Typbits.
-- Fehlender erster/zweiter Registryeintrag, leere Registries, falsche Knotenschlüssel,
-  unpassender Actor-Typ, verlorene Zustandsmaske, unterschiedliche User-/Normalmasken.
-- Ein fehlgeschlagener nativer Referenzerwerb darf einen Pointer im ungültigen
-  Beleg behalten. Daraus entsteht kein Besitz; die Freigabe dereferenziert ihn nicht.
-- Teilfehler, genaue Quellzuordnung und umgekehrte Freigabereihenfolge;
-  verschachtelter Besitz bleibt erhalten. Registryeinträge werden nicht verändert.
-- Alive=0 wird im direkten nativen Pfad tatsächlich akzeptiert. Dieser Besitz
-  ist keine Reparaturfreigabe; der getrennte Inventarleser prüft Alive/Zerstörung
-  zusätzlich unter den Besitzersperren. Registrierter Erwerb weist Alive=0 ab.
-- Letzte Referenz und verzögerte serverseitige Bereinigung: Zustandswechsel
-  `0x20 → 0x40`, Freigabe der eingebetteten Sperre vor Bereinigung/Zerstörung,
-  genau ein Destruktor-Dispatch. Testobjekte bleiben zur Fehlererkennung allokiert.
-- Tatsächliche konkurrierende Registry-Schreibsperren für Client und Server,
-  jeweils mit unverändertem oder inzwischen entferntem Eintrag.
-- Alter Host lehnt neue Spiel-EXE ab; neuer Host lehnt eine andere eigene PE-Testdatei
-  vor nativer Ausführung ab. Die alte Freigabe wird nicht erweitert.
+- Six CTest suites and MSVC release with `/W4 /WX`.
+- **30 native scenarios, 263 native calls, 3,490 test conditions.**
+- normal/user variants; both direct reference modes and registered mode;
+full identifier including generation bits; valid high type bits.
+- missing first/second registry entry, empty registries, incorrect node keys,
+Inappropriate actor type, lost Zustandsmaske, different user/normal masks.
+- A failed native reference acquisition may include a pointer in the invalid
+Keep the document. This does not give rise to possession; The release does not de-reference it.
+- sub-error, precise source allocation and reverse release order;
+nested possessions remain. Registry entries are not changed.
+- Alive=0 is actually accepted in the direct native path. This possession
+is not a repair clearance; The separate inventory reader additionally checks Alive/Destruction under the owner locks. Registered acquisition rejects Alive=0.
+- Last reference and delayed server-side cleanup: Zustandchange
+`0x20 → 0x40`, release of the embedded lock before cleanup/destruction, exactly one destructor dispatch. Test objects remain allocated for error detection.
+- Actual competing registry write locks for client and server,
+each with unchanged or meanwhile removed entry.
+- Old Host rejects new game EXE; new host rejects another own PE test file
+before native execution. The old release will not be extended.
 
-Die bisherigen eigenständigen Suiten bleiben erfolgreich: 1.481 Aktionsbedingungen,
-249 Leser-/Referenzbedingungen, 25 Sperrgruppenbedingungen, 55 Adapterbedingungen.
-Die 45 Manifestbedingungen des neuen Hosts laufen auch ohne Spiel-EXE; sie sind
-kein nativer Erfolgsnachweis. Die 3.490 Bedingungen stammen aus dem gesonderten
-Aufruf mit exakt gepinnter EXE.
+The previous standalone suites remain successful: 1,481 Action Conditions, 249 Reader/Reference Conditions, 25 Lock Group Conditions, 55 Adapter Conditions. The 45 manifest conditions of the new host also run without game EXE; They are not a native proof of success. The 3,490 conditions come from the separate call with exactly pinned EXE.
 
-## Noch zu implementieren
+## Still to be implemented
 
-Die Manager werden im Test weiterhin bereitgestellt. Aktueller Spieler,
-gesicherte Managerlebensdauer sowie geeigneter Engine-Thread und dessen TLS-Modus
-müssen im echten Host aufgelöst werden. Der Inventarleser und weitere native
-Änderungs-/Ereignismethoden benötigen ihre neuen Layout-/Buildnachweise.
+The managers will continue to be provided in the test. Current player, secured manager lifetime as well as suitable engine thread and its TLS mode must be resolved in the real host. The inventory reader and other native change/event methods require their new layout/build proofs.
 
-Thread-Referenzmap, übergeordnete Referenzen und endgültige Bereinigung/Zerstörung
-sind klar begrenzte Fixture-Abhängigkeiten. Diese Probe beansprucht keine
-vollständige Engine-Lebensdauerverwaltung. Die vollständige Reparaturtransaktion,
-Ereigniszuordnung, Eingabe, Loader und B0-Einbau fehlen weiterhin. Es werden keine
-verschollenen oder zerstörten Items erzeugt.
+Thread reference map, higher-level references and final cleanup/destruction are clearly limited fixture dependencies. This sample does not claim full engine lifetime management. The complete repair transaction, event allocation, input, loader and B0 installation are still missing. No lost or destroyed items are created.
 
-## Reproduzieren
+## Reproduced
 
 ```powershell
-# Alle synthetischen/Manifesttests; liest keine Spiel-EXE.
+# Run all synthetic/manifest tests; does not read a game EXE.
 ./runtime/repair/test.ps1
 
-# Zusätzlich native Registry-/Referenzprobe auf privaten Testobjekten.
+# Also run the native registry/reference test on private test objects.
 ./runtime/repair/test.ps1 -RegistryGameExe "C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert/bin64/CrimsonDesert.exe"
 ```
 
-`-GameExe` bezeichnet unverändert den historischen 2944-Host. Für die neue
-Registry-Probe ausschließlich `-RegistryGameExe` verwenden.
-Nachweise: `.local/repair-runtime-v8-build-test.log`,
-`.local/repair-runtime-v8-native-result.json`,
-`.local/repair-runtime-v8-build-refusals.json`,
-`.local/repair-runtime-v8-validation.json`.
+`-GameExe` unchanged means the historical 2944 host. For the new registry sample use only `-RegistryGameExe`. Evidence: `.local/repair-runtime-v8-build-test.log`, `.local/repair-runtime-v8-native-result.json`, `.local/repair-runtime-v8-build-refusals.json`, `.local/repair-runtime-v8-validation.json`.
 
-Keine Veränderung der Installation oder Saves, kein Zugriff auf den laufenden
-Spielprozess. [Offene Spielabnahmen](../../TESTCHECKLISTE.md).
+No changes to the installation or saves, no access to the ongoing game process. [Open play decreases](../../TESTCHECKLISTE.md).

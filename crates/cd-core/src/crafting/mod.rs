@@ -171,7 +171,7 @@ impl CraftCatalog {
         for variants in recipes.values_mut() {
             variants.sort_by_key(|r| r.key);
         }
-        let coverage=Coverage{recipe_rows:recipe_table.records().len(),group_rows:groups.len(),dropset_rows:drop_table.records().len(),interpreted_dropsets:drop_rows.len(),usable_recipes:recipes.values().map(Vec::len).sum(),excluded,source_note:"Händler, Regionen und Weltquellen sind noch nicht verifiziert. Dropset-Verweise sind Tabellenquellen; eine unbekannte Chance bedeutet nicht 0 %. Kein Save-Import.".into()};
+        let coverage=Coverage{recipe_rows:recipe_table.records().len(),group_rows:groups.len(),dropset_rows:drop_table.records().len(),interpreted_dropsets:drop_rows.len(),usable_recipes:recipes.values().map(Vec::len).sum(),excluded,source_note:"Vendors, regions and world sources are not yet verified. Drop set references are table sources; an unknown chance does not mean 0%. No save import.".into()};
         Ok(Self {
             items: item_refs,
             recipes,

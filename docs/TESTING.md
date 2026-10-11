@@ -1,1453 +1,593 @@
-# Prüfplan und Nachweise
-
-Stand: Phase 5, v0.5.9, 23.09.2026. Aktueller Stand in
-[PROGRESS.md](PROGRESS.md), Implementierungsgrenzen in [MODS.md](MODS.md).
-Live-B0 ist automatisiert an künstlichen Installationen geprüft. Basiswechsel, Inventurintegration und bestätigte Fremdzusätze sind implementiert.
-Die manuelle Spielabnahme bleibt **offen**.
-Auf Wunsch des Nutzers vom 20.09.2026 werden die manuellen Spieltests erst nach
-Abschluss der Entwicklung aller Phasen durchgeführt. Sie blockieren die weitere
-Entwicklung nicht und werden bis dahin ausdrücklich als ungetestet geführt.
-
-## Inventar-Paketserializer, Modul 0.23.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 36 zusätzliche Fälle:
-26 direkte Proben des Originalsenders/der Streamauswahl und zehn Verbindungen
-mit Reparaturtransaktion und Client-Ack. Exakte Feldbreiten und Bytefolge,
-Null-/Maximalwerte, falscher Actor, UID-Wechsel, fehlende Empfänger/Puffer,
-verworfene Bytes und fehlende/doppelte Zustellung geprüft. Die private
-Bestätigung verwirft alle unklaren Ergebnisse und verhindert Replay.
-
-Gesamt: 454 native Szenarien, 4.812 gezählte Aufrufe, 206.786 Bedingungen
-einschließlich wiederholter Byteprüfungen. 102 Codebereiche, 127 pdata-Fragmente,
-60 private TLS-Stellen plus unveränderte Stackprobe am eigenen Windows-Thread.
-CTest-Bedingungen: 11/1.529/519/25/55/612/29/202/273. Produktionssuiten unverändert.
-Stream-Puffer, Transport und Server-/Speicherabschluss bleiben künstlich;
-der erfolgreiche Poolzweig ist nicht ausgeführt. [Details](../runtime/repair/INVENTORY_PACKET_2949.md).
-
-## Separater Offline-Inventarauftrag
-
-Slot 2 bei geschlossenem Spiel gezielt geändert: 200 leichte und 200 schwere
-Kupferbeutel, zusätzlich 30.000 Silber. Originale gesichert; vollständiger
-semantischer Vergleich, gültige neue IDs/Slots/Zeiger, bytegenaue Rücknahme auf
-Kopien und Integrität der tatsächlich ersetzten Dateien nach erneutem Öffnen
-geprüft. Nur `save.save`/`lobby.save` dieses Slots geändert, acht weitere Dateien
-unverändert. Anzeige, Verwendung und erneutes Speichern im Spiel bleiben offen.
-[Bericht](../.local/inventory-currency/RESULTAT.md). Dieser Einzelauftrag ist kein
-allgemeiner Save-Writer und kein Nachweis des Reparatur-Speicherabschlusses.
-
-## Native Pufferaufbereitung und Kompression, Modul 0.22.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 66 neue Fälle auf eigenen
-Daten: 40 Größen-/Kompressionsfälle, vier Ausgabe-Wiederverwendungen, sechs Fehler,
-14 Verbindungen zum Original-Dateihelfer und zwei Wiederholungen nach Öffnungsfehler.
-Ein unabhängiger LZ4-Testdecoder rekonstruiert die ursprünglichen Bytes; die
-Ausgabe enthält den exakten Header und beide Größenfelder. Alle Puffer freigegeben.
-
-Gesamt: 418 native Szenarien, 4.289 Aufrufe, 204.378 Bedingungen, darunter viele
-wiederholte Byteprüfungen. 100 Codebereiche, 125 pdata-Fragmente und 58 private
-TLS-Ersetzungen. Die originale Stackprobe liest das Stacklimit des eigenen Threads.
-CTest-Bedingungen: 11/1.529/519/25/55/600/29/202/273. Produktionssuiten unverändert.
-
-Wiederholung eines Eintrags nach Öffnungsfehler komprimiert bereits komprimierte
-Daten erneut. Nachgelagerte Verarbeitung und alle Dateioperationen bleiben
-Callbacks; kein Integritäts-/Verschlüsselungs- oder Datenträgernachweis.
-Allokationsfehler, vollständige Objektserialisierung und Spielanbindung fehlen.
-[Nachweis und Grenzen](../runtime/repair/SAVE_ENCODING_2949.md),
-`.local/repair-runtime-v22-{build-test.log,native-result.json,validation.json}`.
-
-## Dateischreibhelfer mit privaten Dateiempfängern, Modul 0.21.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 26 Direktfälle und acht
-Dispatcher-Integrationen prüfen Pufferbesitz und Fehler bis einschließlich Flush/
-Close. Alle Dateioperationen sind private Callbacks mit einem synthetischen Handle.
-Kodierung, langer Pfadname und nichtleere Stringdestruktion sind nicht ausgeführt.
-
-Gesamt: 352 native Szenarien, 4.095 Aufrufe, 142.649 Bedingungen. 91 Codebereiche,
-118 pdata-Fragmente und 55 private TLS-Stellen. Die CTest-Suiten melden
-11/1.529/519/25/55/546/29/202/273 Bedingungen. Produktionssuiten unverändert.
-Der erfolgreiche native Ablauf kann trotz fehlgeschlagenem Flush den vorgemerkten
-Payload freigeben und Dirty löschen. Das ist ausdrücklich kein Speicherbeleg.
-
-Echter Encoder/WriteFile-Wrapper nur statisch gelesen. Die Vorbereitung kann den
-ursprünglichen Payload ändern; der Erhalt bei Fehlern gilt bisher nur mit dem
-nichtverändernden Testencoder. Kein Zugriff auf Spielprozess oder Saves; keine
-Änderung an der Installation. Die installierte EXE wurde ausschließlich gelesen.
-[Nachweis und Grenzen](../runtime/repair/SAVE_FILE_2949.md),
-`.local/repair-runtime-v21-{build-test.log,native-result.json,validation.json}`.
-
-## Speicherdispatcher und Warteschlangen, Modul 0.20.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 39 neue native Fälle:
-16 Gate-/Statuskombinationen, acht Fehlerfälle, acht Steam-Quota-Fälle,
-ein fehlendes Backend sowie sechs Queue-Fälle mit Wachstum und Duplikaten.
-Datei-, Plattform- und Diagnoseempfänger bleiben private Testcallbacks.
-
-Gesamt: 318 native Szenarien, 4.039 Aufrufe, 141.411 Bedingungen. 88 Codebereiche,
-115 pdata-Fragmente und 51 private TLS-Stellen. Die neun CTest-Suiten melden
-11/1.529/519/25/55/528/29/202/273 Bedingungen. Writer und Transaktion unverändert.
-
-Zusätzlicher statischer Nachweis: acht Datei-/Konstruktor-/Timerfunktionen,
-fünf VTables, 13 Instruktionsanker und die beiden Dateiimporte. Der originale
-Schreibhelfer ignoriert das Flush-Ergebnis; er wurde noch nicht ausgeführt.
-Keine Save-Dateien, Steam-API oder laufenden Spielobjekte verwendet. Kein
-Datenträgerabschluss und kein installierbarer Reparaturmod nachgewiesen.
-[Nachweis und Grenzen](../runtime/repair/SAVE_BACKEND_2949.md),
-`.local/repair-runtime-v20-{build-test.log,native-result.json,validation.json}`.
-
-## Item-/Speicherobjekt-Umwandlung, Modul 0.19.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 38 neue native Fälle
-führen Originalkonverter und deren Lebensdauerfunktionen auf privaten Objekten
-aus; 14 Fälle verwenden produktive Reparaturpläne und native Nachherkopien.
-Hauptwerte einschließlich 0/No-Wear/Sentinel, Sockelgeometrien, Färbedaten,
-Reset/Wiederverwendung und vollständige Freigabe in beiden Allokationsmodi geprüft.
-
-Gesamt: 279 native Szenarien, 3.950 Aufrufe, 139.784 Bedingungen. 82 Codebereiche,
-108 pdata-Fragmente, 50 private TLS-Stellen. Die neun CTest-Suiten melden
-11/1.529/519/25/55/492/29/202/273 Bedingungen; die 492 Manifestbedingungen gehören
-nicht zu einer zusätzlichen Spielprüfung. Writer und Transaktion unverändert.
-
-Keine reguläre Serialisierung auf Datenträger, kein tatsächlicher Save-Abschluss
-und kein vollständiger Engine-Commit. Katalog, Uhr, Reflexionsbenachrichtigungen,
-Sockelrichtlinien und Heap sind kontrollierte Testabhängigkeiten. Übrige optionale
-Itemdaten bleiben offen. Unveränderte Rust-/UI-Teile nicht erneut getestet.
-[Nachweis und genaue Grenzen](../runtime/repair/ITEM_SAVE_2949.md),
-`.local/repair-runtime-v19-{build-test.log,native-result.json,validation.json}`.
-
-## Vollständiger SQL-Auftragsweg, Modul 0.18.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 19 neue native Fälle:
-acht Ausführungszweige/Fehlerfälle, drei Request-Erwerbsfälle und acht kombinierte
-Slot-Verbraucherfälle in beiden privaten TLS-Allokationsmodi. Status-/Fristfelder,
-temporärer Diagnosezeiger, erhaltene alte Fehler, Nullzeiger und Unwind geprüft.
-
-Gesamt: 241 native Szenarien, 3.674 Aufrufe und 128.415 Bedingungen. 58 Codebereiche,
-76 pdata-Fragmente und 35 private TLS-Stellen. Produktionssuiten unverändert:
-43 Transaktionsszenarien/273 Bedingungen und 35 Schreibszenarien/202 Bedingungen.
-
-Die Ausführung kann Erfolg ohne Request-Zugriff liefern und enthält keinen
-Datenbankaufruf. Das native Testergebnis weist ausdrücklich
-`sql_execute_is_persistence_proof=false` aus. Noch keine reale Speicherung,
-kein vollständiger Engine-Commit und kein installierbarer Reparaturmod.
-Uhr, Diagnose, Kapazitätsverwaltung und Teile der Ereignisempfänger bleiben
-Testabhängigkeiten. Unveränderte Rust-/UI-Teile nicht erneut getestet.
-[Nachweis](../runtime/repair/SQL_DISPATCH_2949.md),
-`.local/repair-runtime-v18-{build-test.log,native-result.json,validation.json}`.
-
-Zusätzlicher statischer Nachweis: sieben Funktionshashes, vier RTTI-Typen,
-Sprung-/VTable-Zuordnung und 15 Instruktionsanker für alternative Transaktion
-und Item-/Speicherobjekt-Umwandlungen. Kein weiterer nativer Erfolg gezählt.
-Die Umwandlungen enthalten Haupt- und Sockelhaltbarkeit, sind aber noch nicht
-mit eigenen Daten ausgeführt; der tatsächliche Save-Vorgang ist nicht geprüft.
-[Nachweis](../runtime/repair/ITEM_SAVE_2949.md),
-`.local/repair-runtime-v18-save-route.json`.
-
-## Inventar-Client-Rückmeldung, Modul 0.17.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 36 zusätzliche native
-Fälle führen den originalen Inventar-Ack aus: 14 Direktfälle in beiden TLS-Modi
-und acht Fälle im gemeinsamen Adapter mit nativen Kopien/Feldschreiber.
-Absolute Hauptwerte, Menge/Key/Slot-/Containerfehler, unveränderte Sockel und
-korrekte Sperr-/Referenzfolge geprüft. UID-Wechsel, fehlende/doppelte Zustellung
-und Fehler beim Abschluss ergeben keinen Reparaturerfolg oder Replay.
-
-Gesamt: 222 native Szenarien, 3.526 Aufrufe, 125.524 Bedingungen. 56 Codebereiche,
-70 pdata-Fragmente und 35 private TLS-Stellen. Bestehende Produktionssuiten:
-43 Transaktionsszenarien/273 Bedingungen, 35 Schreibszenarien/202 Bedingungen.
-
-Containerübersetzung, leere Namensformatierung und UI sind Testempfänger; die
-nichtleeren Stringpfade sind nicht ausgeführt. Inventar-Server und Persistenz
-ebenfalls künstlich. Die Integrationsprobe meldet nach dem vorherigen Feldschritt
-Delta 0; die tatsächliche UI-Reaktion ist noch zu prüfen. Keine Spielreparatur
-behauptet. Die nur statisch geprüfte Socket-SQL-Zuordnung belegt keinen
-Haltbarkeits-Speicherweg. Unveränderte Rust-/UI-Teile nicht erneut ausgeführt.
-[Nachweis](../runtime/repair/INVENTORY_EVENTS_2949.md),
-`.local/repair-runtime-v17-{build-test.log,native-result.json,validation.json}`.
-
-## Slot-Verarbeitung und Batchabschluss, Modul 0.16.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. Ablaufsuite:
-43 Szenarien, 273 Bedingungen; Schreiber unverändert 35 Szenarien/202 Bedingungen.
-Fehlender Abschlussadapter verhindert Kopieren und Schreiben. Abschlussfehler
-oder Sitzungswechsel nach Meldungen bestätigen keinen Erfolg. Aufrufreihenfolge,
-freigegebene Sperren und bis zum Ende gehaltene Referenzen/Kopien sind geprüft.
-
-24 neue native Verbraucherfälle umfassen beide Allokationswege, leere Listen,
-Duplikate, fehlende/ungültige Items, Hauptwerte 0 und 65.535 sowie 64 Slots.
-UID-/Haltbarkeitspaare, native Tabellenbereinigung, erneute Nutzung und Freigabe
-sind geprüft. Kapazitätsfehler, positive Ausführungsfehler und gespeicherte negative
-Fehler treten nach dem Leeren auf; erneut ausführen stellt die Markierungen nicht
-wieder her. Die Persistenzschnittstelle ist ein eigener Testempfänger.
-
-18 Ausrüstungsfälle verwenden den gemeinsamen Adapter samt Slot-Verbraucher.
-Drei zusätzliche Fehlerfälle sperren den Auftrag als unklar, obwohl Client-Ack
-und Feldänderung erfolgreich waren. Gesamt: 186 native Szenarien, 2.826 gezählte
-Aufrufe, 124.527 Bedingungen; viele Bedingungen prüfen wiederholt die Tabellen.
-55 Codebereiche, 69 pdata-Fragmente und 32 private TLS-Stellen sind gepinnt.
-
-Tatsächliche Speicherung ist nicht belegt; insbesondere fehlt der ergänzende
-Weg für Sockeldatensätze. Inventarereignisse und Spielhost bleiben offen. Kein
-Zugriff auf den Spielprozess oder Saves, keine Installationsänderung. App und
-ursprünglicher Prüfbericht sowie 38 EXE-/Metadatendateien bleiben hashgleich.
-Unveränderte Rust-/UI-Teile wurden nicht erneut getestet. Die spätere Spielabnahme
-steht mit konkreten Erwartungen in der [Testcheckliste](../TESTCHECKLISTE.md).
-[Nachweis](../runtime/repair/PERSISTENCE_2949.md),
-`.local/repair-runtime-v16-{build-test.log,native-result.json,validation.json}`.
-
-## Gemeinsamer Ablauf und vorbereitete Nachherkopien, Modul 0.15.0
-
-Neun CTest-Suiten und MSVC Release `/W4 /WX` bestanden. Neue Ablaufsuite:
-40 Szenarien, 247 Bedingungen. Feldschreiber: 35 Szenarien, 202 Bedingungen.
-Aktion/Leser/Sperren/Registry/Itembesitzer: 1.529/519/25/55/29 Bedingungen.
-Alle Kopien vor dem ersten Store, gesamte Meldungszulassung, falscher Thread,
-unzugängliche Zusatzdaten, Allokationsbudget, Kopier-/Schreib-/Meldungsabbrüche,
-Sitzungswechsel und unabhängige Bestätigung geprüft. Fehler ab dem ersten
-Storeversuch gelten niemals als unveränderte Ablehnung oder Erfolg.
-
-Die 15 nativen Ausrüstungsfälle verwenden den Produktionsadapter statt einer
-manuellen Feldschleife. Originale Itemkopien, Feldschreiber, Slot-Markierung,
-Entsperren und Server-/Client-Meldungsweg verbunden. Neue Erfassung nach dem
-Vorgang verweigert absichtlich abweichende Slots und Zustandskopien. 32 native
-Itemfälle prüfen auch leere/teilweise gespeicherte Sockel und Kopiervorbereitung.
-Gesamt: 159 native Szenarien, 2.023 gezählte Aufrufe, 119.953 Bedingungen.
-51 Codebereiche/57 pdata-Fragmente/26 TLS-Stellen unverändert gepinnt.
-
-Korrekturen: Nur gespeicherte Sockel lesen; logische Plätze dürfen über der
-Allokationskapazität liegen. Die Zusatzvektoren bei `+0x78`/`+0xA8` besitzen
-16-/6-Byte-Datensätze. Ein Test prüft die zuvor übersehene hintere Überlappung.
-Frühere Zähler enthalten Vergleiche ungespeicherter Sockel und den inzwischen
-ersetzten manuellen Ereignisaufbau; sie sind nicht direkt als Fallzahlen vergleichbar.
-
-Keine vollständige Live-Reparatur: konkrete Inventarereignisse, Slot-Verbraucher,
-echte Empfänger und Host bleiben offen. Unveränderte Rust-/UI-Teile nicht neu getestet.
-[Details](../runtime/repair/TRANSACTION_2949.md),
-`.local/repair-runtime-v15-{build-test.log,native-result.json,validation.json}`.
-
-## Vollständiger Haltbarkeits-Feldschritt, Modul 0.14.0
-
-Acht CTest-Suiten und MSVC Release `/W4 /WX` bestanden. Neue Schreibsuite:
-34 Szenarien, 197 Bedingungen. Aktions-/Leser-/Sperr-/Registry-/Itembedingungen
-bleiben 1.537/519/25/55/30. Alle Bereiche und beide Zustandskopien, No-Wear,
-Sentinel, leere Aufträge und ausschließlich geänderte Wörter sind geprüft.
-
-Gegenprüfungen: Kapazitätsfehler, gemeinsame/überlappende Item-/Sockel-/Zusatzpuffer,
-geschützte Strukturen, verweigerte Schreibbarkeit eines späten Feldes, veralteter
-Batch und Sitzungswechsel. Während der Vorprüfung geänderte Werte, bytegleiche
-verlegte Arrays und leere Slots verhindern sämtliche Stores. Teilfehler, falsche
-Schreibrückmeldungen und Änderungen nach begonnenem Schreiben ergeben niemals
-einen Erfolg oder eine automatische Wiederholung. Eigene Windows-Seiten prüfen
-Alignment, Überlauf und Seitenschutz. 2.048 Items/4.096 Stores innerhalb des
-Implementierungsbudgets bestehen einschließlich vollständiger Nachkontrolle.
-
-Acht zusätzliche native Fälle verbinden den neuen Schreiber mit originalen
-Referenz-/Sperrfunktionen und tatsächlichen privaten Speicheradressen, mit direkter
-und registrierter Referenzverwaltung. Alle Quellbytes stimmen mit einem unabhängigen
-Nachhervergleich überein. Gesamt: 141 native Szenarien, 1.408 Aufrufe und 120.069
-Bedingungen. Das Originalfunktionsmanifest bleibt bei 51 Codebereichen, 57 pdata-
-Fragmenten, 26 privaten TLS-Lesestellen und 306 Manifestbedingungen.
-
-`fields_written` ist ausdrücklich kein bestätigter Engine-Commit. Die vollständige
-Verbindung mit vorab angelegten nativen Kopien und den Ereignissen fehlt noch;
-die bisherigen 15 Ereignisfälle behalten ihren separaten privaten Feldaufbau.
-Spielhost, Slot-Consumer, Inventarereignisse und echte Effekt-/Transportverarbeitung
-bleiben offen. Unveränderte App-/Rust-/UI-Teile nicht erneut getestet.
-[Details](../runtime/repair/FIELD_WRITER_2949.md),
-`.local/repair-runtime-v14-{build-test.log,native-result.json,validation.json}`.
-
-## Gehaltene Erfassung und native Slot-Markierung, Modul 0.13.0
-
-Sieben CTest-Suiten und MSVC Release `/W4 /WX` bestanden. Leser jetzt 519
-Bedingungen; Aktion/Sperren/Registry/Itembesitzer unverändert 1.537/25/55/30.
-`HeldCapture` hält beide Besitzer und Sperren für Planung und erneute Vorprüfung;
-getrenntes Entsperren lässt Referenzen für die Benachrichtigung bestehen.
-Wiedererwerb, falscher Thread, Änderungen an Sitzung/Quelle, veraltete Batches
-und Freigabe bei Fehlern/Exceptions geprüft. Ein konkurrierender Thread kann
-nach `open` keine der beiden tatsächlichen Windows-Sperren erwerben.
-
-16 neue native Fälle prüfen Slot-Markierung mit Duplikaten, Kollisionen,
-verschobenen Bucket-Verkettungen und Wachstum auf 64 Einträge, in beiden
-TLS-Allokationsmodi. Die 15 Ereignisfälle nutzen die originale Markierung unter
-den Sperren vor dem Server-Notifier. Insgesamt 133 native Szenarien, 1.296 Aufrufe
-und 119.997 Bedingungen; viele davon prüfen dieselbe Tabelle nach jeder Einfügung.
-Manifest: 51 Codebereiche, 57 pdata-Fragmente, 26 private TLS-Lesestellen;
-306 Manifestbedingungen ohne EXE. Alle privaten Allokationen mit Schutzmarkierungen
-geprüft und ausgeglichen; der zusätzliche Insert-Unwind-Alias ist bytegleich.
-
-Der Slot-Consumer und die echte Listenbereinigung sind offen. Testheap,
-Effekt-/Transport-/UI-Empfänger bleiben eigene Abhängigkeiten. Keine Aussage über
-vollständigen nativen Schreiber, Spielhost oder erfolgreiche Reparatur im Spiel.
-Kein geänderter App-/UI-Code; daher keine erneute Rust-/UI-Prüfung behauptet.
-[Details](../runtime/repair/DIRTY_SLOTS_2949.md),
-`.local/repair-runtime-v13-{build-test.log,native-result.json,validation.json}`.
-
-## Native Itemkopie und Ereignisintegration, Modul 0.12.0
-
-Sieben CTest-Suiten, MSVC Release `/W4 /WX`, 30 neue Bedingungen für den nativen
-Itembesitzer. Feste Konstruktor-/Zuweisungs-/Destruktorbindung, Threadgrenze,
-Headerprüfung vor Zieländerung, Überlappung, doppelte Freigabe und unbrauchbare
-native Rückgaben sind geprüft. Aktions-/Leser-/Sperr-/Quellensuiten bleiben bei
-1.537/385/25/55 Bedingungen.
-
-117 native Szenarien mit 851 gezählten Aufrufen und 13.639 Bedingungen bestanden.
-14 neue Fälle führen die originalen Itemmethoden samt verschachtelten Kopierhelfern
-aus. Sockel, beide zusätzlichen Listen und optionale 24-/16-Byte-Blöcke werden
-unabhängig kopiert; Wachstum, Ersetzen, Selbstzuweisung und ungültige Quellkapazität
-geprüft. Beide TLS-Allokationswege nutzen einen eigenen Windows-Heap mit
-Schutzmarkierungen und vollständig ausgeglichenen Freigaben. Quelle bleibt erhalten.
-
-Die 15 Ereignisfälle verwenden jetzt die originalen nativen Nachherkopien unter
-den bestehenden Actor-Referenzen: Kopieren unter den Besitzersperren, Benachrichtigung
-danach, Destruktion nach Rückkehr. Das Manifest umfasst 45 Codebereiche, 49 pdata-
-Fragmente und 24 private TLS-Umleitungen. Ein byteidentischer, gepinnter Unwind-
-Alias wird für die Kette normalisiert. Ohne EXE nur 270 Manifestbedingungen.
-
-Kein Nachweis der echten Engine-Allokation, vollständigen Slot-/Inventaränderung,
-Effektverarbeitung, Nachrichtenübertragung oder Spielhostbindung. Exceptions und
-Allokationsfehler fremder Funktionen bleiben außerhalb der Probe. App-/UI-Code
-unverändert, keine neue Rust-/UI-Testausführung behauptet.
-[Details](../runtime/repair/ITEM_LIFECYCLE_2949.md),
-`.local/repair-runtime-v12-{build-test.log,native-result.json,validation.json}`.
-
-## Ereignisvorbereitung und native Equipment-Ereignisse, Modul 0.11.0
-
-Sechs CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 1.537 Aktionsbedingungen,
-385 Leserbedingungen, 25 Sperrgruppenbedingungen und 55 Quellenadapterbedingungen.
-Die eigene Ereignisvorbereitung berücksichtigt aktive Maxima, No-Wear, signierte
-Haltbarkeit, reine Sockelreparatur und weiterhin kaputte Nachherzustände.
-
-103 native Szenarien mit 758 gezählten Aufrufen und 9.311 Bedingungen bestanden.
-15 neue Fälle verbinden originale Server-Benachrichtigung, Ereignisinitialisierung,
-Client-Ack und Sockel-Collector mit privaten Effekt-/Transport-/UI-Empfängern.
-Geprüft sind Repaired-Zustandsart 3 und ihre Argumente, optionale Kind-Ereignisse,
-No-Wear, Sockelerhalt sowie Ablehnung falscher/fehlender/doppelter Rückmeldung,
-fehlender Slots, Teiländerungen, fehlender Belege und geänderter Sitzung.
-
-Die private Reparatur hält native Actor-Referenzen über die gesamte Ereignisfolge;
-Besitzersperren werden zuvor freigegeben. Erfolg verlangt tatsächliche Fixture-
-Callbacks und frische passende Nachherwerte. Ein Rückgabewert 0 allein genügt nicht.
-28 Codebereiche, 25 pdata-Fragmente und acht private TLS-Leseumleitungen; ohne EXE
-führt die Manifestprüfung nur 84 Bedingungen und keine Originalfunktionen aus.
-
-Der reale Effektprozessor, Nachrichtentransport, UI und Persistenz sind dadurch
-nicht geprüft. Engine-Schreibweg/Itemkopie, Slot-Invalidierung, Inventarereignisse,
-Manager-/Thread-/Weltbindung und Installation bleiben offen. App-/Frontendcode
-unverändert; keine erneuten Rust-/UI-Tests behauptet. Spielprozess und Saves nicht
-benutzt. [Details und Grenzen](../runtime/repair/EQUIPMENT_EVENTS_2949.md).
-Nachweise: `.local/repair-runtime-v11-{build-test.log,native-result.json,validation.json}`.
-
-## Native Inventar-/Ausrüstungszugriffe auf 2949, Modul 0.10.0
-
-Sechs CTest-Suiten, MSVC Release `/W4 /WX`, 385 Leserbedingungen und 88 native
-Szenarien mit 578 Aufrufen sowie 6.219 Bedingungen bestanden. Die Erweiterung
-belegt 21 Inventar-/Besitzerfälle, acht Fälle der aktuellen Clientauswahl,
-acht Equipment-Slotfälle und drei Haltbarkeits-Updaterfälle. Der Leser verlangt
-einen explizit bekannten Build und weist unbestätigte Selektoren vorher ab.
-
-Native Inventargetter und eigener Leser liefern für dieselben Fixtures passende
-Ergebnisse einschließlich Presence-Normalisierung, Ausschlusslisten und
-ungültigen Slots. Ein unzugänglicher eigener Slot prüft alle vier Unwindfragmente.
-Clientauswahl mit gültigen/ungültigen nativen Referenzbelegen sowie Normal-/User-
-und direktem/registriertem Modus geprüft. Positive Sockel-Reparatur über den
-Originalupdater bleibt nachweislich ungeeignet: Hauptitem 35 → 100, Sockel 5 → 0.
-
-Equipment-Wrapper mit Delta 0: Native Lock-Referenz und echte exklusive Sperren,
-zweiter Slottag mit Abstand `0xd0`, fehlende/leere/verbrauchte Items, Sentinel
-und Sockel. Die protokollierten Definitionsabfragen müssen tatsächlich auf den
-gewählten Slot zeigen; Rückgabewert 0 allein ist kein Selektionsnachweis.
-Quellbytes, Sperrzählung und Freigabe der leeren temporären Itemkopie sind geprüft.
-
-24 Codebereiche und 20 pdata-Fragmente gepinnt; sechs TLS-Lesestellen in eigenen
-Kopien auf private Daten umgeleitet. Drei vollständig gehashte Aufrufer belegen
-Client-/Server-Kontext- und Komponentenpfade zusätzlich statisch. 72 Manifest-
-bedingungen laufen ohne EXE und zählen nicht als native Ausführung.
-
-Die 2949-Lesefelder besitzen damit eigene Nachweise. Die Engine-Thread-/Manager-
-bindung, Übergänge und der eigentliche Reparaturcommit sind weiterhin offen.
-Der Equipmenttest führt keine Nichtzero-Delta-Ereignisse aus; Tabellenresolver,
-temporäre leere Items und Teile der Lebensdauerverwaltung bleiben Fixtures.
-App-/Rust-/UI-Code unverändert; keine neue Prüfung dieser unveränderten Bereiche
-behauptet. Spiel und Saves nicht benutzt. Nachweise:
-`.local/repair-runtime-v10-{build-test.log,native-result.json,reader-result.json,validation.json}`.
-[Genaue Testgrenzen](../runtime/repair/INVENTORY_2949.md).
-
-## Erfassung aus gehaltenen Referenzen 0.9.0
-
-Sechs CTest-Suiten, MSVC Release `/W4 /WX`, 362 Leser-/Referenzbedingungen und
-die gemeinsame native Probe mit 48 Szenarien, 503 Aufrufen und 3.867 Bedingungen
-bestanden. Geprüft sind die ausschließlich gehaltenen Besitzer, fehlende/andere
-Clientauswahl, Änderungen beim Kontrolllesen und die Freigabe nach Fehlern.
-Explizit unzugängliche Registrybereiche werden im geschützten Leser nicht gelesen.
-
-Der native 2949-Host verbindet jetzt echte Referenzen und nicht wartende
-Windows-Besitzersperren mit dem Leser. Konkurrierende Sperren führen zum Abbruch
-vor Itemzugriff; alle erworbenen Sperren werden vor Referenzen zurückgegeben.
-Inventar, Equipment und Sockel inklusive Kontrolllesen sind unter beiden
-Besitzersperren geprüft. Ein währenddessen ersetzter Registryknoten bewirkt
-keinen Zugriff auf einen unbesessenen Actor. Itemquellen bleiben unverändert.
-
-16 Codebereiche, zehn pdata-Grenzen und fünf gezielt umgeleitete private
-TLS-Lesestellen. Der Test ohne EXE bestätigt nur 48 Manifestbedingungen.
-Die neue Lock-Try-Funktion verwendet echte Windows-Imports auf privaten Daten.
-Das Inventar-/Clientankerlayout dieser Probe bleibt ein Legacy-Fixture;
-sein Zusammenspiel mit den nativen Methoden ist keine 2949-Layoutzulassung.
-Manager-/Threadbindung, Weltwechsel und Reparaturtransaktion bleiben offen.
-
-Die Aktions-/Sperrgruppen-/Quellenadapter-Suiten bestehen weiterhin mit
-1.481/25/55 Bedingungen. App-/Frontendcode wurde nicht verändert; keine neue
-Rust-/UI-Testausführung behauptet. Laufendes Spiel und Saves bleiben unberührt.
-Nachweise: `.local/repair-runtime-v9-{build-test.log,native-result.json,reader-result.json,validation.json}`.
-[Details und Grenzen](../runtime/repair/PINNED_CAPTURE_INTEGRATION.md).
-
-## Gemeinsamer nativer Registry-/Referenzerwerb 0.8.0
-
-Sechs CTest-Suiten und MSVC Release `/W4 /WX` bestanden. Der separate native
-Host für EXE 1.0.0.2949 besteht 30 Szenarien mit 263 Aufrufen und 3.490 Bedingungen:
-geschützte Client-/Server-Lookups, Normal-/User-Referenzmethoden, PaPtr-Freigabe,
-Generation/Masken, ungültige Belege trotz Pointer, bestehender Besitz, Rollback,
-verzögerte Bereinigung und genau einmalige Zerstörung. Vier Fälle verwenden
-konkurrierende echte Windows-SRW-Schreibsperren und entfernen Registryeinträge
-vor der Freigabe. Die anschließende Suche beachtet den aktuellen Registryzustand.
-
-15 vollständige Codebereiche, neun pdata-Grenzen, konkrete Actor-VTables und
-der vollständige EXE-Hash sind gepinnt. Nur vier neun Byte lange TLS-Lesezugriffe
-werden in den privaten Kopien auf private Daten umgeleitet. Threadmap, Parent-
-Referenzen und endgültige Bereinigung/Zerstörung sind Fixture-Abhängigkeiten;
-kein vollständiger Live-Host oder Engine-Commit behauptet. Der direkte native
-Erwerb akzeptiert Alive=0; die zusätzliche Ablehnung im Leser bleibt erforderlich.
-
-Alter Host verweigert die neue EXE; neuer Registry-Host verweigert eine unbekannte
-PE-Testdatei vor nativer Ausführung. Die übrigen Suiten bestätigen unverändert
-1.481 Aktions-, 249 Leser-/Referenz-, 25 Sperrgruppen- und 55 Adapterbedingungen.
-Die sechste CTest-Suite prüft ohne Spiel-EXE nur die 45 Manifestbedingungen;
-der native Erfolg stammt aus dem gesonderten lokalen Aufruf.
-
-App v0.5.9, Desktop-Verknüpfung, ursprünglicher Audit und die 38 erfassten
-Installationshashes unverändert. Keine neue Rust-/Frontendprüfung erforderlich
-oder behauptet; kein Spielprozess-/Save-Zugriff. Nachweise:
-`.local/repair-runtime-v8-{build-test.log,native-result.json,build-refusals.json,validation.json}`.
-[Genaue Pfade und Grenzen](../runtime/repair/REGISTRY_NATIVE_INTEGRATION.md).
-
-## Tabellenunterstützung für Steam 25455892 / App v0.5.9
-
-- 181 Rust-Tests im Workspace, ein gesondert ausgeführter Test der bisherigen
-  Advanced-Tabellen, sieben Frontend-Unit-Tests und 61 UI-Flows bestanden.
-  Clippy für Workspace/alle Targets mit `-D warnings` und Formatprüfung bestanden.
-- Der vollständige Dateivergleich umfasst 61 tatsächlich verwendete Tabellen-,
-  Icon- und Sprachdateien: 57 bytegleich, nur Quest-/Stage-Body und Header geändert.
-  Alle 14 indizierten Paare haben bytegleiche Roundtrips. Neue Anzahl: 52.082
-  Stages, 1.098 Quests. Vollständiger Stage-Modvergleich: ausschließlich die
-  beiden gewählten Patrouillen verändert, alle übrigen Stages einschließlich
-  beider neuer IDs erhalten; keine Questdatei im Overlay.
-- Buildauswahl und Sicherungsbelege prüfen beide bekannten Builds getrennt.
-  Falsche Build-ID, gemischte Registry-/EXE-Metadaten, unvollständige Dateien und
-  falsche Größen werden abgewiesen. Index/Export benutzen die passende Schema-ID.
+# Test plan and evidence
+
+Status: phase 5, v0.5.9, 23.09.2026. Current status in [PROGRESS.md](PROGRESS.md), implementation limits in [MODS.md](MODS.md). Live-B0 is automatically tested on artificial installations. Basic change, inventory integration and confirmed third-party additions are implemented. The manual in-game validation remains **open**. At the request of the user from 20.09.2026, the manual in-game tests is carried out only after completion of the development of all phases. They do not block further development and are until then explicitly listed as untested.
+
+## Inventory package serializer, module 0.23.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. 36 additional cases: 26 direct samples of the original transmitter/stream selection and ten connections with repair transaction and client ax. Exact field widths and byte sequence, zero/maximum values, incorrect actor, UID change, missing receiver/buffer, discarded bytes and missing/double delivery checked. The private confirmation discards all unclear results and prevents replay.
+
+Overall: 454 native scenarios, 4,812 counted calls, 206,786 conditions including repeated byte checks. 102 Code ranges, 127 pdata fragments, 60 private TLS locations plus unchanged stack sample on your own Windows thread. CTest conditions: 11/1,529/519/25/55/612/29/202/273. Production suites unchanged. Stream buffer, transport and server/storage termination remain artificial; The successful pool branch is not executed. [Details](../runtime/repair/INVENTORY_PACKET_2949.md).
+
+## Separate offline inventory order
+
+Slot 2 specifically changed when the game is closed: 200 lightweight and 200 heavy copper bags, in addition 30,000 silver. originals secured; Full semantic comparison, valid new IDs/slots/pointers, byte-accurate return checked for copies and integrity of the actually replaced files after reopening. Only `save.save`/`lobby.save` of this slot changed, eight more files unchanged. Display, use and re-save in-game remain open. [Report](../.local/inventory-currency/RESULTAT.md). This single order is not a general save writer and is not proof of repair memory termination.
+
+## Native buffer preparation and compression, module 0.22.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. 66 new cases on own data: 40 size/compression cases, four output reuse cases, six errors, 14 connections to the original file helper and two repetitions after opening errors. An independent LZ4 test decoder reconstructs the original bytes; the output contains the exact header and both size fields. All buffers released.
+
+Overall: 418 native scenarios, 4,289 calls, 204,378 conditions, including many repeated byte checks. 100 code ranges, 125 pdata fragments and 58 private TLS replacements. The original stack sample reads the stack limit of your own thread. CTest conditions: 11/1,529/519/25/55/600/29/202/273. Production suites unchanged.
+
+Repeating an entry after opening error recompresses already compressed data. Downstream processing and all file operations remain callbacks; no proof of integrity/encryption or data medium. Allocation errors, complete object serialization and game connection are missing. [Detection and limits](../runtime/repair/SAVE_ENCODING_2949.md), `.local/repair-runtime-v22-{build-test.log,native-result.json,validation.json}`.
+
+## File Writer with Private File Receivers, Module 0.21.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. 26 Direct cases and eight dispatcher integrations check buffer ownership and errors up to and including flush/close. All file operations are private callbacks with a synthetic handle. Coding, long path name and non-empty string destruction are not executed.
+
+Overall: 352 native scenarios, 4,095 calls, 142,649 conditions. 91 code ranges, 118 pdata fragments and 55 private TLS locations. The CTest suites report 11/1,529/519/25/55/546/29/202/273 conditions. Production suites unchanged. The successful native expiration can release the earmarked payload and delete dirty despite a failed flush. This is expressly not a storage document.
+
+Real encoder/writefile wrapper read only statically. Preparation may change the original payload; the preservation in case of errors applies so far only with the non-modifying test encoder. No access to game process or saves; No change to the installation. The installed EXE was only read. [Detection and limits](../runtime/repair/SAVE_FILE_2949.md), `.local/repair-runtime-v21-{build-test.log,native-result.json,validation.json}`.
+
+## Save dispatchers and queues, module 0.20.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. 39 new native cases: 16 gate/status combinations, eight error cases, eight Steam quota cases, one missing backend and six queue cases with growth and duplicates. File, platform and diagnostic recipients remain private test callbacks.
+
+Overall: 318 native scenarios, 4,039 calls, 141,411 conditions. 88 code ranges, 115 pdata fragments and 51 private TLS locations. The nine CTest suites report 11/1,529/519/25/55/528/29/202/273 conditions. Writer and transaction unchanged.
+
+Additional static proof: eight file/constructor/timer functions, five VTables, 13 instruction anchors and the two file imports. The original writing assistant ignores the flush result; It has not yet been executed. No save files, Steam API or running game objects used. No data carrier termination and no installable repair mod demonstrated. [Detection and limits](../runtime/repair/SAVE_BACKEND_2949.md), `.local/repair-runtime-v20-{build-test.log,native-result.json,validation.json}`.
+
+## Item/storage object conversion, module 0.19.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. 38 new native cases run original converters and their lifetime functions on private objects; 14 Cases use productive repair plans and native post-copies. Main values including 0/No-Wear/Sentinel, base geometries, dye data, reset/reuse and full release checked in both allocation modes.
+
+Overall: 279 native scenarios, 3,950 calls, 139,784 conditions. 82 code ranges, 108 pdata fragments, 50 private TLS locations. The nine CTest suites report 11/1,529/519/25/55/492/29/202/273 conditions; the 492 manifest conditions do not belong to an additional game test. Writer and transaction unchanged.
+
+No regular serialization on disks, no actual save completion and no complete engine commit. Catalog, watch, reflection notifications, socket guidelines and heap are controlled test dependencies. Other optional item data remains open. Unchanged Rust/UI parts not retested. [Detection and precise limits](../runtime/repair/ITEM_SAVE_2949.md), `.local/repair-runtime-v19-{build-test.log,native-result.json,validation.json}`.
+
+## Complete SQL job path, module 0.18.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. 19 new native cases: eight execution branches/error cases, three request purchase cases and eight combined slot consumer cases in both private TLS allocation modes. Status/deadline fields, temporary diagnostic pointer, old errors received, zero pointer and unwind checked.
+
+Overall: 241 native scenarios, 3,674 calls and 128,415 conditions. 58 code ranges, 76 pdata fragments and 35 private TLS locations. Production suites unchanged: 43 Transaction scenarios/273 Conditions and 35 Writing scenarios/202 Conditions.
+
+Execution can deliver success without request access and does not contain a database call. The native test result expressly shows `sql_execute_is_persistence_proof=false`. No real storage yet, no full engine commit and no installable repair mod. Clock, diagnosis, capacity management and parts of event recipients remain test dependencies. Unchanged Rust/UI parts are not retested. [Evidence](../runtime/repair/SQL_DISPATCH_2949.md), `.local/repair-runtime-v18-{build-test.log,native-result.json,validation.json}`.
+
+Additional static proof: seven function hashes, four RTTI types, jump/VTable mapping and 15 instruction anchors for alternative transaction and item/memory object conversions. No other native success counted. The conversions contain main and base durability, but are not yet executed with own data; the actual save process has not been verified. [Evidence](../runtime/repair/ITEM_SAVE_2949.md), `.local/repair-runtime-v18-save-route.json`.
+
+## Inventory client feedback, module 0.17.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. 36 additional native cases run the original inventory ax: 14 direct cases in both TLS modes and eight cases in the common adapter with native copies/field recorders. Absolute main values, quantity/key/slot/container error, unchanged base and correct lock/reference sequence checked. UID change, missing/double delivery and completion errors do not result in repair success or replay.
+
+Overall: 222 native scenarios, 3,526 calls, 125,524 conditions. 56 code ranges, 70 pdata fragments and 35 private TLS locations. Existing production suites: 43 Transaction scenarios/273 Conditions, 35 Writing scenarios/202 Conditions.
+
+Container translation, blank name formatting and UI are test receivers; the non-empty string paths are not executed. Inventory servers and persistence are also artificial. The integration sample reports after the previous field step delta 0; the actual UI reaction has yet to be verified. No game repair claimed. The only statically tested socket-SQL allocation does not occupy any durability storage path. Unchanged Rust/UI parts not re-executed. [Evidence](../runtime/repair/INVENTORY_EVENTS_2949.md), `.local/repair-runtime-v17-{build-test.log,native-result.json,validation.json}`.
+
+## Slot processing and batch completion, module 0.16.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. Expiration suite: 43 Scenarios, 273 Conditions; Writer unchanged 35 Scenarios/202 Conditions. Missing terminating adapter prevents copying and writing. Closing errors or change of sessions after messages do not confirm success. Call order, blocks released and references/copies held until the end are checked.
+
+24 new native consumer cases include both allocation paths, empty lists, duplicates, missing/invalid items, main values 0 and 65,535, and 64 slots. UID/durability pairs, native table cleanup, reuse and release are checked. Capacitance errors, positive execution errors and stored negative errors occur after emptying; Running again does not restore the markings. The persistence interface is its own test receiver.
+
+18 Equipment cases use the common adapter and slot consumer. Three additional error cases lock the order as unclear, although the client corner and field change were successful. Total: 186 native scenarios, 2,826 counted calls, 124,527 conditions; Many conditions repeatedly check the tables. 55 Code ranges, 69 pdata fragments and 32 private TLS locations are pinned.
+
+Actual storage is not occupied; In particular, the supplementary route for base data sets is missing. Inventory events and game host remain open. No access to the game process or saves, no installation change. App and original test report as well as 38 EXE/metadata files remain hash-same. Unchanged Rust/UI parts were not retested. The later in-game validation stands with concrete expectations in the [Testcheckliste](../TESTCHECKLISTE.md). [Evidence](../runtime/repair/PERSISTENCE_2949.md), `.local/repair-runtime-v16-{build-test.log,native-result.json,validation.json}`.
+
+## Joint process and prepared post-copies, module 0.15.0
+
+Nine CTest suites and MSVC release `/W4 /WX` passed. New flow suite: 40 Scenarios, 247 Conditions. Field recorder: 35 Scenarios, 202 Conditions. Action/reader/lock/registry/item owner: 1,529/519/25/55/29 Conditions. All copies checked before the first store, total notification approval, incorrect thread, inaccessible additional data, allocation budget, copy/write/message cancellations, session change and independent confirmation. Errors from the first store attempt are never considered unchanged rejection or success.
+
+The 15 native equipment cases use the production adapter instead of a manual field loop. Original item copies, field recorder, slot marking, unlocking and server/client message path connected. New capture after the process intentionally refuses deviant slots and Zustandcopies. 32 native item cases also check empty/partially stored sockets and copy preparation. Overall: 159 native scenarios, 2,023 counted calls, 119,953 conditions. 51 Code ranges/57 pdata fragments/26 TLS locations pinned unchanged.
+
+Corrections: Read only stored sockets; Logical places may be above the allocation capacity. The additional vectors at `+0x78`/`+0xA8` have 16/6 byte data sets. One test checks the previously overlooked posterior overlap. Previous counters contain comparisons of unstored sockets and the now replaced manual event setup; They are not directly comparable as case numbers.
+
+No complete live repair: concrete inventory events, slot consumers, real receivers and host remain open. Unchanged Rust/UI parts not retested. [Details](../runtime/repair/TRANSACTION_2949.md), `.local/repair-runtime-v15-{build-test.log,native-result.json,validation.json}`.
+
+## Full durability field step, modulus 0.14.0
+
+Eight CTest suites and MSVC release `/W4 /WX` passed. New writing suite: 34 Scenarios, 197 Conditions. Action/reader/lock/registry/item conditions remain 1,537/519/25/55/30. All ranges and both Zustandcopies, No-Wear, Sentinel, empty orders and only changed words are checked.
+
+Cross-checks: capacitance error, common/overlapping item/socket/additional buffers, protected structures, late field writability denied, outdated batch and session change. Changed values during the pre-check, byte-identical misplaced arrays and empty slots prevent all stores. Partial errors, incorrect write feedbacks and changes after writing is started never result in success or automatic repetition. Own Windows pages check alignment, overflow and page protection. 2,048 Items/4,096 Stores within the implementation budget exist including complete follow-up control.
+
+Eight additional native cases connect the new recorder with original reference/lock functions and actual private memory addresses, with direct and registered reference management. All source bytes agree with an independent follow-up comparison. Overall: 141 native scenarios, 1,408 calls and 120,069 conditions. The original function manifest remains at 51 code ranges, 57 pdata fragments, 26 private TLS reading points and 306 manifest conditions.
+
+`fields_written` is expressly not a confirmed engine commit. The complete connection with pre-created native copies and the events is still missing; the previous 15 incidents retain their separate private field setup. Game host, slot consumer, inventory events and real effect/transport processing remain open. Unchanged app/Rust/UI parts not retested. [Details](../runtime/repair/FIELD_WRITER_2949.md), `.local/repair-runtime-v14-{build-test.log,native-result.json,validation.json}`.
+
+## Capture and native slot marking, module 0.13.0
+
+Seven CTest suites and MSVC release `/W4 /WX` passed. Readers now 519 Conditions; Action/lock/registry/item owner unchanged 1,537/25/55/30. `HeldCapture` keeps both owners and locks for planning and re-examination; Separate unlocking allows for references for notification. Reacquisition, incorrect thread, session/source changes, outdated batches and error/exception release checked. A competing thread cannot purchase either of the two actual Windows locks after `open`.
+
+16 new native cases check slot marking with duplicates, collisions, shifted bucket chains and growth for 64 entries, in both TLS allocation modes. The 15 incidents use the original marking under the locks in front of the server notifier. Total 133 native scenarios, 1,296 calls and 119,997 conditions; Many of them check the same table after each insertion. Manifest: 51 code ranges, 57 pdata fragments, 26 private TLS readers; 306 Manifest Conditions without EXE. All private allocations with protective markings tested and balanced; the additional insert-unwind alias is byte-identical.
+
+The slot consumer and the real list cleanup are open. Testheap, effect/transport/UI receivers remain their own dependencies. No statement about full native writer, game host or successful repair in the game. No changed app/UI code; Therefore, no new Rust/UI check is claimed. [Details](../runtime/repair/DIRTY_SLOTS_2949.md), `.local/repair-runtime-v13-{build-test.log,native-result.json,validation.json}`.
+
+## Native Item Copy and Event Integration, Module 0.12.0
+
+Seven CTest suites, MSVC release `/W4 /WX`, 30 new conditions for the native item owner. Fixed constructor/allocation/destructor binding, thread bound, header check before target change, overlap, double release and unusable native returns are tested. Action/reader/lock/source suites remain at 1,537/385/25/55 conditions.
+
+117 native scenarios with 851 counted calls and 13,639 conditions passed. 14 new cases run the original item methods together with nested copy helpers. Sockets, both additional lists and optional 24/16 byte blocks are copied independently; Growth, replacement, self-assignment and invalid source capacity tested. Both TLS allocation paths use their own Windows heap with protection markings and fully balanced releases. The source is preserved.
+
+The 15 incidents now use the original native aftercopies under the existing Actor references: copy under the owner locks, notification afterwards, destruction upon return. The manifest includes 45 code ranges, 49 pdata fragments and 24 private TLS redirects. A byteidentical, pinned Unwind alias is normalized for the chain. Without EXE only 270 manifest conditions.
+
+No proof of real engine allocation, complete slot/inventory change, effect processing, message transmission or game host binding. Exceptions and allocation errors of foreign functions remain outside the sample. App/UI code unchanged, no new Rust/UI test execution claimed. [Details](../runtime/repair/ITEM_LIFECYCLE_2949.md), `.local/repair-runtime-v12-{build-test.log,native-result.json,validation.json}`.
+
+## Event preparation and native equipment events, module 0.11.0
+
+Six CTest suites and MSVC release `/W4 /WX` passed. 1,537 Action Conditions, 385 Reader Conditions, 25 Lock Group Conditions and 55 Source Adapter Conditions. The own event preparation takes into account active maxima, no-wear, signed durability, pure base repair and still broken post-conditions.
+
+103 native scenarios with 758 counted calls and 9,311 conditions passed. 15 new cases combine original server notification, event initialization, client ax and socket collector with private effect/transport/UI receivers. Tested are Repaired-Zustandsart 3 and their arguments, optional child events, no-wear, base maintenance and rejection of false/missing/double feedback, missing slots, partial changes, missing receipts and changed session.
+
+The private repair keeps native Actor references over the entire sequence of events; Owner locks are released beforehand. Success requires actual fixture callbacks and fresh matching after values. A return value 0 alone is not enough. 28 code ranges, 25 pdata fragments and eight private TLS read redirects; without EXE, the manifest check only performs 84 conditions and no original functions.
+
+The real effect processor, message transport, UI and persistence are not tested. Engine writing/item copy, slot invalidation, inventory events, manager/thread/world binding and installation remain open. App/front end code unchanged; No new Rust/UI tests claimed. Game process and saves not used. [Details and limits](../runtime/repair/EQUIPMENT_EVENTS_2949.md). Evidence: `.local/repair-runtime-v11-{build-test.log,native-result.json,validation.json}`.
+
+## Native inventory/equipment accesses on 2949, module 0.10.0
+
+Six CTest suites, MSVC release `/W4 /WX`, 385 reader conditions and 88 native scenarios with 578 calls and 6,219 conditions passed. The extension occupies 21 inventory/owner cases, eight cases of current client selection, eight equipment slot cases and three durability updater cases. The reader requests an explicitly known build and rejects unconfirmed selectors beforehand.
+
+Native inventory getters and their own readers provide matching results for the same fixtures, including presence normalization, exclusion lists, and invalid slots. An inaccessible own slot checks all four unwind fragments. Client selection checked with valid/invalid native reference documents as well as normal/user and direct/registered mode. Positive base repair via the original updater remains demonstrably unsuitable: main item 35 → 100, base 5 → 0.
+
+Equipment wrapper with delta 0: Native lock reference and real exclusive locks, second slot tag with distance `0xd0`, missing/empty/used items, sentinel and sockets. The logged definition queries must actually point to the selected slot; Return value 0 alone is not proof of selection. Source bytes, block count and release of the empty temporary item copy are checked.
+
+24 code ranges and 20 pdata fragments pinned; six TLS readers are redirected to private data in their own copies. Three fully hashed callers additionally occupy client/server context and component paths statically. 72 Manifest Conditions run without EXE and do not count as native execution.
+
+The 2949 reading fields thus have their own proofs. The engine thread/manager binding, transitions and the actual repair commit are still open. The equipment test does not perform non-zero delta events; Table resolvers, temporary empty items and parts of lifetime management remain fixtures. App/Rust/UI code unchanged; No new examination of these unchanged areas is claimed. Play and saves not used. Evidence: `.local/repair-runtime-v10-{build-test.log,native-result.json,reader-result.json,validation.json}`. [Precise test limits](../runtime/repair/INVENTORY_2949.md).
+
+## Capture from held references 0.9.0
+
+Six CTest suites, MSVC release `/W4 /WX`, 362 reader/reference conditions and the common native sample with 48 scenarios, 503 invocations and 3,867 conditions passed. Tested are the solely held owners, missing/other client selection, changes in the control reading and the release for errors. Explicitly inaccessible registry areas are not read in the protected reader.
+
+The native 2949 host now connects real references and non-waiting Windows owner locks with the reader. Competing locks lead to termination before item access; all purchased locks are returned before references. Inventory, equipment and socket including control reading are checked under both owner locks. A registry node replaced in the meantime does not provide access to an unobsessed actor. Item sources remain unchanged.
+
+16 Code ranges, ten pdata boundaries and five targeted redirected private TLS readers. The test without EXE only confirms 48 manifest conditions. The new lock-try feature uses real Windows imports on private data. The inventory/client anchor layout of this sample remains a legacy fixture; its interaction with the native methods is not 2949 layout approval. Manager/thread binding, world change and repair transaction remain open.
+
+The action/blocking group/source adapter suites still exist with 1,481/25/55 conditions. App/front-end code has not been modified; No new Rust/UI test execution is claimed. Ongoing play and saves remain unaffected. Evidence: `.local/repair-runtime-v9-{build-test.log,native-result.json,reader-result.json,validation.json}`. [Details and limits](../runtime/repair/PINNED_CAPTURE_INTEGRATION.md).
+
+## Common native registry/reference acquisition 0.8.0
+
+Six CTest suites and MSVC release `/W4 /WX` passed. The separate native host for EXE 1.0.0.2949 consists of 30 scenarios with 263 calls and 3,490 conditions: protected client/server lookups, normal/user reference methods, PaPtr sharing, generation/masks, invalid receipts despite pointers, existing ownership, rollback, delayed cleanup and one-time destruction. Four cases use competing real Windows SRW write locks and remove registry entries before sharing. The subsequent search observes the current registry state.
+
+15 full code ranges, nine pdata boundaries, concrete Actor VTables and the full EXE hash are pinned. Only four nine-byte long TLS read accesses are redirected to private data in the private copies. Threadmap, parent references and final cleanup/destruction are fixture dependencies; No full live host or engine commit claimed. Direct native acquisition accepts Alive=0; the additional rejection in the reader remains necessary.
+
+Old host refuses the new EXE; New registry host denies an unknown PE test file before native execution. The remaining suites confirm unchanged 1,481 Action, 249 Reader/Reference, 25 Lock Group and 55 Adapter conditions. The sixth CTest suite only checks the 45 manifest conditions without game EXE; the native success comes from the separate local call.
+
+App v0.5.9, desktop shortcut, original audit and the 38 captured installation hashes unchanged. No new Rust/front end test required or claimed; No game process/save access. Evidence: `.local/repair-runtime-v8-{build-test.log,native-result.json,build-refusals.json,validation.json}`. [Accurate paths and boundaries](../runtime/repair/REGISTRY_NATIVE_INTEGRATION.md).
+
+## Table support for Steam 25455892 / App v0.5.9
+
+- 181 Rust tests in the workspace, a separately executed test of the previous
+Advanced tables, seven front-end unit tests and 61 UI flows passed. Passed Clippy for Workspace/all targets with `-D warnings` and format check.
+- The complete file comparison includes 61 actually used tables,
+Icon and language files: 57 byte-identical, only quest/stage body and header changed. All 14 indexed pairs have byte-identical round trips. New number: 52,082 Stages, 1,098 Quests. Complete stage mod comparison: only the two selected patrols are changed, all other stages including both new IDs are obtained; No quest file in the overlay.
+- Build selection and backup vouchers check both known builds separately.
+Wrong build ID, mixed registry/EXE metadata, incomplete files and incorrect sizes are rejected. Index/Export use the appropriate schema ID.
 - Release-CLI: `metadata_matches=true`, `read_schema_supported=true`, Schema
-  `steam-25455892-gamedata-2.3-v2`, `certified_vanilla=false`; Tabellenaufruf erfolgreich.
-  Ein eigener PE-Testbestand mit unbekannter Version `0.5.9.0` wird mit Exit 2
-  und Versionsfehler abgewiesen, bevor eine Mod-Sicherung geprüft wird. Diese
-  als Testdatei kopierte Workbench-EXE wurde nicht ausgeführt.
-- Echte Release-App v0.5.9 im eigens gestarteten versteckten Testfenster:
-  3.359 Änderungen über 13 Tabellen, 2.069 Skills, neun Inventarbereiche,
-  122 No-Wear-Items, 36 Buff-Zusatzkosten und 31 Skill-Eigenkosten geprüft.
-  Reparatur bleibt sowohl in der Oberfläche als auch bei direkten Requests gesperrt.
-  Zwei Apply-/Restore-Zyklen an einer Projektkopie einschließlich Wiederanwendung,
-  Recovery, Startschutz und simulierter Update-Abweisung bestanden. Keine Seitenfehler;
-  1.024-Pixel-Ansichten geprüft, Abschlussansicht zusätzlich visuell kontrolliert.
-- Das Spiel lief während der App-Probe. 38 EXE-/Metadatenhashes und der ursprüngliche
-  Audit blieben unverändert; kein Live-Apply und keine B0-Einrichtung erfolgt.
-
-Die normale Tauri-Buildausgabe konnte eine inzwischen geöffnete ältere Workbench
-nicht ersetzen (`os error 5`). Die bereits fertig kompilierte Release-EXE aus
-`target/release/deps` wurde nach Versions-/Hashkontrolle als
-`target/release/crimson-workbench-0.5.9.exe` bereitgestellt und genau diese Datei
-im obigen Desktop-Test geprüft. SHA-256:
-`30eba52e4d07237aabe35ae1ca9a6daa3de07607be1f1e8ee2db62a72cba7b18`,
-16.183.808 Bytes. Desktop-Verknüpfung und Startskript verwenden diese Datei;
-das bestehende Fenster wurde nicht geschlossen.
-
-Die native Reparatur-Runtime ist damit nicht für die neue EXE zugelassen.
-Eine gesonderte rein lesende RTTI-/pdata-Probe erfasst acht relevante VTables
-neu. Fehlende Funktionsgrenzen bleiben ausdrücklich unbestimmt; keine native
-Ausführung und keine Übernahme alter Adressen.
-
-Nachweise: `.local/phase5-build-update-{workspace-tests,pinned-tests,frontend-tests,ui-tests,clippy}.log`,
-`phase5-build-update-{fingerprint,tables,unknown-version,delivery,shortcut}.json`,
-`.local/phase5-build25455892-native/result.json` und
-`.local/build-25455892-table-comparison.json`.
-[Buildumfang](BUILD_SUPPORT.md), [spätere Nutzerabnahme](../TESTCHECKLISTE.md).
-
-## Registry-Quellenadapter 0.7.0 und Buildwechsel (vorheriger App-Stand)
-
-Nutzerlesbare Fälle mit Erwartungswerten: [TESTCHECKLISTE.md](../TESTCHECKLISTE.md).
-Fünf CTest-Suiten und MSVC Release `/W4 /WX` bestanden: 55 neue Registry-Bedingungen,
-249 Leser-/Referenzbedingungen, 25 Sperrgruppenbedingungen, 1.481 Aktionsbedingungen.
-Die neuen Adaptertests verwenden künstliche Manager-Lookups und zwei verschiedene
-Freigabemethoden. Fehler in beiden Quellen, gleiche Actoradresse, Nullbindung,
-volle Kennung, korrekte Kontextbindung und genau einmalige Rückgabe sind geprüft.
-
-Die installierte EXE ist jetzt 1.0.0.2949 / Steam 25455892. 24 der bisher
-38 erfassten Dateien unterscheiden sich. Der gepinnte native Host lehnt die neue
-EXE ab; das wurde als erwarteter negativer Test geprüft. CLI-Fingerprint meldet
-`metadata_matches=false` und `read_schema_supported=false`. Der zusätzliche
-CLI-Tabellenversuch stoppt schon an der fehlenden Projektprobensicherung; er
-belegt keine konkrete Build-Fehlermeldung. Keine native Erfolgsprobe für 0.7.0
-und keine neue UI-/Rust-/Tabellen-Roundtripprüfung behauptet.
-
-App und Audit unverändert. 38 neue beobachtete Hashes nach der Arbeit nochmals
-bestätigt. Keine Spiel-/Save-Schreibzugriffe und keine Prozessinteraktion.
-Nachweise: `.local/repair-runtime-v7-{build-test.log,validation.json,build-refusals.json}`,
-`repair-runtime-v7-{action,reader,lease,registry}-result.json` und
-`repair-runtime-v7-current-fingerprint.json`.
-[Buildbeobachtung](builds/steam-25455892.observed.json),
-[Vertrag und Grenzen](../runtime/repair/REGISTRY_INTEGRATION.md).
-
-## Reparatur-Referenzverwaltung 0.6.0 (vorheriger Stand)
-
-Vier CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 249 Leser-/Referenzbedingungen,
-25 Gruppenbedingungen und 1.481 Aktionsbedingungen. Neuer Nachweis: Erwerbsfehler
-beider Quellen, balancierte Freigabe auch ungültiger Belege, Sperren vor Referenzen,
-volle Kennung, Alive-/Zerstörungszustand vor/nach Erfassung, doppelte/aliasierte
-Besitzer, falscher Thread, nicht kopierbarer Besitz und Exception-Unwind.
-
-203 native Aufrufe und 3.859 Bedingungen. 13 Referenzszenarien mit Original-
-Erwerb, bestehender Referenzprüfung, PaPtr-Freigabe und konkretem Actor-Release.
-Der tatsächliche Release-Override wurde an fünf Actor-VTables kontrolliert.
-Geprüft sind beide direkten TLS-Modi und der registrierte Pfad, verzögerte
-Zerstörung, ungültige Belege mit Pointer, Sonderbelege und ausstehende Bereinigung.
-Drei TLS-Lesezugriffe sind auf private Daten umgeleitet; Threadmap, eingebettete
-Sperren und Bereinigungs-/Zerstörungsabhängigkeiten bleiben Fixture-Callbacks.
-Keine Behauptung eines vollständigen Live-Hosts oder tatsächlicher Spielereignisse.
-
-38 Installationshashes, App und ursprünglicher Audit unverändert. Kein Spiel-/
-Save-Zugriff; keine neue Rust-/Frontendprüfung. Nachweise:
-`.local/repair-runtime-v6-build-test.log`, `.local/repair-runtime-v6-validation.json`,
-`repair-runtime-v6-{action,reader,lease}-result.json`.
-[Details und Grenzen](../runtime/repair/REFERENCE_INTEGRATION.md).
-
-## Reparatur-Besitzersperren 0.5.0 (vorheriger Stand)
-
-Vier CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 1.481 Aktionsbedingungen,
-163 Leserbedingungen und 25 Bedingungen für die Sperrgruppe. Die Leserproben
-verweigern Itemzugriff ohne beide Sperren; Fehlerfälle prüfen Rückgabe beider
-Sperren, falsche Bindungen, geänderte Anker und identische Sperrobjekte.
-
-140 native Aufrufe mit 2.408 Bedingungen. Originale Try-/Release-Kopien verwenden
-auf eigenen Testobjekten echte Windows-SRW-Imports. Geprüft sind Exklusivität,
-Rekursion, konkurrierende Threads, Rücknahme bei zweiter belegter Sperre und
-Ablehnung eines Schreibversuchs bei gehaltenem Leselock. Genau ein neun Byte
-langer TLS-Lesezugriff der Try-Kopie ist auf private Daten je Thread umgeleitet;
-Restbytes sind unverändert. Dies ergänzt die älteren Proben mit deren Lock-Stubs.
-
-EXE vor/nach Probe verifiziert; 38 Installationshashes, App und ursprünglicher
-Audit unverändert. Keine neue App-Testausführung, keine Spiel-/Save-Zugriffe.
-Lebensdauerreferenzen der echten Spielobjekte und der Engine-Commit fehlen.
-Nachweise: `.local/repair-runtime-v5-build-test.log`,
-`.local/repair-runtime-v5-validation.json` sowie
-`repair-runtime-v5-{action,reader,lease}-result.json`.
-[Details und Grenzen](../runtime/repair/LOCK_INTEGRATION.md).
-
-## Reparatur-Abschlusssteuerung 0.4.0 (vorheriger Stand)
-
-Drei CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 1.481 Bedingungen für
-die Aktion, 124 für den unveränderten Leser. Neue Prüfungen: asynchron angenommene
-Aufträge zählen noch nicht als Erfolg; Bestätigung braucht alle Nachherwerte und
-Ereignisse. Fremde IDs, alte Sitzungen bei gleicher ID, falscher Thread, doppelte
-Bestätigung, Teiländerungen, fehlende Items, Katalog-/Weltwechsel und Timeout.
-Nach Annahme kein Abbruch/Retry; unklarer Abschluss sperrt die Queue dauerhaft.
-
-122 native Aufrufe mit 2.221 Bedingungen. Sechs zusätzliche Fälle im Client-Ack:
-Teiländerung und Sockelentfernung vor Listenfehler, korrekte Abbilder mit Delta 0,
-falsche Serverliste trotz korrekter Abbilder, normaler Verschleiß als scheinbarer
-Erfolg, erfolgreiche Sockelentfernung und fehlender Slot mit Fehlercode 0.
-Die Nachherwertprüfung unterscheidet diese Fälle vom tatsächlichen Reparaturziel.
-
-Originaler Updater, Lock-Konstruktor und Sockelentferner; beim Client-Ack wird
-genau ein neun Byte großer TLS-Zugriff auf private Testdaten umgeleitet.
-Alle übrigen Ack-Bytes unverändert geprüft, drei Sockel-Unwind-Fragmente samt
-Prologkette registriert. UI, Listenallokation und virtuelle Lock-Methoden sind
-Stubs. Kein realer Spielereignisversand und kein vollständiger Engine-Commit.
-EXE vor/nach Probe geprüft. 38 EXE-/Metadatenhashes, Audit und App unverändert;
-kein Spielprozess-/Save-Zugriff. Keine neue Rust-/Frontendprüfung behauptet.
-
-Nachweise: `.local/repair-runtime-v4-{build-test.log,contract.log,validation.json}`,
-`repair-runtime-v4-{action,reader}-result.json`.
-[Auftragsabschluss, native Befunde und Testgrenzen](../runtime/repair/ACK_INTEGRATION.md).
-
-## Lesender Reparaturadapter 0.3.0 (vorheriger Stand)
-
-Drei CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 124 Bedingungen prüfen
-den Leser: Client-/Server-Zuordnung über Charakterkennung, Possessor-/Owner-
-Prüfungen, nur vorhandene Items im Character-Inventar und Equipment, UID-/Slot-
-Übereinstimmung, Socketdaten, Ausschlüsse, Layout-/Lesefehler und Änderungen
-während der Erfassung. 2.048 Items erfolgreich erfasst; Überschreitung des
-Gesamtbudgets verwirft die gesamte Ausgabe. Reparatur der resultierenden
-privaten Abbilder lässt sämtliche Quelldaten unverändert.
-
-Der native Host besteht 116 Aufrufe mit 1.387 Bedingungen. Neu: Vergleich des
-eigenen Inventarlesers mit der Originalfunktion auf denselben künstlichen Daten,
-Holder-/Possessorpfade und zwölf Registryfälle. Echte Registry-/Typfunktionskopien,
-aber ausdrücklich künstliche nichtwerfende Lock-/Actor-Zugriffsmethoden. Ein
-ungültiges Ergebnis kann weiter einen Actorpointer tragen; Validitätsbyte geprüft.
-Der eigene Reader besitzt noch keine solche Engine-Zugriffsfreigabe.
-
-Alle vier `pdata`-Fragmente des Inventargetters einschließlich ihrer Unwind-
-Ketten werden registriert. Ein absichtlich unzugänglicher privater Slot kehrt
-als erwartete Exception zum Testhost zurück. Der Leser lehnt denselben Bereich
-ohne direkte Dereferenzierung ab. Die bestehende Aktionssuite bleibt bei 1.377
-erfolgreichen Bedingungen. Vollständiger EXE-Hash vor/nach nativer Probe geprüft.
-
-38 EXE-/Metadatenhashes, App v0.5.8 und ursprünglicher Audit unverändert.
-Kein Zugriff auf den Spielprozess/Saves, keine Installation. Echte Engine-Leases,
-Änderungstransaktion/Benachrichtigungen, Bedieneingabe, Loader und B0 bleiben offen.
-Keine neue Spielabnahme, Persistenzzusage oder Rust-/Frontendprüfung behauptet.
-Der vorhandene Windows-CI-Befehl erfasst alle drei Suiten; lokal bestanden,
-kein GitHub-CI-Lauf gestartet.
-
-Nachweise: `.local/repair-runtime-v3-{build-test.log,contract.log,validation.json}`,
-`repair-runtime-v3-{action,reader}-result.json`.
-[Leser, native Belege und verbleibende Grenzen](../runtime/repair/READER_LAYOUT.md).
-
-## Eigene Reparaturaktion 0.2.0 (vorheriger Stand)
-
-Beide CTest-Suiten und MSVC Release mit `/W4 /WX` bestanden. Die neue Aktionssuite
-prüft 1.377 Bedingungen: Einzel-/Bereichsauswahl, Haupt-/Sockelhaltbarkeit,
-No-Wear-Kombination, unveränderte übrige Itembytes, vollständige Batch-Ablehnung
-bei Änderungen, Identitäts-/Mengen-/Layoutfehler, Sentinel- und Grenzwerte,
-Weltwechsel, falsche Threads, Ablauf/Abbruch sowie gleichzeitige Eingaben.
-Ein unklarer Commit sperrt Folgeaufträge; es gibt keine automatische Wiederholung.
-
-Der erweiterte native Host führt insgesamt 83 Aufrufe und 1.252 Prüfbedingungen
-aus. Vier zusätzliche Aufrufe der originalen Updater-Kopie bestätigen die
-Sockelabweichung bei positivem Delta und die korrekte Weiterverarbeitung der
-eigenen Reparaturwerte mit Delta 0, normalem Verschleiß und No-Wear-Override.
-Der Getter und sämtliche Item-/Socketinstanzen sind künstliche Testdaten;
-vollständiger EXE-Hash wird vor und nach der Probe geprüft.
-
-Die neue statische Bibliothek und Testprogramme bleiben im privaten Buildordner.
-Der tatsächliche Spieladapter, Engine-Benachrichtigungen, Bedieneingabe, Loader
-und B0-Installation fehlen weiterhin. Keine Spielabnahme oder Persistenzzusage.
-App v0.5.8 bleibt unverändert; keine neuen Rust-/Frontend-Ergebnisse behauptet.
-38 EXE-/Metadatenhashes, vorhandene App und ursprünglicher Audit unverändert.
-Kein Spielprozess- oder Savezugriff, keine Installation.
-
-Der Windows-CI-Schritt ist ergänzt; sein Befehl wurde lokal ohne Spieldateien
-ausgeführt und bestand beide Suiten. Kein neuer GitHub-CI-Lauf wurde gestartet.
-
-Nachweise: `.local/repair-runtime-v2-{build-test.log,action-result.json,validation.json}`.
-[Implementierung und Reproduktion](../runtime/repair/README.md),
-[Spieladapter-Vertrag](../runtime/repair/ACTION_INTEGRATION.md).
-
-## Reparatur-Laufzeitprototyp 0.1.0 (vorheriger Stand)
-
-Separater C++-Release unter `.local/repair-runtime-build/Release/` gebaut;
-Desktop-App bleibt v0.5.8. CTest-Vertragstest, 79 native Funktionsaufrufe mit
-1.236 Prüfbedingungen, drei Python-Regressionen und zwei bestehende Rust-
-Reparatursperren bestanden. Compilerwarnungen sind Fehler (`/W4 /WX`).
-Kein neuer Frontend-/Tauri-Code; die vorherigen App-Prüfungen wurden dafür
-nicht als neue Tests ausgegeben oder erneut vollständig ausgeführt.
-
-Native Probe: Original, koordinierter Änderungskandidat und Restore; passende,
-leere und unpassende Reparaturregeln; Mengen-/Kostenfälle; Fehlerpfade;
-unveränderte Eingaben/Materialaufträge und leere Prepare-/Commit-Transaktionen.
-Die zwei absichtlich ausgelösten Divisionen durch null bleiben auf den eigenen
-Testhost beschränkt. Quell-EXE vor/nach Ausführung vollständig geprüft.
-Der Audit bestätigt 16 direkte Referenzen, einschließlich überlappender
-Opcode-Kandidaten; indirekte Aufrufe werden nicht als geprüft ausgewiesen.
-
-38 EXE-/Metadatenhashes, ursprünglicher Audit und App-EXE unverändert.
-Kein Spieleprozess-/Savezugriff, kein Loader installiert. Die Reparaturfunktion
-bleibt mangels vollständigem Aufruf-/UI-/Installationspfad gesperrt.
-Diese Probe ist keine Spielabnahme.
-
-Nachweise: `.local/repair-runtime-v1-validation.json`,
-`repair-runtime-v1-build-test.log`, `repair-runtime-v1-audit.json`,
-`repair-runtime-v1-{audit-tests,core-guard,writer-guard}.log`.
-[Reproduktion und Grenzen](../runtime/repair/README.md).
-
-## Zusätzliche Eigenkosten v0.5.8
-
-**Geprüft:** 179 Rust-Tests, eine separat ausgeführte hashgeprüfte Tabellenprobe,
-sieben Frontend-Unit-Tests und 61 UI-Flows. Fmt, Clippy `-D warnings`, TypeScript
-und Release-Build grün. Alle 292 BuffInfo-Records und Tabellenfiles bytegleich
-rekonstruiert; 36 Zusatzkosten bei 0/50/200 Prozent auf präzise Diffs geprüft.
-31 weitere Skill-Eigenkosten einschließlich Einzelwert-Vorrang geprüft.
-
-Fertige EXE v0.5.8: 3.359 Änderungen über 13 Tabellen,
-zwei Apply-/Restore-Zyklen an der Projektkopie. Reapply, Recovery, Startschutz
-und Updateablehnung bestanden. Neue Kostenansicht bei 1.024 Pixeln und fertige
-Vorschau visuell geprüft. 38 EXE-/Metadatenhashes und der ursprüngliche Prüfbericht
-unverändert; keine Live-Anwendung, kein Savezugriff, eigene Testinstanz beendet.
-Die vorhandene Desktop-Verknüpfung öffnet v0.5.8.
-
-Nachweise: `.local/phase5-v9-{rust,pinned,clippy,unit,ui,build}.log`,
-`phase5-v9-native/result.json`, `phase5-v9-validation.json`.
-Phase 5 bleibt wegen der dokumentierten technischen Lücken offen.
-
-Manuelle Ergänzung zur späteren Spielabnahme (jetzt nicht durchführen):
-- Ausrüstungs-Buff mit Zusatzkosten, etwa Myurdin, bei 100/50/0 Prozent prüfen.
-  Ausdauer und Geist getrennt testen; Verhalten nach Ablegen der Ausrüstung.
-- Referenzierte aktive Skills und laufenden Verbrauch getrennt prüfen; ein
-  positiver Regenerationseffekt muss weiter funktionieren.
-- „Weitere Skills: Geist“ für Ressourcenverbrauch/Elementarverstärkung prüfen;
-  individuelle Buffausnahme muss dem Faktor vorgehen. Zusätzlicher Verbrauch
-  außerhalb dieser Tabellenfelder bleibt gesondert zu protokollieren.
-- Gegnerische Drain-Effekte und Dot-Debuffs dürfen unverändert bleiben.
-- Export und Restore müssen die zusätzlichen `buffinfo`-Dateien einschließen.
-
-## Phase-5-Restprüfung v0.5.7 (vorheriger Stand)
-
-**Geprüft:** 176 Rust-Tests, eine separat ausgeführte hashgeprüfte Tabellenprobe,
-sieben Frontend-Unit-Tests und 60 UI-Flows; Fmt, Clippy `-D warnings`, TypeScript
-und Release-Build grün. Alle 6.816 Items auf präzisen Haltbarkeits-Diff und
-Idempotenz geprüft, alle 2.069 vollständigen Skill-Records bytegleich rekonstruiert.
-
-Fertige EXE v0.5.7: 122 Haltbarkeitsänderungen und alle sechs neuen Lager in
-der tatsächlichen UI, Vorschau und im Export geprüft. Insgesamt 3.323
-Änderungen über zwölf Tabellen, zwei Apply-/Restore-Zyklen an der Projektkopie;
-Reapply, Recovery, Startschutz und Updateablehnung bestanden. Neue Lager- und
-Haltbarkeitsansicht bei 1.024 Pixeln sowie Vorschau visuell geprüft. Keine
-Browserfehler. 38 EXE-/Metadatenhashes und ursprünglicher Prüfbericht unverändert.
-Keine Mods live angewendet oder Saveinhalte gelesen. Eigene Testinstanz beendet;
-die bestehende Desktop-Verknüpfung öffnet v0.5.7.
-
-Nachweise: `.local/phase5-v8-{rust,pinned,clippy,unit,ui,build}.log`,
-`phase5-v8-native/result.json`, `phase5-v8-validation.json`.
-Spielabnahmen bleiben verschoben. Phase 5 ist wegen der dokumentierten
-technischen Lücken weiterhin nicht vollständig abgeschlossen.
-
-Zusätzliche Regressionen: alle 6.816 Items auf exakten Haltbarkeits-Diff,
-unveränderte 0-/65535-Werte, Kombination mit Itemänderungen und Idempotenz;
-vollständige Inventar-Move-Strukturen, abgebrochene Eingaben und geschützte
-Spezialcontainer; alle neun Slotbereiche und deren Grenzen; sechs zusätzliche
-Lager zusammen mit Haltbarkeit in UI, Export und Projekt-Apply/Restore.
-
-[Restpunktmatrix und technische Lücken](PHASE5_REMAINING.md).
-Manuelle Spieltests bleiben zurückgestellt.
-
-## Phase-5-Erweiterung v0.5.6 (vorheriger Stand)
-
-Der Reader wird mit einer Gruppenreferenz ungleich Record-ID und eingebetteten
-Kennungsbytes in einem UTF-8-Text geprüft. Beide gültigen Fälle bleiben lesbar;
-ein ungültiger Bufftyp darf nicht durch einen späteren Suffix gerettet werden.
-Zusätzliche Tests trennen u16/u32-Referenzen, negative Ressourcenwerte,
-Regenerationsflag und Itemkostenbytes und prüfen Counts sowie jeden abgeschnittenen
-Präfix eines nichtleeren Beispiels. Sämtliche neuen Inspektionsfelder bleiben
-schreibgeschützt. Bestehende Buffänderungen bewahren den neuen Suffix bytegleich.
-
-Die reale, hashgeprüfte Probe rekonstruiert alle **2.069 vollständigen Records**
-aus 87.697 Basisfeldern, Matrixcounts und 4.607 Buffeinträgen. Keine Lücke in der
-Byteabdeckung außerhalb der Buffmatrix mehr. Die UI-Probe prüft Namens-/Wertesuche,
-leere Treffer, Schutz vor Bearbeitung, unveränderte bestehende Vorschau und
-Darstellung bei 1.024 Pixeln.
-
-**Geprüft:** 175 Rust-Tests, eine separat ausgeführte hashgeprüfte Tabellenprobe,
-sieben Frontend-Unit-Tests und 59 UI-Flows. Fmt, Clippy `-D warnings`, TypeScript
-und Release-Build grün. Alle 2.069 vollständigen Skills bytegenau rekonstruiert.
-
-Fertige EXE v0.5.6: Basisfelder echter Skills per IPC und UI geprüft,
-Referenzen schreibgeschützt; Namens-/Wertesuche sowie Darstellung bei 1.024 Pixeln.
-3.189 reguläre Änderungen über zwölf Tabellen, Export und zwei Apply-/Restore-
-Zyklen an einer Projektkopie erfolgreich. Reapply, Recovery, Startschutz und
-Updateablehnung bestanden. Keine Browserfehler. Die neue Basisdatenansicht und
-die fertige Vorschau wurden visuell geprüft.
-
-38 EXE-/Metadatenhashes und ursprünglicher Prüfbericht unverändert. Keine Mods
-live angewendet, keine Saveinhalte gelesen. Eigene unsichtbare Testinstanz beendet.
-Die bestehende Desktop-Verknüpfung öffnet v0.5.6. Manuelle Spieltests bleiben
-wie vereinbart zurückgestellt.
-
-Nachweise: `.local/phase5-v7-{rust,pinned,clippy,unit,ui,build}.log`,
-`phase5-v7-native/result.json`, `phase5-v7-validation.json`.
-
-Manuelle Workbench-Prüfung nach Abschluss aller Phasen: Skill auswählen,
-**Buffmatrix & vollständiger Datensatz → Basisdaten, Voraussetzungen & Ressourcen**
-öffnen; nach `varyStatAmount`, `parentSkill` und einer Kennung suchen. Originalwerte
-bleiben von vorgemerkten Änderungen getrennt. Nur bereits freigegebene Skillfelder
-oberhalb bearbeiten; Referenzen haben keinen Schreibschalter. Keine neue
-Gameplaywirkung durch die reine Inspektionsansicht behauptet.
-
-## Phase-5-Erweiterung v0.5.5 (vorheriger Stand)
-
-Die Reparatursperre wird mit synthetisch vorhandenen Regeln geprüft: globale
-und individuelle Flags (auch zu unbekannten Itemschlüsseln) müssen vor einer
-anderen gültigen Skilländerung scheitern. Weder Änderungen noch Ersetzungen
-dürfen zurückbleiben. Ein separater Format-Test prüft, dass alte Requests mit
-`free_repair: true` den Writer nicht erreichen; das Flag bleibt für die gezielte
-Korrektur alter Vorlagen lesbar und andere Werte bleiben erhalten.
-
-Der neue UI-Flow gibt absichtlich nichtleere Reparaturmetadaten zurück. Trotzdem
-bleiben beide Schalter zunächst gesperrt. Eine alte Vorlage mit aktivem Flag
-liefert keine exportierbare Vorschau. Das Häkchen lässt sich entfernen; danach
-ist die Vorschau mit den unveränderten übrigen Itemwerten wieder möglich.
-
-Der tatsächliche Nullfehler wurde ausschließlich statisch nachgewiesen, nicht
-im laufenden Spiel ausgelöst.
-
-**Abschluss:** 173 Rust-Tests, eine separat tatsächlich ausgeführte hashgeprüfte
-Tabellenprobe, sieben Frontend-Unit-Tests und 58 UI-Flows erfolgreich. Fmt,
-Clippy `-D warnings`, TypeScript und Release-Build grün.
-
-Nativer unsichtbarer Release-Test v0.5.5: globale und individuelle
-`free_repair: true`-Requests werden per echtem IPC abgelehnt. Normale Vorschau
-mit 3.189 Änderungen über zwölf Tabellen, Export und zwei Apply-/Restore-Zyklen
-an einer Projektkopie erfolgreich. Reapply, Recovery, Startschutz und
-Updateablehnung bestanden. Reparaturansicht bei 1.024 Pixeln und fertige
-Vorschau visuell geprüft; keine Browserfehler. 38 EXE-/Metadatenhashes und
-der ursprüngliche Prüfbericht unverändert. Keine Mods live angewendet und keine
-Saveinhalte gelesen. Eigene Testinstanz beendet. Spielabnahme weiter auf Nutzerwunsch vertagt.
-
-Belege: `.local/phase5-v6-rust.log`, `phase5-v6-pinned.log`,
-`phase5-v6-clippy.log`, `phase5-v6-unit.log`, `phase5-v6-ui.log`,
-`phase5-v6-build.log`, `phase5-v6-native/result.json`,
-`phase5-v6-validation.json`. Kostenfreie Reparatur gilt weiterhin als offen;
-Phase 5 ist noch nicht vollständig entwickelt.
-
-## Phase-5-Erweiterung v0.5.4 (vorheriger Stand)
-
-Neue Prüfungen decken die vollständige Feldabgrenzung von neun Summon-Payloads
-und einem AddSubLevel-Payload ab. Alle 4.607 Matrixeinträge der 2.069 Skills
-werden aus den angezeigten Werten bytegleich rekonstruiert. Die beiden neuen
-Varianten enthalten keine editierbaren Payloadfelder. Tests lehnen Änderungen
-an Referenzen, Counts und neu gelesenen Zeit-/Spawnwerten ab. Bestehende
-Common-Buffänderungen müssen den Summon-Payload unverändert erhalten.
-
-Synthetische Fälle: nichtleere Select-Liste, mehrbyteiger UTF-8-Text und dadurch
-verschobene Folgefelder, jeder abgeschnittene Summon-Präfix, übergroße Counts
-und nicht unterstützte eingebettete Bedingungen. AddSubLevel-Referenz und
-unbekanntes Vier-Byte-Feld werden einzeln geprüft; keine i64-Umdeutung.
-
-UI: Feldnamensuche einschließlich Groß-/Kleinschreibung, keine Treffer,
-Rücksetzen des Suchfilters und keine Schreibfelder für neue Payloadwerte.
-Ein anfänglicher neuer Test erwartete bei unverändertem Formular einen
-Advanced-Request; korrekt ist dessen vollständiges Weglassen. Die Assertion
-wurde entsprechend korrigiert, ohne den Produktcode dafür zu ändern.
-**Abschluss:** 171 Rust-Tests, eine separat tatsächlich ausgeführte hashgeprüfte
-Tabellenprobe, sieben Frontend-Unit-Tests und 57 UI-Flows erfolgreich. Fmt,
-Clippy `-D warnings`, TypeScript und Release-Build grün. Nach einer abschließenden
-Textpräzisierung wurde der Release erneut gebaut; der native Test verwendet
-nur diese fertige v0.5.4 und prüft zusätzlich deren Versionsanzeige.
-
-Nativer unsichtbarer Release-Test: alle zehn neuen Payloads über echtes IPC,
-Referenzschutz und Feldnamensuche; 3.189 Änderungen über zwölf Tabellen,
-Export und zwei Apply-/Restore-Zyklen an einer Projektkopie. Reapply, Recovery,
-Startschutz und Updateablehnung bestanden. Summon-Ansicht bei 1.024 Pixeln und
-fertige Vorschau visuell geprüft; auch der innere Detailbereich hat keinen
-horizontalen Überlauf. Keine Browserfehler. 38 EXE-/Metadatenhashes und der
-ursprüngliche Prüfbericht unverändert; keine Live-Anwendung oder Saveinhalte
-gelesen. Eigene Testinstanz anschließend beendet.
-
-Belege: `.local/phase5-v5-rust.log`, `phase5-v5-pinned-final.log`,
-`phase5-v5-clippy.log`, `phase5-v5-unit.log`, `phase5-v5-ui.log`,
-`phase5-v5-build-final.log`, `phase5-v5-native/result.json`,
-`phase5-v5-validation.json`. Manuelle Spieltests bleiben zurückgestellt;
-Phase 5 gilt weiterhin nicht als vollständig entwickelt.
-
-## Phase-5-Erweiterung v0.5.3 (vorheriger Stand)
-
-**169 Rust-Tests**, **1 separat ausgeführte lokale Tabellenprobe**,
-**7 Frontend-Unit-Tests** und **56 UI-Flows bestanden**. Fmt, Clippy mit
-`-D warnings` und TypeScript erfolgreich.
-
-- Wiederbesetzung: vollständige Struktur, leere Listen, übergroße Counts,
-  abgeschnittene Records, Suffixbytes und Timer-Sentinels; Faktor, Einzelausnahme
-  und Grenzen. Alle 108 echten Regeln werden geparst und halbiert, ausschließlich
-  die vier Bytes von `delayTime` dürfen sich unterscheiden. Questverknüpfungen,
-  Bedingungen, Raten, Close-Timer, Knoten und Schutzwerte bleiben bytegleich.
-  Header/Body werden erneut aufgebaut und eingelesen. Der Integrationstest
-  exportiert und entpackt nun zwölf geänderte Tabellen.
-- Inventar: beide Felder aller drei echten Inventare erlauben 1460;
-  1461 und 65535 werden backendseitig abgelehnt. Die UI übernimmt dieselbe
-  Grenze aus dem Katalog und blockiert ungültige Vorschauen.
-- Die optional neue Request-Eigenschaft bleibt bei alten Requests vollständig
-  abwesend. Vorschau, Einzelausnahmen, Rücksetzen und getrennte Patrouillen-
-  /Spawn-Einstellungen werden im UI geprüft.
-- Ein neuer UI-Test deckte einen bestehenden Freigabe-Randfall auf: Eine
-  ungültige sichtbare Zahl änderte den letzten gültigen Request nicht. Die
-  DOM-Gültigkeit wird jetzt nach den Eingabe-Handlern berücksichtigt. Export,
-  Probe und Live-Dateivorschau werden gesperrt; eine vorbereitete Live-Freigabe
-  verfällt und kehrt nach Korrektur nicht automatisch zurück. Frühere
-  fehlschlagende Testläufe bleiben als Diagnose erhalten; der abschließende
-  vollständige Lauf ist grün.
-
-Belege: `.local/phase5-v4-rust.log`, `phase5-v4-pinned-final.log`,
-`phase5-v4-clippy.log`, `phase5-v4-unit.log`, `phase5-v4-ui-pass.log`.
-Die Tabellenprobe bleibt im gewöhnlichen Workspace-Test explizit `ignored`
-und wurde zusätzlich separat tatsächlich ausgeführt.
-
-Nativer unsichtbarer Release-Test v0.5.3: **3.189 Änderungen über zwölf Tabellen**,
-108 Wiederbesetzungsregeln (davon eine Einzelausnahme), 2.922 Advanced-Records,
-Export und zwei Apply-/Restore-Zyklen ausschließlich an der Projektkopie.
-Reapply, Recovery, Startschutz und Updateablehnung bestanden. Alle 38 geprüften
-EXE-/Metadatendateien und der ursprüngliche Prüfbericht blieben identisch;
-Spiel lief, keine Live-Anwendung oder initialisierte Workbench im Spielordner,
-keine Saveinhalte gelesen. Weltansicht bei 1.024 Pixeln und fertige Vorschau
-visuell geprüft; kein horizontaler Überlauf, keine Browserfehler. Eigene
-Testinstanz anschließend beendet. Belege: `.local/phase5-v4-native/result.json`,
-`phase5-v4-build.log`, `phase5-v4-validation.json`.
-
-## Phase-5-Erweiterung v0.5.2 (vorheriger Stand)
-
-**167 Rust-Tests**, zusätzlich **1 explizite lokale Tabellenprobe**,
-**7 Frontend-Unit-Tests** und **53 UI-Flows bestanden**. Fmt und Clippy mit
-`-D warnings` erfolgreich. Zwei anfängliche UI-Testassertionen unterschieden
-zwischen einem fehlenden optionalen Property und `undefined`; die produktive
-JSON-/Plan-Kanonisierung ließ beides korrekt aus. Die korrigierten Tests prüfen
-weiterhin, dass das Entfernen von Overrides keinen veralteten Plan hinterlässt.
-
-Neue Prüfungen: genaue i64-Änderung und Identität aller übrigen Buffbytes;
-Grenzen, Bruchzahlen, Exponenten, unbekannte Pfade, strukturelle Felder,
-Referenzen und opake Werte werden abgelehnt. Graphkurven bleiben geschützt.
-Cooldown- und Buffänderung am selben realen Skill kommen gemeinsam im Overlay an.
-Alte Requests ohne neue optionale Felder behalten ihre serialisierte Form.
-
-Patrouillen: beide Originaltimer, Faktor und Einzelüberschreibung, positive
-Grenzen, Sentinelablehnung und abgeschnittene Präfixe. Alle übrigen Stagebytes
-und Records bleiben unverändert. Stadtflug: exakte Regelidentität, Ausdruck,
-Baum und Flags; Fremdwerte und bereits geänderte Regeln werden abgelehnt.
-Beide Bedienoptionen ändern nur denselben Conditionrecord; alle anderen
-10.797 Bedingungen bleiben byteidentisch. Die Archivintegration baut und
-entpackt elf Tabellen ausschließlich im Projekt-/Temp-Bereich.
-
-Finale Protokolle: `.local/phase5-v3-rust-final.log`,
-`.local/phase5-v3-pinned-final.log`, `.local/phase5-v3-clippy-final.log`,
-`.local/phase5-v3-unit.log`, `.local/phase5-v3-ui-final.log`.
-Der optionale Tabellenprobentest bleibt im normalen Workspace-Lauf `ignored`
-und wurde separat tatsächlich ausgeführt. Manuelle Spielabnahme weiterhin offen.
-
-TypeScript und Release-Build erfolgreich. Nativer unsichtbarer Test der EXE
-v0.5.2: **3.081 Änderungen über elf Tabellen**, i64-Buffänderung plus Cooldown,
-beide Patrouillen-Timer und Stadtflug-Regel im selben Plan; Export und zwei
-Apply-/Restore-Zyklen nur an der Projektkopie. Reapply, Recovery, Start-/Backup-
-Schutz und Updateablehnung erfolgreich. Alle 38 geprüften EXE-/Metadatendateien
-und der ursprüngliche Prüfbericht unverändert; Spiel lief, keine Live-Anwendung
-oder initialisierte `.workbench` im Spiel. Eigene Testinstanz danach beendet.
-Screenshots bei 1.024/1.440 Pixeln visuell geprüft. Der erste native Start in
-der Sandbox hatte keinen erreichbaren WebView-Testzugang; der abschließende
-Lauf mit lokalem Testprofil und nötigen Ausführungsrechten bestand vollständig.
-Belege: `.local/phase5-v3-native/result.json`, `.local/phase5-v3-build.log`,
-`.local/phase5-v3-validation.json`.
-
-## Phase-5-Erweiterung v0.5.1 (vorheriger Stand)
-
-**162 Rust-Tests**, zusätzlich **1 explizite lokale Tabellenprobe**,
-**7 Frontend-Unit-Tests** und **51 UI-Flows bestanden**. Fmt, Clippy mit
-`-D warnings`, TypeScript und Release-Build erfolgreich.
-
-Neue Prüfungen: Enchant-Kopie mit Preisen/Buffs/Stats, sortierte Einfügung
-mit korrekten Trennern, Ablehnung doppelter Ziele, verketteter Kopierquellen,
-unbekannter Quellen und nicht bestätigter Originalstrukturen. Statänderung
-auf neuer Stufe, neu aufgebaute Header und unveränderte andere Itemrecords.
-Stacks werden auch nach neu hinzugefügten Buffs/Enchant-Zeilen geprüft.
-Alte Vorlagen ohne Kopierregeln bleiben kompatibel; leere optionale Listen
-machen eine Vorschau nicht fälschlich veraltet.
-
-Alle 2.069 Skillmatrizen und 4.607 Einträge einschließlich null sind vollständig
-und lückenlos inspizierbar. Jede ausgegebene Feldrepräsentation wird im Test
-zurück in Bytes gewandelt und mit den Originalbytes verglichen. Tests für
-abgeschnittene Daten, ungültige Flags/Counts, zusätzliche Bytes und signed
-Werte; neue IPC-Abfrage lehnt veraltete Sitzungen ab. Buffwerte bleiben
-schreibgeschützt, Rohdaten/Typgrenzen sind keine bestätigte Gameplaysemantik.
-
-Nativer unsichtbarer Lauf: `.local/phase5-v2-native/result.json`, **3.077
-Änderungen über neun Tabellen**, neue Enchant-Stufe und Skillmatrixansicht,
-Export und zwei Apply-/Restore-Zyklen nur an Projektkopien. Reapply, Recovery,
-Start-/Backupschutz und Updateablehnung erfolgreich. Alle 38 geprüften
-EXE-/Metadatenhashes und der ursprüngliche Prüfbericht unverändert. Spiel
-lief; keine initialisierte `.workbench` in der Installation, keine Live-Anwendung.
-Screenshots bei 1.024 und 1.440 Pixeln visuell geprüft.
-
-Protokolle: `.local/phase5-v2-{rust,pinned,unit,ui,clippy}-final.log`,
-`.local/phase5-v2-build.log`, `.local/phase5-v2-validation.json`.
-
-## Phase-5-Prüfungen v0.5.0 (vorheriger Stand)
-
-Rust-Workspace plus lokale zusätzliche Echtdateiprobe, Frontend-Unit-Tests und
-Headless-UI-Flows prüfen den neuen Stand. Finale Protokolle und Zählungen liegen
-unter `.local/phase5-*-final.log` bzw. `.local/phase5-validation.json`.
-
-Ergebnis: **158 Rust-Tests**, zusätzlich **1 lokale Tabellenprobe**,
-**6 Frontend-Unit-Tests** und **49 UI-Flows bestanden**. Der optionale
-Tabellenprobentest wird im allgemeinen Workspace-Lauf übersprungen und wurde
-separat explizit ausgeführt. Fmt, Clippy `-D warnings`, TypeScript und
-Release-Build erfolgreich.
-
-Neue Kernprüfungen: negative Kosten ohne Veränderung positiver Regeneration;
-Originalaufbau statt wiederholter Multiplikation; Präzedenz global → Skill →
-Einzelfeld; unveränderte opake Bytes; Sentinel-Erhalt, Überlaufablehnung,
-unbekannte IDs/Kategorien/Felder; gesperrte nicht vorhandene Reparaturregeln.
-Die lokale hashgeprüfte Probe liest alle unterstützten Records, verändert
-mehrere Tabellen, fügt einen Stat ein und prüft den neuen Header sowie alle
-anderen Itemrecords auf Byteidentität. Die reguläre Echtdateiintegration
-baut ein Overlay mit neun Tabellen und entpackt es ausschließlich in Temp.
-
-Frontend: exakte Requests, kanonischer Vergleich nach Rust-Sortierung,
-ungültige Eingaben, gesperrte Reparaturoption, vorzeichenbehaftete Skillwerte,
-lokale Vorlagen über Neustart und auf ein anderes Item, späte IPC-Antworten
-und 1024px ohne horizontalen Überlauf. Ungültiger Vorlagenspeicher wird verworfen.
-
-Nativer Lauf `.local/phase5-native/result.json`: v0.5.0, 2.811 Records,
-2.069 Skills, 6.816 Items, 2.833 Items ohne erkannte Zustandsmerkmale,
-0 Items mit Reparaturregeln, 3.076 geplante Änderungen über neun Tabellen.
-Projektprobe mit zwei Apply-/Restore-Zyklen, Reapply, Recovery, gehaltenem
-Schutz und Updateablehnung bestanden. 38 Original-EXE-/Metadatendateien
-und der ursprüngliche Audit unverändert. Kein Live-Apply, kein Savezugriff,
-keine Steuerung oder Sperre des laufenden Spiels. Screenshots wurden geprüft.
-
-### Manuelle Abnahme B4–B11 – erst nach allen Entwicklungsphasen
-
-Alle folgenden Punkte sind **offen**, keiner wurde automatisiert als Gameplay-
-Erfolg gewertet. Voraussetzungen aus dem B0-Prüfplan gelten weiterhin.
-Jeweils ein kleines, eindeutig beobachtbares Beispiel einzeln prüfen und
-danach Restore durchführen. Bei jeder Zeile Original-/Mod-/Restore-Beobachtung
-und Buildnummer dokumentieren.
-
-| Modul | Spätere Prüfung |
+`steam-25455892-gamedata-2.3-v2`, `certified_vanilla=false`; Table call successful. An own PE test stock with unknown version `0.5.9.0` is rejected with Exit 2 and version errors before a modbackup is checked. This Workbench-EXE copied as a test file was not executed.
+- Real release app v0.5.9 in the specially launched hidden test window:
+3,359 Changes reviewed over 13 tables, 2,069 skills, nine inventory areas, 122 no-wear items, 36 buff additional costs and 31 skill self-consumption costs. Repair remains locked in the surface as well as in direct requests. Passed two apply/restore cycles on a project copy including reapplication, recovery, launch protection and simulated update rejection. No lateral errors; 1,024 pixel views checked, final view additionally visually controlled.
+- The game ran during the app rehearsal. 38 EXE/metadata hashes and the original
+audit remained unchanged; There is no live apply and no B0 setup.
+
+The normal Tauri build output could not replace a now open older Workbench (`os error 5`). The already compiled release EXE from `target/release/deps` was provided as `target/release/crimson-workbench-0.5.9.exe` after version/hash control and exactly this file was checked in the above desktop test. SHA-256: `30eba52e4d07237aabe35ae1ca9a6daa3de07607be1f1e8ee2db62a72cba7b18`, 16,183,808 bytes. Desktop shortcut and start script use this file; The existing window was not closed.
+
+The native repair runtime is therefore not approved for the new EXE. A separate read-only RTTI/pdata sample recaptures eight relevant VTables. The lack of functional limits remains explicitly indeterminate; No native execution and no transfer of old addresses.
+
+Evidence: `.local/phase5-build-update-{workspace-tests,pinned-tests,frontend-tests,ui-tests,clippy}.log`, `phase5-build-update-{fingerprint,tables,unknown-version,delivery,shortcut}.json`, `.local/phase5-build25455892-native/result.json` and `.local/build-25455892-table-comparison.json`. [Extent of build](BUILD_SUPPORT.md), [Subsequent user acceptance](../TESTCHECKLISTE.md).
+
+## Registry source adapter 0.7.0 and build change (previous app status)
+
+User-readable cases with expected values: [TESTCHECKLISTE.md](../TESTCHECKLISTE.md). Five CTest suites and MSVC release `/W4 /WX` passed: 55 new registry conditions, 249 reader/reference conditions, 25 lock group conditions, 1,481 action conditions. The new adapter tests use artificial manager lookups and two different sharing methods. Errors in both sources, same actor address, zero binding, full identifier, correct context binding and exact one-time return are checked.
+
+The installed EXE is now 1.0.0.2949 / Steam 25455892. 24 of the previously 38 captured files differ. The pinned native host rejects the new EXE; This was tested as an expected negative test. CLI fingerprint reports `metadata_matches=false` and `read_schema_supported=false`. The additional CLI table test already stops at the missing project sample backup; it does not occupy a specific build error message. No native test of success for 0.7.0 and no new UI/Rust/table roundtrip test claimed.
+
+App and audit unchanged. 38 new observed hashes confirmed again after work. No game/savewrite operations and no process interaction. Evidence: `.local/repair-runtime-v7-{build-test.log,validation.json,build-refusals.json}`, `repair-runtime-v7-{action,reader,lease,registry}-result.json` and `repair-runtime-v7-current-fingerprint.json`. [Build Observation](builds/steam-25455892.observed.json), [Treaty and borders](../runtime/repair/REGISTRY_INTEGRATION.md).
+
+## Repair reference management 0.6.0 (previous status)
+
+Four CTest suites and MSVC release `/W4 /WX` passed. 249 Reader/Reference Conditions, 25 Group Conditions and 1,481 Action Conditions. New Evidence: Acquisition error of both sources, balanced release also of invalid documents, blocking from references, full identifier, Alive/Destruction state before/after capture, dual/aliased owners, wrong thread, uncopiable possession and exception wind.
+
+203 native calls and 3,859 conditions. 13 Reference scenarios with original purchase, existing reference check, PaPtr release and concrete actor release. The actual release override was controlled on five Actor VTables. Checked are both direct TLS modes and the registered path, delayed destruction, invalid receipts with pointer, special receipts and pending cleanup. Three TLS read accesses are redirected to private data; Threadmap, embedded locks and cleanup/destruction dependencies remain fixture callbacks. No claim of a full live host or actual game events.
+
+38 Installation hashes, app and original audit unchanged. No game/save access; No new Rust/front end check. Evidence: `.local/repair-runtime-v6-build-test.log`, `.local/repair-runtime-v6-validation.json`, `repair-runtime-v6-{action,reader,lease}-result.json`. [Details and limits](../runtime/repair/REFERENCE_INTEGRATION.md).
+
+## Repair owner locks 0.5.0 (previous status)
+
+Four CTest suites and MSVC release `/W4 /WX` passed. 1,481 Action Conditions, 163 Reader Conditions and 25 Conditions for the blocking group. Reader samples deny item access without both locks; Error cases check return of both locks, incorrect bindings, changed anchors and identical lock objects.
+
+140 native calls with 2,408 conditions. Original try/release copies use real Windows SRW imports on their own test objects. Tested are exclusivity, recursion, competing threads, retrieval at second lock and rejection of a write attempt at held read lock. Exactly one nine-byte long TLS read access of the try copy is redirected to private data per thread; Restbytes are unchanged. This complements the older samples with their lock stubs.
+
+EXE verified before/after sample; 38 Installation hashes, app and original audit unchanged. No new app test run, no game/save accesses. Durability references of the real game objects and the engine commit are missing. Evidence: `.local/repair-runtime-v5-build-test.log`, `.local/repair-runtime-v5-validation.json` and `repair-runtime-v5-{action,reader,lease}-result.json`. [Details and limits](../runtime/repair/LOCK_INTEGRATION.md).
+
+## Repair final control 0.4.0 (previous status)
+
+Three CTest suites and MSVC release `/W4 /WX` passed. 1,481 Conditions for the action, 124 for the unchanged reader. New tests: asynchronously accepted orders do not count as a success yet; Confirmation needs all after values and events. Stranger IDs, old sessions with the same ID, wrong thread, double confirmation, partial changes, missing items, catalog/world change and timeout. After acceptance, no termination/retry; Unclear conclusion permanently blocks the queue.
+
+122 native calls with 2,221 conditions. Six additional cases in the client corner: partial change and socket removal before list errors, correct images with delta 0, wrong server list despite correct images, normal wear as an apparent success, successful socket removal and missing slot with error code 0. The post-downgrade test distinguishes these cases from the actual repair goal.
+
+Original updater, lock constructor and base remover; For the client, exactly one nine-byte TLS access to private test data is redirected. All other Ack bytes tested unchanged, three base unwind fragments together with prologue chain registered. UI, list allocation and virtual lock methods are stubs. No real game event shipping and no complete engine commit. EXE tested before/after sample. 38 EXE/metadata hashes, audit and app unchanged; No game process/save access. No new Rust/front end check claimed.
+
+Evidence: `.local/repair-runtime-v4-{build-test.log,contract.log,validation.json}`, `repair-runtime-v4-{action,reader}-result.json`. [Contract conclusion, native findings and test limits](../runtime/repair/ACK_INTEGRATION.md).
+
+## Reading repair adapter 0.3.0 (previous)
+
+Three CTest suites and MSVC release `/W4 /WX` passed. 124 Conditions check the reader: client/server assignment via character identifier, possessor/owner checks, only existing items in the character inventory and equipment, UID/slot match, socket data, exclusions, layout/reading errors and changes during capture. 2,048 Items successfully captured; Exceeding the total budget discards the entire expenditure. Repair of the resulting private images leaves all source data unchanged.
+
+The native host exists 116 calls with 1,387 conditions. New: Comparison of the own inventory reader with the original function on the same artificial data, Holder/Possessor paths and twelve registry cases. Real registry/type function copies, but explicitly artificial non-throwing lock/actor access methods. An invalid result can still carry an actor pointer; Validity byte checked. Your own reader does not yet have such an engine access release.
+
+All four `pdata` fragments of the inventory getter, including their unwind chains, are registered. An intentionally inaccessible private slot returns to the test host as an expected exception. The reader rejects the same area without direct dereference. The existing action suite remains at 1,377 successful conditions. Complete EXE hash tested before/after native sample.
+
+38 EXE/metadata hashes, app v0.5.8 and original audit unchanged. No access to the game process/saves, no installation. Real engine leases, change transaction/notifications, operator input, loader and B0 remain open. No new in-game validation, persistence commitment or Rust/front end check claimed. The existing Windows CI command captures all three suites; passed locally, no GitHub-CI run started.
+
+Evidence: `.local/repair-runtime-v3-{build-test.log,contract.log,validation.json}`, `repair-runtime-v3-{action,reader}-result.json`. [Readers, native receipts and remaining boundaries](../runtime/repair/READER_LAYOUT.md).
+
+## Own repair action 0.2.0 (previous status)
+
+Both CTest suites and MSVC release with `/W4 /WX` passed. The new action suite checks 1,377 conditions: single/range selection, main/socket durability, no-wear combination, unchanged remaining item bytes, complete batch rejection for changes, identity/quantity/layout errors, sentinel and layout limits, world change, wrong threads, expiration/termination and simultaneous inputs. An unclear commit blocks follow-up orders; There is no automatic repetition.
+
+The extended native host runs a total of 83 calls and 1,252 check conditions. Four additional calls to the original Updater copy confirm the base deviation at positive delta and the correct further processing of your own repair values with delta 0, normal wear and no-wear override. The getter and all item/socket punches are artificial test data; complete EXE hash is tested before and after the sample.
+
+The new static library and test programs remain in the private buildorder. The actual game adapter, engine notifications, operator input, loader and B0 installation are still missing. No in-game validation or persistence commitment. App v0.5.8 remains unchanged; No new Rust/frontend results claimed. 38 EXE/metadata hashes, existing app and original audit unchanged. No gaming process or save access, no installation.
+
+The Windows CI step is supplemented; his command was executed locally without game files and passed both suites. No new GitHub CI run has been started.
+
+Evidence: `.local/repair-runtime-v2-{build-test.log,action-result.json,validation.json}`. [Implementation and reproduction](../runtime/repair/README.md), [Game adapter contract](../runtime/repair/ACTION_INTEGRATION.md).
+
+## Repair runtime prototype 0.1.0 (previous)
+
+Separate C++ release built under `.local/repair-runtime-build/Release/`; Desktop app remains v0.5.8. CTest contract test, 79 native function calls with 1,236 test conditions, three Python regressions and two existing Rust repair locks passed. Compiler warnings are errors (`/W4 /WX`). No new frontend/Tauri code; the previous app checks were not issued as new tests or re-executed completely.
+
+Native sample: original, coordinated change candidate and restore; Appropriate, empty and inappropriate repair rules; volume/cost cases; error paths; unchanged inputs/material orders and empty prepare/commit transactions. The two intentionally triggered divisions by zero remain limited to their own test host. Source EXE fully verified before/after execution. The audit confirms 16 direct references, including overlapping opcode candidates; Indirect calls shall not be identified as audited.
+
+38 EXE/metadata hashes, original audit and app EXE unchanged. No game process/save access, no loader installed. The repair function remains blocked due to the lack of a complete call/UI/installation path. This sample is not in-game validation.
+
+Evidence: `.local/repair-runtime-v1-validation.json`, `repair-runtime-v1-build-test.log`, `repair-runtime-v1-audit.json`, `repair-runtime-v1-{audit-tests,core-guard,writer-guard}.log`. [Reproduction and borders](../runtime/repair/README.md).
+
+## Additional own costs v0.5.8
+
+**Tested:** 179 Rust Tests, a separately executed hash-tested table sample, seven front-end unit tests and 61 UI flows. Fmt, Clippy `-D warnings`, TypeScript and release build green. All 292 BuffInfo records and table files byte-identical reconstructed; 36 Additional costs at 0/50/200 percent checked for precise diffs. 31 further Skill own costs including single value priority checked.
+
+Finished EXE v0.5.8: 3,359 Changes over 13 tables, two apply/restore cycles on the project copy. Reapply, Recovery, launch protection and Update Rejection passed. New cost view at 1,024 pixels and finished preview visually checked. 38 EXE/metadata hashes and the original test report unchanged; no live application, no save access, own test instance terminated. The existing desktop shortcut opens v0.5.8.
+
+Evidence: `.local/phase5-v9-{rust,pinned,clippy,unit,ui,build}.log`, `phase5-v9-native/result.json`, `phase5-v9-validation.json`. Phase 5 remains open due to the documented technical gaps.
+
+Manual addition to the later in-game validation (do not perform now):
+- Test equipment buff with additional costs, such as myurdine, at 100/50/0 percent.
+Test endurance and mind separately; Behaviour after discharging the equipment.
+- Test referenced active skills and ongoing consumption separately; one
+Positive regeneration effect must continue to work.
+- “Additional Skills: Spirit” for resource consumption/elemental gain testing;
+The individual buff exception must take precedence over the factor. Additional consumption outside these table fields shall be recorded separately.
+- Enemy drain effects and dot debuffs may remain unchanged.
+- Export and Restore must include the additional `buffinfo` files.
+
+## Phase 5 residual test v0.5.7 (previous status)
+
+**Tested:** 176 Rust Tests, a separately executed hash-tested table sample, seven front-end unit tests and 60 UI flows; Fmt, Clippy `-D warnings`, TypeScript and release build green. All 6,816 items tested for precise durability diff and idem potency, all 2,069 complete skill records byte-identical reconstructed.
+
+Finished EXE v0.5.7: 122 Durability changes and all six new bearings tested in the actual UI, preview and export. Total 3,323 changes over twelve tables, two apply/restore cycles to the project copy; Reapply, Recovery, launch protection and Update Rejection passed. New storage and durability view at 1,024 pixels as well as preview visually tested. No browser errors. 38 EXE/metadata hashes and original test report unchanged. No mods applied live or saved content read. Own test instance terminated; The existing desktop shortcut opens v0.5.7.
+
+Evidence: `.local/phase5-v8-{rust,pinned,clippy,unit,ui,build}.log`, `phase5-v8-native/result.json`, `phase5-v8-validation.json`. Matches will be postponed. Phase 5 is still not fully completed due to the documented technical gaps.
+
+Additional regressions: all 6,816 items on exact durability diff, unchanged 0/65535 values, combination with item changes and idem potency; complete inventory move structures, aborted inputs and protected special containers; all nine slot areas and their limits; six additional warehouses along with durability in UI, export and project apply/restore.
+
+[Residual point matrix and technical gaps](PHASE5_REMAINING.md). Manual in-game tests remains deferred.
+
+## Phase 5 extension v0.5.6 (previous status)
+
+The reader is checked with a group reference unlike Record ID and embedded identifier bytes in a UTF 8 text. Both valid cases remain legible; an invalid buff type must not be rescued by a later suffix. Additional tests separate u16/u32 references, negative resource values, regeneration flag, and item cost bytes, and check counts and any truncated prefix of a non-empty example. All new inspection fields remain write-protected. Existing buff changes preserve the new suffix byte-identical.
+
+The real, hash-tested sample reconstructs all **2,069 complete records** from 87,697 base fields, matrix counts and 4,607 buff entries. No more gap in the byte cover outside the buff matrix. The UI sample checks name/value search, blank hits, protection against editing, unchanged existing preview and display at 1,024 pixels.
+
+**Tested:** 175 Rust Tests, a separately executed hash-tested table sample, seven front-end unit tests and 59 UI flows. Fmt, Clippy `-D warnings`, TypeScript and release build green. All 2,069 complete skills byte accurately reconstructed.
+
+Finished EXE v0.5.6: Base fields of real skills tested via IPC and UI, references protected by write protection; Name/value search and display at 1,024 pixels. 3,189 regular changes over twelve tables, export and two apply/restore cycles on one project copy successfully. Reapply, Recovery, launch protection and Update Rejection passed. No browser errors. The new basic data view and the finished preview were visually checked.
+
+38 EXE/metadata hashes and original test report unchanged. No mods applied live, no save content read. Own invisible test instance terminated. The existing desktop shortcut opens v0.5.6. Manuals in-game tests remain deferred as agreed.
+
+Evidence: `.local/phase5-v7-{rust,pinned,clippy,unit,ui,build}.log`, `phase5-v7-native/result.json`, `phase5-v7-validation.json`.
+
+Manual Workbench check after completion of all phases: select skill, open **Buffmatrix & complete data set → Basic data, prerequisites & resources**; search for `varyStatAmount`, `parentSkill` and an identifier. Original values remain separate from pre-registered changes. Edit only already released skill fields above; References do not have a write desk. No new gameplay effect claimed by the pure inspection view.
+
+## Phase 5 extension v0.5.5 (previous status)
+
+The repair lock is checked with synthetically existing rules: global and individual flags (even to unknown item keys) must fail before another valid skill change. Neither changes nor replacements must be left behind. A separate format test checks that old requests with `free_repair: true` do not reach the writer; the flag remains readable for the targeted correction of old templates and other values are retained.
+
+The new UI flow returns intentionally non-empty repair metadata. Nevertheless, both switches remain blocked at first. An old template with an active flag does not provide an exportable preview. The tick can be removed; then the preview with the remaining unchanged item values is again possible.
+
+The actual zero error was only statically proven, not triggered in the current game.
+
+**Completion:**173Rust Tests, a separately executed hash-tested table sample, seven front-end unit tests and 58 UI flows successfully. Fmt, Clippy `-D warnings`, TypeScript and release build green.
+
+Native invisible release test v0.5.5: global and individual `free_repair: true` requests are rejected via real IPC. Normal preview with 3,189 changes over twelve tables, export and two apply/restore cycles on one project copy successfully. Reapply, Recovery, launch protection and Update Rejection passed. Repair view at 1,024 pixels and finished preview visually checked; No browser errors. 38 EXE/metadata hashes and the original test report unchanged. No mods applied live and no save content read. Own test instance terminated. in-game validation continues to be postponed on user request.
+
+Proofs: `.local/phase5-v6-rust.log`, `phase5-v6-pinned.log`, `phase5-v6-clippy.log`, `phase5-v6-unit.log`, `phase5-v6-ui.log`, `phase5-v6-build.log`, `phase5-v6-native/result.json`, `phase5-v6-validation.json`. Free repair is still considered open; Phase 5 is not yet fully developed.
+
+## Phase 5 extension v0.5.4 (previous status)
+
+New checks cover the complete field delineation of nine sumon payloads and one AddSubLevel payload. All 4,607 matrix entries of the 2,069 skills are reconstructed from the displayed values byte-identical. The two new variants do not contain editable payload fields. Tests reject changes to references, counts, and newly read time/spawn values. Existing common buff changes must keep the summon payload unchanged.
+
+Synthetic cases: non-empty select list, multi-byte UTF 8 text and consequently shifted follower fields, each truncated summon prefix, oversized counts and unsupported embedded conditions. AddSubLevel reference and unknown four-byte field are checked individually; No i64 reinterpretation.
+
+UI: field name search including upper case, no hits, reset search filter and no write fields for new payload values. An initial new test expected an Advanced Request with an unchanged form; It is correct to omit it completely. The assertion has been corrected accordingly without changing the product code for it. **Completion:**171Rust Tests, a separately executed hash-tested table sample, seven front-end unit tests and 57 UI flows successfully. Fmt, Clippy `-D warnings`, TypeScript and release build green. After a final text clarification, the release was built again; the native test uses only this finished v0.5.4 and additionally checks its version display.
+
+Native invisible release test: all ten new payloads via real IPC, reference protection and field name search; 3,189 Changes over twelve tables, export and two apply/restore cycles to a project copy. Reapply, Recovery, launch protection and Update Rejection passed. Summon view at 1,024 pixels and finished preview visually checked; Even the inner detail area does not have a horizontal overflow. No browser errors. 38 EXE/metadata hashes and the original test report unchanged; No live application or save content read. Own test instance then terminated.
+
+Proofs: `.local/phase5-v5-rust.log`, `phase5-v5-pinned-final.log`, `phase5-v5-clippy.log`, `phase5-v5-unit.log`, `phase5-v5-ui.log`, `phase5-v5-build-final.log`, `phase5-v5-native/result.json`, `phase5-v5-validation.json`. Manual in-game tests remain deferred; Phase 5 is still not considered fully developed.
+
+## Phase 5 extension v0.5.3 (previous status)
+
+**169Rust-Tests**, **1 separately executed local table sample**, **7 Frontend unit tests** and **56 UI flows passed**. Fmt, Clippy with `-D warnings` and TypeScript successful.
+
+- Re-occupation: complete structure, empty lists, oversized counts,
+truncated records, suffixbytes and timer sentinels; Factor, individual exception and limits. All 108 real rules are parsed and halved, only the four bytes of `delayTime` may differ. Quest shortcuts, conditions, rates, close timers, nodes and protection values remain byte-identical. Header/body are rebuilt and read in. The integration test now exports and unpacks twelve changed tables.
+- Inventory: both fields of all three real inventories allow 1460;
+1461 and 65535 are rejected on the backend. The UI takes the same boundary from the catalogue and blocks invalid previews.
+- The optional new request property remains completely with old requests
+Absent. Preview, single exceptions, reset and separate patrol/spawn settings are checked in the UI.
+- A new UI test uncovered an existing release marginal case:
+An invalid visible number did not change the last valid request. The DOM validity is now considered after the input handlers. Export, sample and live file preview will be blocked; a prepared live release expires and does not return automatically after correction. Previous failed test runs are maintained as a diagnosis; The final full run is green.
+
+Proofs: `.local/phase5-v4-rust.log`, `phase5-v4-pinned-final.log`, `phase5-v4-clippy.log`, `phase5-v4-unit.log`, `phase5-v4-ui-pass.log`. The table sample remains explicitly `ignored` in the ordinary workspace test and was additionally executed separately.
+
+Native invisible release test v0.5.3: **3,189 Changes over twelve tables**, 108 rules of replacement (one single exception), 2,922 Advanced Records, Export and two Apply/Restore cycles exclusively on the project copy. Reapply, Recovery, launch protection and Update Rejection passed. All 38 tested EXE/metadata files and the original test report remained the same; Game ran, no live application or initialized Workbench in the game folder, no save content read. Worldview at 1,024 pixels and finished preview visually checked; No horizontal overflow, no browser errors. Own test instance then terminated. Proofs: `.local/phase5-v4-native/result.json`, `phase5-v4-build.log`, `phase5-v4-validation.json`.
+
+## Phase 5 extension v0.5.2 (previous status)
+
+**167Rust tests**, in addition **1 explicit local table sample**, **7 frontend unit tests** and **53 UI flows passed**. Fmt and Clippy with `-D warnings` successful. Two initial UI test assessments distinguished between a missing optional property and `undefined`; The productive JSON/Plan canonization correctly omitted both. The corrected tests continue to verify that removing overrides does not leave an outdated plan.
+
+New checks: accurate i64 change and identity of all remaining buffbytes; Boundaries, fractions, exponents, unknown paths, structural fields, references and opaque values are rejected. Graph curves remain protected. Cooldown and buff changes on the same real skill arrive together in the overlay. Old requests without new optional fields retain their serialized form.
+
+Patrols: both original timers, factor and single override, positive boundaries, sentinel rejection and cut-off prefixes. All other stagebytes and records remain unchanged. City flight: exact rule identity, expression, tree and flags; Foreign values and already changed rules are rejected. Both control options only change the same condition record; all other 10,797 conditions remain byte-identical. The archive integration builds and unpacks eleven tables exclusively in the project/temp area.
+
+Final protocols: `.local/phase5-v3-rust-final.log`, `.local/phase5-v3-pinned-final.log`, `.local/phase5-v3-clippy-final.log`, `.local/phase5-v3-unit.log`, `.local/phase5-v3-ui-final.log`. The optional table sample test remains in the normal workspace run `ignored` and was actually run separately. Manual in-game validation remains open.
+
+TypeScript and release build successful. Native invisible test of EXE v0.5.2: **3,081 Changes over eleven tables**, i64 buff change plus cooldown, both patrol timers and city flight rule in the same plan; Export and two apply/restore cycles only on the project copy. Reapply, Recovery, Start/Backup Protection and Update Rejection Successful. All 38 tested EXE/metadata files and the original test report unchanged; Game ran, no live application or initialized `.workbench` in game. Own test instance then terminated. Screenshots at 1,024/1,440 pixels visually checked. The first native launch in the Sandbox did not have accessible WebView test access; The final run with a local test profile and necessary execution rights was complete. Proofs: `.local/phase5-v3-native/result.json`, `.local/phase5-v3-build.log`, `.local/phase5-v3-validation.json`.
+
+## Phase 5 extension v0.5.1 (previous status)
+
+**162Rust tests**, in addition **1 explicit local table sample**, **7 frontend unit tests** and **51 UI flows passed**. Fmt, Clippy with `-D warnings`, TypeScript and release build successful.
+
+New checks: Enchant copy with prices/buffs/stats, sorted insertion with correct disconnectors, rejection of duplicate targets, concatenated copy sources, unknown sources and unconfirmed original structures. State change on a new level, newly built headers and unchanged other item records. Stacks are also checked for newly added buffs/enchant lines. Old templates without copying rules remain compatible; Empty optional lists do not make a preview erroneously obsolete.
+
+All 2,069 skill matrices and 4,607 entries including zero are completely and seamlessly inspectable. Each field representation output is converted back into bytes in the test and compared with the original bytes. tests for cropped data, invalid flags/counts, additional bytes and signed values; New IPC query rejects outdated sessions. Buff values remain read-only, raw data/type limits are not confirmed gameplay semantics.
+
+Native Invisible Run: `.local/phase5-v2-native/result.json`, **3,077 Changes across nine tables**, new Enchant Level and Skill Matrix view, Export and two Apply/Restore cycles to project copies only. Reapply, Recovery, Start/Backup Protection and Update Rejection Successful. All 38 tested EXE/metadata hashes and the original test report unchanged. the game was played; No initialized `.workbench` in the installation, no live application. Screenshots at 1,024 and 1,440 pixels visually checked.
+
+Protokolle: `.local/phase5-v2-{rust,pinned,unit,ui,clippy}-final.log`, `.local/phase5-v2-build.log`, `.local/phase5-v2-validation.json`.
+
+## Phase 5 tests v0.5.0 (previous status)
+
+Rust-Workspace plus local additional real file sample, frontend unit tests and headless UI flows check the new status. Final logs and counts are below `.local/phase5-*-final.log` or `.local/phase5-validation.json`.
+
+Result: **158Rust tests**, additionally **1 local table sample**, **6 frontend unit tests** and **49 UI flows passed**. The optional table sample test is skipped in the general workspace run and was explicitly performed separately. Fmt, Clippy `-D warnings`, TypeScript and release build successful.
+
+New core tests: negative costs without alteration of positive regeneration; original structure instead of repeated multiplication; precedent globally → skill → single field; unchanged opaque bytes; Sentinel maintenance, overflow rejection, unknown IDs/categories/fields; blocked non-existing repair rules. The local hash-checked sample reads all supported records, modifies multiple tables, inserts a stat, and checks the new header and all other item records for byte identity. The regular real file integration builds an overlay with nine tables and unpacks it exclusively in Temp.
+
+Frontend: exact requests, canonical comparison for Rust sorting, invalid inputs, locked repair option, signed skill values, local templates via restart and to another item, late IPC responses and 1024px without horizontal overflow. Invalid master memory is rejected.
+
+Native run `.local/phase5-native/result.json`: v0.5.0, 2,811 Records, 2,069 Skills, 6,816 Items, 2,833 Items without detected Zustand Features, 0 Items with repair rules, 3,076 scheduled changes across nine tables. Passed workspace rehearsal with two Apply/Restore cycles, Reapply, Recovery, Hold Protection and Update Rejection. 38 Original EXE/metadata files and the original audit unchanged. No live app, no save access, no control or lock of the current game. Screenshots have been reviewed.
+
+### Manual acceptance B4–B11 – only after all stages of development
+
+All of the following points are **open**, none were automatically rated as a gameplay success. Requirements from the B0 test plan continue to apply. In each case, check a small, clearly observable example individually and then carry out restorations. For each line, document original/mod/restore observation and build number.
+
+|Module|Later examination|
 |---|---|
-| B4 | Identifizierte Terrain-/Pool-Gruppe mit ×2 sowie Einzelausnahme vergleichen; keine unbeteiligten Spawns verändert. Reittier im MainField/in einer Stadt rufen und bewegen; Dauer und Cooldown messen. Hidden-Estate-/Watergate-Reset mit Faktor und Einzelwert beobachten; reale Uhr und Spielzeit getrennt erfassen. Allgemeine NPC-Timer bleiben offen. |
-| B4 Wiederbesetzung | Original, 50 % und eine Einzelausnahme an bekannten Fraktionsgebieten vergleichen. Vorhandene Bedingungen/Questzustände, Spielzeit gegenüber Echtzeit und nach Restore die Originalwartezeit prüfen. Keine allgemeine NPC-Abdeckung unterstellen. |
-| B5 | Blackstar-Cooldown, 10-/30-Minuten-Dauer und eigenen Wert messen. Abyss-Regionssperre und Stadtflug abseits von Straßen getrennt prüfen, auch mit anderem Flugreittier; Kopfgeld-/Questbedingungen unverändert. Andere Grenzen prüfen; Ausnahmen/geskriptete Abstiege aufzeichnen. Bossdrache unverändert. |
-| B6 | Start-/Maximalplätze für alle neun Bereiche einschließlich Kuku und fünf Housing-Lagern einzeln prüfen, einschließlich bereits vorhandener Spielstände. Erst moderate Erhöhung; große Werte und Verkleinerung nicht als bestanden übernehmen. |
-| B7 | Gewöhnliche stapelbare Items, ausgewählte Kategorie und Einzelitem vergleichen; Aufteilen, Kaufen, Looten, Verschieben und Neuladen. Experimentelle Ausrüstung separat mit verschiedenen Haltbarkeits-/Enchant-/Sockelzuständen prüfen; Zusammenführung/Verlust wäre ein Fehler. |
-| B8 | Bekannte Verschleißhandlung mit „Kein Haltbarkeitsverlust“ und nach Restore vergleichen: gewöhnliche Ausrüstung, Spezialausrüstung mit endlicher Haltbarkeit und gesockelte Items getrennt. Bereits verbrauchte Exemplare sind kein Wiederherstellungstest. Reparaturkostenprüfung ist zurückgestellt, weil dieser Build noch keinen freigegebenen Kostenpfad hat. |
-| B9 | Pro Kategorie Original, 50 %, 0 % vergleichen; Bewegung/Kampf und Fahrerfälle abdecken. Positive Regeneration muss unverändert bleiben. Nicht erfasste Kosten ausdrücklich dokumentieren. |
-| B10 | Einen tatsächlichen nichtleeren Cooldown global und individuell ändern, Priorität prüfen; bekannte Zahlen auf einem einzelnen Skill prüfen. Einen bestätigten i64-Buffwert gezielt ändern; andere Matrixbytes bleiben unverändert. Unbekannte Bedeutungen nicht als geprüfte Effekte deklarieren. |
-| B11 | Ein Item/Enchant-Level mit einem Stat und einem kompatiblen Buff testen. Zusätzlich eine neue Stufe aus einer Originalstufe kopieren; Tabellenexistenz allein beweist keinen erreichbaren Upgradeweg. Equip/Unequip, tatsächlich erreichbare Level, neues/bestehendes Item und Neuladen vergleichen. Vorlage auf geeignetes zweites Item übernehmen; unpassende Quellen/Level/IDs müssen abgelehnt werden. |
-
-Danach gemeinsames Overlay mehrerer Module, Restore und erneutes Apply prüfen.
-Damit sind weder die noch offenen Formatfunktionen noch die Spielabnahme
-vorweggenommen.
-
-## Phase-4-Prüfungen v0.4.10
-
-**154 Rust-Tests bestanden**, einschließlich vier Echtdateiintegrationen.
-Fmt und Clippy mit `-D warnings` erfolgreich.
-
-Neun neue Core-Szenarien: exakte Zusatzbestätigung für Inventur/Inhaltsbericht und
-Apply/Reapply/Restore, unveränderte fremde PAZ/PAMT/DLL-Dateien, kollisionsfreie
-eigene Gruppen, leere Dateien und zusätzliche `.EXE`, gleich große nachträgliche
-Änderungen, neue Kinder und veraltete Vorschauen; Widerruf vor/während geschützter
-Arbeit mit Freigabe der Handles; gesperrte Originaländerungen, fremde Registry,
-Saves einschließlich konfigurierter geschützter Unterordner, private Pfade
-und Hardlinks; beschädigte Bestätigungen und Eingabegrenzen;
-später von Steam übernommene Pfade; Basiswechsel unter Erhalt fremder Dateien.
-Der letzte der 128 Protokolleinträge ist für einen Widerruf reserviert. Alle acht
-Fremddateitests bestanden nach Ergänzung dieses Grenzfalls erneut.
-
-44 UI-Flows und 4 Frontend-Unit-Tests bestanden, TypeScript und Frontend-Build
-passen. Fünf neue UI-Flows prüfen freiwilligen Aufruf, explizite genaue Bestätigung
-ohne Live-Aktion, Widerruf auch bei gesperrter neuer Vorschau, veraltete Antworten,
-neue Checkbox nach Fehler, leeren Bestand und 1024px-Layout. Der neue Ablauf wurde
-nicht auf eine echte Fremdmod-Installation angewendet.
-
-Release v0.4.10 und native Windows-Prüfung bestanden. Zusatzdateivorschau auf der
-echten Installation rein lesend geprüft: leerer Bestand, keine Bestätigung und
-keine Live-Einrichtung. Drei neue Sitzungssperren, bestehende sieben Live-Sperren,
-Projektproben und Restore erfolgreich. Keine JavaScript-Fehler; 1024px-Ansicht
-visuell geprüft. Alle 38 EXE-/Metadatenhashes und der ursprüngliche Nutzerbericht
-unverändert; kein kompletter PAZ-Hashlauf und keine Spielsperre.
-Nachweise: `.local/phase4-v11-validation.json`, `.local/phase4-v11-native/result.json`,
-`.local/phase4-v11-rust-tests.log`, `.local/phase4-v11-foreign-final.log`.
-
-Spätere manuelle Abnahme: siehe [Fremddatei-Checkliste](FOREIGN_FILES.md).
-Die Bestätigung von Zusatzdateien ist kein Test ihrer Spielwirkung. Registrierte
-Fremdmods werden nicht mit Workbench-Mods verschmolzen; Originaländerungen brauchen
-zuerst die Wiederherstellung einer belegten Basis.
-
-## Phase-4-Prüfungen v0.4.9
-
-**145 Rust-Tests bestanden**, einschließlich vier Echtdateiintegrationen.
-Fmt und Clippy mit `-D warnings` erfolgreich. Acht neue Core-Tests prüfen bytegleichen Archiverhalt und Apply/Restore auf der
-neuen Basis, sechs Unterbrechungsgrenzen, teilweise neue Sicherungen, Namenskollisionen,
-gleich große Änderungen eigener Dateien, fremde Kinder, Quelländerungen, Abbruch,
-Doppelbelegung von Archiv/Quelle, Journalmanipulation, Hardlinks, partielle
-Projektveröffentlichungen und die integrierte Inventur/Inhaltsprüfung. Synthetische
-unbekannte Builds werden vom öffentlichen Zulassungspfad weiterhin abgewiesen.
-
-Fünf neue UI-Flows prüfen Vorschau und Herkunftsbestätigung beim Basiswechsel,
-Schreibsperre während des Spielens, gezielte Wiederaufnahme, ungültig gewordene
-Auswahl und getrennte Darstellung eigener/fremder Dateien. 39 UI-Flows und
-vier Frontend-Unit-Tests bestanden; TypeScript und Frontend-Build erfolgreich.
-Ein Windows-Testbefund zu offenen Kinddateien beim Ordnerumbenennen wurde behoben:
-Archivdateien werden nach dem Verschieben erneut verifiziert und bis zum Abschluss
-gehalten. Ein Regressionstest zur reinen Vorschau bei gesperrtem Ausgabecache
-prüft, dass fehlende Live-Zulassungen keine unnötige Schreibberechtigung verlangen.
-
-Release-Build und native Windows-Prüfung bestanden: echte Inventur/gespeicherte
-Basis/Live-Vorschau nur gelesen, sieben Live-Sitzungssperren geprüft und bestehende
-Mod-/Recovery-Projektproben erneut erfolgreich. Kein Live-Setup, Apply oder
-Basiswechsel am echten Spiel, keine Spielsperre. Alle 38 beobachteten Metadaten-
-und EXE-Hashes sowie der Nutzerbericht unverändert. Keine JavaScript-Fehler;
-1024px-Screenshot geprüft. Nachweise: `.local/phase4-v10-validation.json`,
-`.local/phase4-v10-native/result.json`, `.local/phase4-v10-rust-tests.log`.
-
-Spätere manuelle Abnahme nach Abschluss aller Entwicklungsphasen:
-
-- Eigenen Mod anwenden, Inventur öffnen: eigene Gruppen separat, Registry als
-  eigener Mod gekennzeichnet; neuer Vanilla-Inhaltsbericht gesperrt.
-- Nach abgeschlossenem Update/Steam-Verify neue Basis erfassen. Bei unbekanntem
-  Schema keine Anwendung; bei bekanntem Schema Basiswechsel vorschauen und starten.
-- Alte Historie und Gruppen im Archiv, neue Original-Registry unverändert;
-  Mod neu berechnen, anwenden und anschließend auf neue Basis zurücksetzen.
-- Unterbrochenen Basiswechsel ausdrücklich fortsetzen; keinerlei automatische
-  Wiederholung beim Öffnen der App oder bei Navigation.
-
-## Phase-4-Prüfungen v0.4.8
-
-**137 Rust-Tests, 4 Frontend-Unit-Tests und 34 Headless-UI-Flows bestanden.**
-Vollständiger Rust-Lauf einschließlich vier Echtdateitests; Fmt, Clippy mit
-`-D warnings`, Frontend- und Windows-Release-Build erfolgreich. Die 69 bisherigen
-Schreibabbruchpunkte bleiben enthalten. Nach Ergänzung korrekter Body-/Headerpaare
-in den neuen künstlichen Testarchiven bestanden alle fünf neuen Adaptertests.
-
-Geprüft wurden Apply/Reapply/Restore auf synthetischen Installationen, bytegleiche
-Originalquellen und Originaldatenansicht nach Apply, veraltete Vorschauen,
-fremde Dateien, gleich große Quelländerungen, fehlende/defekte Backups,
-Abbruch mit Handlefreigabe, Recovery vor und nach Registry-Commit und die
-Schreibsperre des reinen Inspektionskerns. Ein zusätzlicher Workertest prüft
-Einzelauftrag, Sitzungsisolation, Abbruch und korrekt gemeldeten späten Erfolg.
-
-Die fünf neuen UI-Flows prüfen explizite Herkunftsbestätigung, Write-Sperre bei
-laufendem Spiel, Anbindung des aktuellen Feldplans, veraltete Freigaben ohne
-automatischen Retry, unabhängig verfügbare Rücknahme, Workerabbruch und verspätete
-Antworten nach geänderten Modwerten. Alle 34 UI-Flows bestanden im ersten Gesamtlauf.
-
-Native Release v0.4.8: Die echte Live-Einrichtungsvorschau wurde ausschließlich
-lesend mit 285 Originaldateien geprüft. Keine Herkunftsbestätigung gesetzt,
-keine Einrichtung oder Anwendung ausgelöst. Alle sechs IPCs verweigern ungültige
-Sitzungen. Bestehende Projektproben und Restore bestanden; kein JavaScript-Fehler,
-1024px-Screenshot geprüft. Spiel lief weiter, kein Live-Transaktionsordner erstellt,
-38 beobachtete EXE-/Metadatenhashes sowie ursprünglicher Nutzerbericht unverändert.
-
-Nachweise: `.local/phase4-v9-rust-tests.log`, `.local/phase4-v9-native/result.json`,
-`.local/phase4-v9-validation.json`. [Ablauf und verbleibende Grenzen](LIVE_APPLY.md).
-Tatsächliche Spielwirkung, beliebige Stromausfälle und beliebige externe Startpfade
-sind durch diese Tests nicht bewiesen. Die Live-Einrichtung des Nutzerrechners
-ist ausdrücklich nicht erfolgt.
-
-## Phase-4-Prüfungen v0.4.7
-
-**131 Rust-Tests, 4 Frontend-Unit-Tests, 29 Headless-UI-Flows bestanden.**
-Fmt und Clippy mit `-D warnings` bestanden. Release-Build und native Windows-
-Abnahme erfolgreich; vier Echtdateiintegrationen und bisherige 69
-Transaktions-Abbruchpunkte weiterhin enthalten.
-
-Sieben neue Basistests: unveränderter Bericht und passende Registry-Kopie;
-fehlende/widersprüchliche Berichtsfelder, doppelte Felder/Pfade, unzulässige
-Herkunftsflags, Pfadausbrüche und Größenüberläufe; veraltete Vorschau/Buildwechsel;
-Abbrüche nach Berichtskopie, nach Registry-Kopie und vor Manifestveröffentlichung;
-Manipulation/Hardlinks; Erhalt alter Sicherung bei Änderungen; geschützte Ziele
-und Eingabelimits. Gleiche Dateigröße allein gilt ausdrücklich nicht als erneuter
-Inhaltsnachweis; ein entsprechender Negativtest besteht ohne Vertrauensfreigabe.
-
-Vier neue UI-Flows: explizite Übernahme und Wiederöffnen nach Navigation,
-Ablehnung geänderter Vorschauen ohne Wiederholungsversuch, Update-/Korruptionsstatus,
-verworfene Auswahl und verspätete Antworten. Gesamter UI-Lauf beim ersten
-Durchlauf grün. 1024px ohne horizontales Überlaufen.
-
-Native Abnahme übernimmt den echten Nutzerbericht vom 20.09.2026 byteidentisch,
-erstellt die passende 679-Byte-Registry-Kopie im Projekt und prüft deren Hash nach
-erneutem Öffnen. Vier neue IPCs verweigern veraltete Sitzungen. CLI bestätigt den
-persistierten Stand nach Beendigung der eigenen Testinstanz. Nutzerbericht und
-38 beobachtete Spiel-EXE-/Metadatenhashes unverändert; das Spiel lief weiter.
-Bestehende Mod-/Recovery-Proben bestanden ebenfalls. Keine Spiel- oder Savewrites,
-keine Spielsperren, kein erneuter vollständiger Hashlauf der Originalarchive.
-
-Nachweise: `.local/phase4-v8-rust-tests.log`, `.local/phase4-v8-native/result.json`,
-`.local/phase4-v8-baseline-status.json`, `.local/phase4-v8-validation.json`.
-[Bedienung und Grenzen](BASELINE.md).
-
-## Phase-4-Prüfungen v0.4.6
-
-**124 Rust-Tests und 4 Frontend-Unit-Tests bestanden; 25 verschiedene UI-Flows
-erfolgreich geprüft.** Fmt/Clippy mit `-D warnings` und Release-Build bestanden.
-Vier echte Spieldaten-Integrationen sind enthalten. Die 69 bestehenden
-Transaktions-Abbruchpunkte prüfen jetzt zusätzlich die konkrete Rücknahmevorschau
-gegen die Vorher-/Nachher-Hashes und tatsächlich entfernten Dateien.
-
-Sechs neue Core-Tests: fehlendes Backup wird nicht neu erzeugt, Vorschau verändert
-keine Inhaltsdateien oder Verzeichnisse, Restore entspricht dem Plan, offene
-Transaktionen vor/nach Commit werden richtig eingeordnet, Pläne veralten bei
-neuen Transaktionen und sind nicht zwischen Projektkopien übertragbar. Quellupdates,
-fremde Dateien, manipulierte Registry/Overlays, beschädigte Sicherung, Hardlinks
-und geschützte Pfade werden ohne Bereinigung zurückgewiesen; Listenumfang begrenzt.
-
-Der erste Lauf der neuen Tests scheiterte an einem unvollständigen synthetischen
-Tabellenpaar in der Fixture; der nötige Header wurde ergänzt. Im ersten UI-Lauf
-bestanden die 21 bisherigen und zwei neue Flows. Zwei neue Testselektoren wurden
-korrigiert: `option.disabled` direkt prüfen und den Itemdatenbank-Knopf inklusive
-Zähler adressieren. Danach bestanden alle vier neuen Flows. Kein Produktionscode
-wurde zur Umgehung dieser Fixture-/Selektorfehler angepasst.
-
-Native Release-Abnahme: Backupstatus und deaktivierter Restore bei bereits
-zurückgesetzter Probe; gezielt fehlender Abschlussmarker in einer neuen Kopie
-unserer Probe; offene Transaktion korrekt erkannt, über UI wiederhergestellt,
-Abschlussmarker byteinhaltlich identisch und anschließende Zustandsprüfung grün.
-Alle neuen IPCs verweigern veraltete Sitzungen. CLI-Liste/Vorschau/Restore an
-derselben Kopie ebenfalls erfolgreich. 1024px ohne Überlaufen und visuell geprüft;
-keine JavaScript-Fehler. Bestehende Modflows und Prozess-/Update-Schutzproben grün.
-Spiel lief weiter, 38 beobachtete Spiel-EXE-/Metadatenhashes unverändert.
-
-Nachweise: `.local/phase4-v7-rust-tests.log`, `.local/phase4-v7-native/result.json`,
-`.local/phase4-v7-restore-preview.json`, `.local/phase4-v7-cli-recovery.json`,
-`.local/phase4-v7-validation.json`. [Bedienung und Grenzen](BACKUP_RECOVERY.md).
-
-## Phase-4-Prüfungen v0.4.5
-
-**Nutzerabnahme der vollständigen Inhaltsprüfung, 20.09.2026:** Exportierter
-Desktop-Bericht `exports/installation-audit-1789903405-11284-1-0.json` geprüft.
-285 Dateien / 154.097.618.899 Bytes / 195 PAZ-Archive in 140 Sekunden; alle
-SHA-1-Vergleiche erfolgreich, Metadaten laut Bericht stabil. Berichtskonsistenz
-und Übereinstimmung der 38 zuvor beobachteten SHA-256-Werte bestätigt, ohne
-erneuten Zugriff auf Spielinhalte. Nachweis: `.local/user-content-audit-review.json`.
-Dies ergänzt die unten beschriebene automatisierte Abnahme; Vanilla-Zertifizierung,
-Live-Apply und manuelle In-game-Modultests bleiben offen.
-
-**118 Rust-Tests, 4 Frontend-Unit-Tests, 21 Headless-UI-Flows bestanden.**
-Fmt/Clippy mit `-D warnings` fehlerfrei; vier Echtdateitests und bisherige
-69 Transaktions-Abbruchpunkte eingeschlossen.
-
-Neue [Inhaltsprüfung](CONTENT_AUDIT.md): bekannte SHA-1-/SHA-256-Vektoren,
-Mehrblock-/Leerdateien, gleich große Inhaltsänderungen, Abbruch, Spielstatusfehler
-und neuer Spielstart, Änderungen bereits gehashter Quellen, Depot-/Buildwechsel,
-Wachstum, zusätzliche/fehlende/hart verlinkte Quellen. Der echte öffentliche
-Prozesscheck wird vor Inhaltszugriffen geprüft; eigene Lesehandles erlauben
-konkurrierende Writes und erkennen die nachfolgende Metadatenänderung.
-Worker-Tests prüfen einen aktiven Auftrag, Sitzungsgrenzen, Abbruch und Panik.
-UI-Flows prüfen die Aktivierung nach Metadatenprüfung bei beendetem Spiel,
-Fortschritt, Ansichtswechsel, Abbruch, Fehlermeldung, Abweichungen und Berichtsexport.
-
-Ein früher Gesamtlauf traf eine Prozessabfrage nach dem Ende einer gleichnamigen
-`probe.exe` aus einem anderen Test. Die Schutzschranke blieb geschlossen; die
-betroffenen eigenen Prozess-Fixtures werden nun serialisiert. Der isolierte Test
-und der erneute Gesamtlauf bestehen. Die UI-Fixture musste die frischen Objekte
-realer IPC-Antworten nachbilden, statt React-Stateobjekte in-place zu verändern.
-
-Native Release-Abnahme v0.4.5 bestanden: neuer Inhaltsknopf während des laufenden
-Spiels gesperrt; Start/Abbruch/Export verweigern ungültige Sitzungen. Alle 18
-Befehle stimmen mit der rein lokalen Main-Window-Capability überein. Der große
-Originalhashlauf wurde nicht gestartet; positive Inhaltsläufe verwenden
-synthetische Dateien. Bestehende Modflows und geschützte Projektproben inklusive
-Recovery und Updateablehnung bestanden; CLI-Recovery derselben Probe ebenfalls.
-1024px ohne Überlaufen, Screenshot geprüft, keine JavaScript-Fehler. Alle 38
-beobachteten EXE-/Metadatenhashes nach der nativen Probe unverändert.
-Nachweise: `.local/phase4-v6-validation.json`, `.local/phase4-v6-native/result.json`,
-`.local/phase4-v6-rust-tests-final.log`.
-
-## Phase-4-Prüfungen v0.4.4
-
-**106 Rust-Tests, 4 Frontend-Unit-Tests, 17 Headless-UI-Flows bestanden.**
-Fmt und Clippy mit `-D warnings` fehlerfrei. Vier Echtdateitests wurden ausgeführt;
-69 bestehende Transaktions-Abbruchpunkte bleiben enthalten.
-
-Zehn neue Rust-Tests für [Installationsprüfung](INSTALLATION_CHECK.md): alle
-Abschneidepositionen einer synthetischen Depotliste, CRC/IDs/Größen/Signaturstatus,
-Pfadausbrüche/Gerätenamen/Duplikate, Protobuf-Überläufe, zusätzliche/fehlende Dateien,
-Typwechsel, Registrydefekte, fehlende/widersprüchliche Caches, Steam-Updatezustände,
-Metadatenlimits, Tiefe und eine Windows-Junction. Gleiche Dateigrößen bei geändertem
-Inhalt dürfen niemals als Inhalts- oder Vanilla-Nachweis gelten.
-
-Zwei neue UI-Flows: bewusster Start statt automatischem Scan, zusätzliche EXEs,
-Vertrauensgrenze und Wiederholung; sichtbare Fehlermeldung mit erneutem Start.
-Die echte CLI-Inventur zählt 285 passende Dateien, drei EXEs und zwei Depots.
-Die erste native Abnahme fand eine fehlende Tauri-ACL-Zuordnung für den neuen
-Lesebefehl. `build.rs` und die lokale Main-Window-Capability wurden ergänzt;
-kein allgemeiner oder Remote-Zugriff hinzugefügt. Die finale Release-EXE bestand
-die Wiederholung einschließlich echter Inventur, bestehender Modflows, geschützter
-Projektproben und Recovery. 1024px ohne Überlaufen, keine JavaScript-Fehler;
-CLI-Recovery derselben v3-Probe ebenfalls erfolgreich. Alle 38 beobachteten
-EXE-/Metadatenhashes nach der nativen Probe unverändert.
-
-Nachweise: `.local/phase4-v5-validation.json`, `.local/phase4-v5-native/result.json`,
-`.local/phase4-v5-rust-tests-final.log`, `.local/phase4-v5-cli-recovery.json`.
-
-
-## Phase-4-Prüfungen v0.4.3
-
-**96 Rust-Tests, 4 Frontend-Unit-Tests und 15 Headless-UI-Flows bestanden**;
-Fmt/Clippy mit `-D warnings` fehlerfrei. Vier Echtdateitests wurden tatsächlich
-ausgeführt. Die 69 bisherigen Transaktions-Abbruchpunkte bleiben eingeschlossen.
-
-- Integrierte Sitzungssperren über Apply/Reapply/Restore/Recovery: EXE-Start,
-  Quell-/Backupwrites und Umbenennung relevanter Elternordner gesperrt.
-- Bereits laufende eigene Testkopie vor State-/Backuperstellung erkannt; reale
-  Prozesspfade auf beiden Seiten kanonisiert. Prozessprüffehler sperren auch
-  Recovery und Restore; Handles bleiben bis zum Ende der Sitzung gehalten.
-- Abbruch nach Intent-Veröffentlichung mit gehaltenen Sperren, danach Recovery.
-- Simuliertes Quellupdate vor Recovery und nach Commit: neue Quellen/Registry
-  bleiben bytegleich erhalten, altes Backup und eigene Overlaydateien werden
-  nicht über einen fremden/neuen Zustand zurückgeschrieben oder entfernt.
-- Manipulierte Schutzmanifeste, v3-Downgrade, beschädigte Backups, Hardlinks,
-  Pfadausbrüche und eine behauptete Vanilla-Herkunft werden abgewiesen.
-- Echte Händlerdaten: eigene leere Artikelauswahl und Originalrefresh unterdrücken
-  globale Werte; ein anderer Händler außerhalb der Auswahl erhält seine eigenen
-  Artikel und Tagesrefresh. Alle übrigen Händlerrecords bleiben bytegleich.
-- UI: individuelle Auswahl/Refresh übermitteln, anschließend wieder erben und
-  Ausnahme entfernen; Schutz-/Updateprobe wird mit ihrem Testumfang angezeigt.
-
-Die ersten Schutztests deckten auf, dass exklusives EXE-Öffnen allein bereits
-laufende Images nicht erkennt und Attributzugriff keine wirksame Ordnersperre
-hält. Ein weiterer Test erforderte den beidseitig kanonisierten Prozesspfadvergleich.
-Nach diesen Korrekturen bestanden die Tests ohne Abschwächung ihrer Anforderungen.
-
-Belege: `.local/phase4-v4-rust-tests.log`, `.local/phase4-v4-mods-tests.log`,
-`.local/phase4-v4-protected-tests.log`. Ablauf und Grenzen:
-[Geschützte Projektproben](PROTECTED_REHEARSALS.md).
-Die finale Release-EXE v0.4.3 bestand außerdem den nativen WebView2-Test mit
-echten Daten: 34.488 bisherige Änderungen, geschützte Probezyklen mit Recovery,
-Updateablehnung, Tagesrefresh, Tabellenwachstum, Dropchancen und manuelle
-Garantien. Die individuelle Händlerauswahl ersetzte die globale Artikelauswahl
-korrekt; Export und 1024px bestanden ohne JavaScript-Fehler. Ein zunächst
-mehrdeutiger Testselektor für verschachtelte Details wurde korrigiert; dieselbe
-EXE bestand danach den vollständigen Lauf. Die neue CLI stellte dieselbe
-v3-Probe anschließend idempotent wieder her. Belege unter
-`.local/phase4-v4-native/`, `.local/phase4-v4-cli-recovery.json` und
-`.local/phase4-v4-validation.json`.
-
-Windows wurde tatsächlich geprüft; keine Linux-Ausführung und weiterhin kein
-Live-Apply, keine Vanilla-Zertifizierung und keine In-game-Abnahme.
-
-## Phase-4-Prüfungen v0.4.2 (historisch)
-
-**87 Rust-Tests, 4 Frontend-Unit-Tests und 14 Headless-UI-Flows bestanden.**
-Fmt/Clippy mit `-D warnings` fehlerfrei. Der vollständige Workspace-Lauf enthält
-vier tatsächlich ausgeführte Echtdateitests; anschließend bestand der erweiterte
-Shoptest für alle 6.816 Items bei einem Händler ebenfalls.
-
-- Neue Stockpositionen erhalten neue Listen-/Save-Indizes; bestehende Lücken,
-  Preise, Bedingungen und ursprüngliche Positionen bleiben bytegleich.
-  Doppelte Save-Indizes und veränderte Listenreihenfolge sperren Ergänzungen.
-- Eine reine Ankaufsposition verhindert kein neues kaufbares Angebot desselben
-  Items. Buyable-/Sellable-Counts bleiben konsistent.
-- Tagesrefresh verändert nur das bestätigte Tagesfeld; Sentinel-Intervalle
-  bleiben erhalten. Echte globale Vorschau: genau 246 Änderungen.
-- Kleine Ergänzung und vollständiges Sortiment bei Händler 3101: Bodywachstum,
-  neu berechneter Header, Rücklesen des verschlüsselten Overlays und alle anderen
-  Händlerrecords unverändert.
-- Mengen ×3 und Chance ×2 bei Set 175521: Rate 35.000 → 70.000 direkt an den
-  erzeugten Bytes geprüft. Exakte Skalierung, Nullfaktor, 100-%-Deckelung und
-  breite Zwischenwerte; manuelle Garantie hat Vorrang vor Chancenfaktor 0.
-- Ablehnung gewichteter/bedingter Chancenvarianten, Garantie mit Mengenfaktor 0,
-  unbekannter Items, ungeeigneter Händler und übergroßer Vorschauauswahl.
-- UI überträgt tägliches Auffüllen, zusätzliche Artikel und manuelle Garantien
-  gemeinsam; Zurücksetzen setzt die Optionen zurück. Bestehende Export-/
-  Probe-/Ausnahmetests und gesperrter Live-Apply bleiben grün.
-
-Die finale Release-EXE v0.4.2 bestand den nativen WebView2-Test mit echten Daten:
-bestehender 34.488-Änderungen-Plan, zwei Apply/Reapply/Restore-Zyklen plus Recovery,
-246 Tagesrefresh-Änderungen, zwei neue Artikel bei Händler 3101, Chance ×2 und
-Menge ×3 in einem gemeinsamen Plan sowie explizite 100-%-Basisrate. Auch die
-gewachsene Tabelle bestand zwei Probezyklen plus Recovery; Exporte und 1024px
-ohne Überlaufen geprüft. Keine JavaScript-Fehler. Das Spiel lief weiter.
-
-Ein erster nativer Prüflauf scheiterte an falsch kodierten Umlauten im Testskript.
-Nach Skriptkorrektur bestand dieselbe unveränderte Release-EXE alle Prüfungen.
-Der Launcher schloss jeweils ausschließlich seine eigene unsichtbare Testinstanz.
-
-Nachweise: `.local/phase4-v3-rust-tests.log`,
-`.local/phase4-v3-all-items-test.log`, `.local/phase4-v3-native/result.json`
-und `.local/phase4-v3-validation.json`. Statische Feldbelege:
-[PHASE4_FIELDS.md](research/PHASE4_FIELDS.md).
-Live-B0, universelle Händlerabdeckung und In-game-Nachweise bleiben offen.
-
-## Phase-4-Prüfungen v0.4.1 (historisch)
-
-Ergebnis: **83 Rust-Tests, 4 Frontend-Unit-Tests und 13 Headless-UI-Flows grün**;
-Fmt/Clippy fehlerfrei. Vollständiger Workspace-Lauf mit 82 Tests plus abschließende
-Formatsuite mit 18 statt 17 Tests nach Ergänzung der exakten Längenprüfung.
-Die finale Release-EXE v0.4.1 bestand den nativen Test mit 34.488 Änderungen,
-Reapply/Recovery, sechs Dateiübergängen, Export und 1024px-Darstellung.
-
-Zusätzliche Prüfungen des neuen privaten Transaktionskerns:
-
-- Zwei verschlüsselte Overlaygruppen, erneute Anwendung geänderter Inhalte,
-  alte Dateien bis zum Registry-Commit erhalten, anschließend Restore bytegleich.
-- 69 injizierte Abbrüche bei Apply, Reapply und Restore, einschließlich Teilwrites,
-  Veröffentlichung der Gruppe, Registry-Commit, Bereinigung und Abschlussnachweis.
-- Wiederholter Abbruch während Recovery vor und nach Registry-Commit.
-- Schutz gegen belegte IDs, veraltete Pläne, fremde Inhalte, beschädigte Backups,
-  parallele Locks, Hardlinks und fehlgeschlagene Prozessprüfungen.
-- Prüfung des gesamten PAMT/PAZ-Paars samt exakter dekomprimierter Länge sowie
-  Ablehnung doppelter virtueller Tabellenpfade über mehrere Gruppen.
-- Öffentlicher Recovery-Befehl verweigert geschützte, falsch platzierte,
-  unmarkierte und unbekannt versionierte Proben sowie verlinkte Marker.
-- Desktop-Probe mit echten Daten: zwei Apply/Reapply/Restore-Zyklen, Recovery,
-  sechs Dateiübergänge; Headless-UI prüft die Anzeige einschließlich entfernter Dateien.
-
-Neue native Nachweise liegen unter `.local/phase4-v2-native/`, Rust-Ausgabe unter
-`.local/phase4-v2-rust-tests.log` und `.local/phase4-v2-format-tests.log`.
-`mod-recover` wurde auch per CLI an der nativen Probe wiederholt (idempotent,
-ursprüngliche Registry erhalten). Der Abschlussvergleich bestätigt unveränderte
-Hashes aller 38 beobachteten EXE-/Metadaten-Dateien; kein vollständiger PAZ-Abgleich.
-Injizierte Abbrüche sind keine tatsächlichen Stromausfälle oder Nachweise für alle
-Dateisystem-/Datenträgerfehler. Live-Startschutz und In-game-Abnahme bleiben offen.
-
-## Phase-4-Prüfungen v0.4.0 (historisch)
-
-Ergebnis: **74 Rust-Tests, 4 Frontend-Unit-Tests und 13 Headless-UI-Flows grün**,
-ebenso native Prüfung der finalen Release-App v0.4.0. Fmt/Clippy fehlerfrei.
-
-- Neuer `mods_live`-Test mit tatsächlichen Tabellen: exakte Abdeckung, unveränderte
-  Tabellenpaare, deterministisches Overlay, gezielte Händler-/Dropset-Auswahl,
-  alle anderen Records bytegleich, drei Friendly-Werte und negative Strafe,
-  Sentinel-Ablehnung, unbekannte Optionsnamen und Eingabegrenzen.
-- Synthetischer Storetest: unbekannte September-Bytes, optionaler Block und
-  Effektliste bleiben bei Bestandsänderung exakt erhalten. Index-Wachstum bewahrt
-  Bodypräfix und nichtphysische Header-Keyreihenfolge.
-- Overlaytest liest verschlüsselten LZ4-Body/Header über den echten Archivreader
-  zurück, prüft Determinismus, Kollisionen, Paare und verbotene Dateinamen.
-- Private Transaktionsprobe: sechs Apply-/fünf Restore-Unterbrechungsgrenzen,
-  Wiederöffnung/Recovery, beschädigtes Backup, konkurrierender Lock, fremde
-  Registry-/Gruppenänderung, Hardlinks sowie laufender/unklarer Prozesscheck.
-- Windows-Startschutztest ausschließlich mit einer kopierten eigenen Test-EXE:
-  Start bei exklusivem Dateihandle verweigert, nach Freigabe erfolgreich.
-- Vier zusätzliche Headless-UI-Flows: explizite Vorschau, stets gesperrter
-  Live-Apply, geprüfte Plan-ID beim Export/Probelauf, stale Vorschau, Auswahl und
-  Ausnahmen, Eingabefehler, 1024px und Backend-Ablehnung.
-
-`app/scripts/native-mods-smoke.mjs` prüfte die echte Oberfläche in einem separat
-gestarteten unsichtbaren Workbench-Fenster: alle Shops 999, Mengen ×2, Trust ×3,
-Dateiplan, zwei Probeläufe, Export mit Credits, Trust-Strafe unverändert sowie
-Sperre einer veralteten Vorschau. Ergebnis/Screenshots unter `.local/phase4-native/`.
-Das Script startet und bedient kein Spiel. Der zugehörige Launcher beendet
-anschließend ausschließlich seine eigene Workbench-Testinstanz.
-
-Die Unterbrechungstests sind keine Stromausfall-Simulation. Vollständige Recovery
-bei beliebigem Abbruch während Datei-I/O, Live-Reapply, mehrere Gruppen und
-integrierter Schutz gegen jeden Launcherpfad sind vor Live-Freigabe noch nötig.
-
-## Phase-3-Nachweis
-
-65 Rust-Tests, 4 Frontend-Unit-Tests und 9 Headless-Edge-Flows bestanden.
-`crates/cd-core/tests/crafting_live.rs` prüft den vollständigen Rezept-/Gruppen-
-Roundtrip, alle freigegebenen Item-Dropsets, die konkreten Pfeil-/Eintopfbeispiele
-und die Planung jedes der 1.108 freigegebenen Rezepte. Fehlende lokale Konfiguration
-wird explizit übersprungen; konfigurierte unbekannte Builds schlagen fehl.
-
-`app/scripts/native-crafting-smoke.mjs` prüft die echte App mit den lokalen Daten
-in einem unsichtbaren eigenen WebView2-Fenster. Screenshots/Ergebnis:
-`.local/phase3-native/`. Debug- und finale Release-EXE bestanden; der bisherige
-Itembrowser einschließlich Sprachwechsel wurde danach mit der Release-EXE
-erneut geprüft (`.local/phase3-item-regression/`). Kein Spielstart, keine
-In-game-Aktion, kein Savezugriff.
-
-Reproduzierbare Befehle: dieselben Workspace-/Frontend-Kommandos unten; zusätzlich
-`cargo test -p cd-core --test crafting_live --locked -- --nocapture`.
-
-Manuelle Durchsicht:
-
-- Herstellungsziel Pfeil (50001), Menge 31, Bauholz-Vorrat 3: 7 Bauholz und
-  2 Eisenerz fehlen; 60 Pfeile werden hergestellt und 29 bleiben übrig.
-- Gemischten Eintopf wählen, Rezept 343, Meeresfrüchtealternative wechseln:
-  Baum, Restbedarf und Vorratsliste müssen dasselbe gewählte Item verwenden.
-- Zwischenprodukt vorhanden / manuell beschaffen, Rezepte wechseln, Vorräte leeren.
-- Über Itemdetails → Verknüpfungen → Herstellen zum Rechner wechseln.
-- Quellenlücken, unbekannte Chancen und Zykluswarnungen nicht als gesicherte
-  Weltfundorte, 0 % oder kostenloses Herstellen missverstehen.
-
-Linux wurde lokal weiterhin nicht ausgeführt. Die Zahlen der früheren Phasen
-unten sind historische Nachweise.
-
-## Phase-2-Nachweis
+|B4|Compare identified terrain/pool group with ×2 and single exception; No uninvolved spawns are changed. mount call and move in the MainField/in a city; Measure duration and cooldown. Observe Hidden Estate/Watergate reset with factor and individual value; Record real clock and playtime separately. General NPC timers remain open.|
+|B4 Resettlement|Original, 50 % and a single exception in known fraction areas. Existing conditions/quest states, playing time versus real time and check the original waiting time after Restore. Do not assume general NPC coverage.|
+|B5|Blackstar cooldown, 10-/30-minute duration and own value measurement. Check Abyss regional exclusion and off-road flight separately, including with other mounts; Bounty/quest conditions unchanged. Examine other boundaries; Record exceptions/scripted descents. Boss Dragon unchanged.|
+|B6|Check start/maximum seats for all nine areas including Kuku and five housing warehouses individually, including pre-existing saved games. Only moderate increase; large values and reduction do not take over as existed.|
+|B7|Ordinary stackable items, selected category and individual items compare; Splitting, buying, looting, moving and reloading. Test experimental equipment separately with different durability/enchant/socket conditions; Merging/loss would be a mistake.|
+|B8|Known wear action with "No durability loss" and according to Restore compare: ordinary equipment, special equipment with finite durability and socketed items separately. Existing specimens are not a recovery test. Repair cost verification is postponed because this build does not yet have a released cost path.|
+|B9|Compare Original, 50 %, 0 % per category; Cover movement/combat and driver cases. Positive regeneration must remain unchanged. Explicitly document unrecognised costs.|
+|B10|Change an actual non-empty cooldown globally and individually, consider priority; Check known numbers on a single skill. Targetedly change a confirmed i64 buff value; Other matrix bytes remain unchanged. Do not declare unknown meanings as tested effects.|
+|B11|Test an item/enchant level with a stat and a compatible buff. In addition, copy a new level from an original level; Table existence alone does not prove an achievable upgrade path. Equip/Unequip, actually reachable levels, new/existing item and reloading compare. Apply submission to a suitable second item; Inappropriate sources/levels/IDs must be rejected.|
+
+Then check joint overlay of several modules, restore and reapply. Thus, neither the open format functions nor the in-game validation are anticipated.
+
+## Phase 4 tests v0.4.10
+
+**154 Rust tests passed**, including four real file integrations. Fmt and Clippy with `-D warnings` successful.
+
+Nine new core scenarios: exact additional confirmation for inventory/content report and Apply/Reapply/Restore, unchanged foreign PAZ/PAMT/DLL files, collision-free own groups, empty files and additional `.EXE`, same sized subsequent changes, new children and obsolete previews; Revocation before/during protected work with release of handles; locked original changes, foreign registries, saves including configured protected subfolders, private paths and hardlinks; damaged confirmations and input limits; paths later taken over by Steam; Basic change while receiving foreign files. The last of the 128 log entries is reserved for revocation. All eight foreign file tests passed again after supplementing this border case.
+
+44 UI flows and 4 frontend unit tests passed, TypeScript and frontend build fit. Five new UI flows check voluntary call, explicit accurate confirmation without live action, revocation even if the new preview is blocked, outdated responses, new checkbox for errors, empty inventory and 1024px layout. The new process was not applied to a real third-party mod installation.
+
+Release v0.4.10 and native Windows check passed. Additional file preview checked on the real installation purely reading: empty stock, no confirmation and no live setup. Three new session locks, existing seven live locks, workspace rehearsals and restore successfully. No JavaScript errors; 1024px view visually checked. All 38 EXE/metadata hashes and the original user report unchanged; No complete PAZ hash-run and no game lock. Evidence: `.local/phase4-v11-validation.json`, `.local/phase4-v11-native/result.json`, `.local/phase4-v11-rust-tests.log`, `.local/phase4-v11-foreign-final.log`.
+
+Later manual removal: see [Fremddatei-Checkliste](FOREIGN_FILES.md). The confirmation of additional files is not a test of their game effect. Registered third-party modes are not merged with Workbench mods; Original changes first need to restore an occupied base.
+
+## Phase 4 tests v0.4.9
+
+**145 Rust tests passed**, including four real file integrations. Fmt and Clippy with `-D warnings` successful. Eight new core tests check byte-like archive maintenance and Apply/Restore on the new basis, six interruption limits, partially new backups, name collisions, equally large changes of own files, foreign children, source changes, cancellation, double assignment of archive/source, journal manipulation, hardlinks, partial project publications and the integrated inventory/content check. Synthetic unknown builds will continue to be rejected by the public approval path.
+
+Five new UI flows check preview and confirmation of origin at base change, write lock during play, targeted recovery, invalidated selection and separate display of own/foreign files. 39 Passed UI flows and four frontend unit tests; TypeScript and frontend build successful. A Windows test result on open child files when renaming a folder has been fixed: archive files are re-verified after moving and held until completion. A regression test for pure preview with locked output cache checks that missing live approvals do not require unnecessary write permission.
+
+Release build and native Windows check passed: real inventory/stored base/live preview read only, seven live session locks checked and existing mod/recovery workspace rehearsals successfully reappeared. No live setup, apply or base change on the real game, no game lock. All 38 observed metadata and EXE hashes as well as the user report unchanged. No JavaScript errors; 1024px screenshot. Evidence: `.local/phase4-v10-validation.json`, `.local/phase4-v10-native/result.json`, `.local/phase4-v10-rust-tests.log`.
+
+Subsequent manual acceptance after completion of all development phases:
+
+- Apply your own mod, open inventory: own groups separately, registry as
+own mod marked; New Vanilla content report blocked.
+- After completing the update/Steam-Verify capture new base. If unknown
+Scheme no application; in the case of a known scheme, preview and start base change.
+- Old history and groups in the archive, new original registry unchanged;
+Recalculate the mod, apply it and then reset it to a new basis.
+- Explicitly continue interrupted base change; No automatic
+Repeat when opening the app or when navigating.
+
+## Phase 4 tests v0.4.8
+
+**137 Rust tests, 4 frontend unit tests and 34 headless UI flows.** Full Rust run including four real file tests; Fmt, Clippy with `-D warnings`, Frontend and Windows release build successful. The 69 previous write-off points remain included. After completing correct body/header pairs in the new artificial test archives, all five new adapter tests passed.
+
+Apply/Reapply/Restore were tested on synthetic installations, byte-identical original sources and original data view to Apply, outdated previews, foreign files, same-sized source changes, missing/defective backups, cancellation with handle release, recovery before and after registry commit and the write lock of the pure inspection core. An additional worker test checks individual order, session isolation, discontinuation, and correctly reported late success.
+
+The five new UI flows check explicit confirmation of origin, write lock during play, connection of the current field plan, obsolete releases without automatic retry, independently available withdrawal, worker cancellation and delayed responses after changed mod values. All 34 UI flows passed in the first total run.
+
+Native Release v0.4.8: The real live setup preview was checked only read with 285 original files. No origin confirmation set, no setup or application triggered. All six IPCs refuse invalid sessions. Existing workspace rehearsals and restore existed; no JavaScript error, 1024px screenshot checked. The game continued, no live transaction folder was created, 38 observed EXE/metadata hashes and original user report unchanged.
+
+Evidence: `.local/phase4-v9-rust-tests.log`, `.local/phase4-v9-native/result.json`, `.local/phase4-v9-validation.json`. [Expiration and remaining borders](LIVE_APPLY.md). Actual game effect, arbitrary power outages and arbitrary external starting paths are not proven by these tests. The live setup of the user computer has expressly not taken place.
+
+## Phase 4 tests v0.4.7
+
+**131 Rust tests, 4 frontend unit tests, 29 headless UI flows.** Fmt and Clippy with `-D warnings` passed. Release build and native Windows acceptance successful; four real file integrations and previous 69 transaction breakpoints are still included.
+
+Seven new basic tests: unchanged report and matching registry copy; missing/contradictory reporting fields, duplicate fields/paths, unauthorised flags of origin, path breaks and size overflows; obsolete preview/build change; cancellations by report copy, by registry copy and before publication of the manifest; manipulation/hardlinks; Getting old backup for changes; Protected targets and input limits. The same file size alone is expressly not considered as proof of content again; a corresponding negative test passes without confidence release.
+
+Four new UI flows: explicit adoption and reopening after navigation, refusal of changed previews without repeat attempt, update/corruption status, discarded selection and delayed responses. Entire UI run on the first run green. 1024px without horizontal overflow.
+
+Native acceptance takes over the real user report from 20.09.2026 byte-identical, creates the matching 679 byte registry copy in the project and checks its hash after reopening. Four new IPCs refuse outdated sessions. CLI confirms the persisted status after termination of its own test instance. User report and 38 observed game EXE/metadata hashes unchanged; The game continued. Existing mod/recovery samples also passed. No game or savewrites, no game locks, no new complete hash run of the original archives.
+
+Evidence: `.local/phase4-v8-rust-tests.log`, `.local/phase4-v8-native/result.json`, `.local/phase4-v8-baseline-status.json`, `.local/phase4-v8-validation.json`. [Operation and limits](BASELINE.md).
+
+## Phase 4 tests v0.4.6
+
+**124 Rust tests and 4 frontend unit tests passed; 25 successfully tested various UI flows.** Fmt/Clippy with `-D warnings` and Release Build passed. Four real game data integrations are included. The 69 existing transaction breakpoints now additionally check the concrete withdrawal preview against the before/after hashes and actually removed files.
+
+Six new core tests: missing backup is not recreated, preview does not change content files or directories, restorers comply with the plan, open transactions before/after commit are correctly arranged, plans become obsolete in new transactions and are not transferable between project copies. source updates, foreign files, tampered registry/overlays, corrupted backup, hardlinks and protected paths are rejected without cleanup; List size limited.
+
+The first run of the new tests failed due to an incomplete synthetic table pair in the fixture; The necessary header has been added. In the first UI run, the 21 previous and two new flows existed. Two new test selectors have been corrected: `option.disabled` check directly and address the item database button including the counter. After that, all four new flows passed. No production code has been adapted to circumvent these fixture/selector errors.
+
+Native release acceptance: backup status and restore deactivated with already reset sample; deliberately missing final marker in a new copy of our sample; Open transaction correctly detected, restored via UI, final marker byte content identical and subsequent Zustandchecking green. All new IPCs refuse outdated sessions. CLI List/Preview/Restore on the same copy also successful. 1024px without overflow and visually checked; No JavaScript errors. Existing modflows and process/update protection samples green. Game continued, 38 observed game EXE/metadata hashes unchanged.
+
+Evidence: `.local/phase4-v7-rust-tests.log`, `.local/phase4-v7-native/result.json`, `.local/phase4-v7-restore-preview.json`, `.local/phase4-v7-cli-recovery.json`, `.local/phase4-v7-validation.json`. [Operation and limits](BACKUP_RECOVERY.md).
+
+## Phase 4 tests v0.4.5
+
+**User acceptance of full content verification, 20.09.2026:**Exported desktop report `exports/installation-audit-1789903405-11284-1-0.json` checked. 285 Files / 154,097,618,899 Bytes / 195 PAZ archives in 140 seconds; all SHA-1 comparisons are successful, metadata according to the report stable. Report consistency and match of 38 previously observed SHA-256 values confirmed without re-accessing game content. Detection: `.local/user-content-audit-review.json`. This complements the automated acceptance described below; Vanilla certification, live apply and manual in-game module testing remain open.
+
+**118 Rust tests, 4 frontend unit tests, 21 headless UI flows passed.** Fmt/Clippy with `-D warnings` error-free; four real file tests and previous 69 transaction breakpoints included.
+
+New [Content verification](CONTENT_AUDIT.md): known SHA-1/SHA-256 vectors, multiblock/blank files, same sized content changes, cancellation, game status errors and new game launch, changes of already hashed sources, depot/build change, growth, additional/missing/hard linked sources. The real public process check is checked before content accesses; Our own read handles allow competing writes and recognize the subsequent metadata change. Worker tests check an active order, session limits, abandonment and panic. UI flows check activation after metadata checking when the game is over, progress, change of view, cancellation, error message, deviations and report export.
+
+An early total run met a process query for the end of a `probe.exe` of the same name from another test. The protective barrier remained closed; the affected own process fixtures are now serialized. Pass the isolated test and re-run. The UI fixture had to replicate the fresh objects of real IPC responses instead of changing React state objects in-place.
+
+Native release acceptance v0.4.5 passed: new content button locked during the running game; Start/Cancel/Export refuse invalid sessions. All 18 commands are consistent with the purely local main-window capability. The great original hash run was not started; Positive content runs use synthetic files. Existing modflows and protected workspace rehearsals including recovery and refusal; CLI recovery of the same sample as well. 1024px without overrun, screenshot checked, no JavaScript errors. All 38 observed EXE/metadata hashes unchanged after the native sample. Evidence: `.local/phase4-v6-validation.json`, `.local/phase4-v6-native/result.json`, `.local/phase4-v6-rust-tests-final.log`.
+
+## Phase 4 tests v0.4.4
+
+**106 Rust tests, 4 frontend unit tests, 17 headless UI flows.** Fmt and Clippy with `-D warnings` error-free. Four real file tests were carried out; 69 existing transaction termination points remain included.
+
+Ten new Rust tests for [Installation test](INSTALLATION_CHECK.md): all cut-off positions of a synthetic repository list, CRC/IDs/sizes/signature status, path breakouts/devices/devices/duplicates, protobuf overflows, additional/missing files, type changes, registry defects, missing/contradictory caches, Steam update states, metadata limits, depth and a Windows junction. Same file sizes with changed content must never be considered as proof of content or vanilla.
+
+Two new UI flows: conscious start instead of automatic scan, additional EXEs, confidence limit and repetition; visible error message with restart. 285 The first native acceptance found a missing Tauri-ACL assignment for the new read command. `build.rs` The final release EXE consisted of the repetition including real inventory, existing modflows, protected workspace rehearsals 1024px without overrun, no JavaScript errors; CLI recovery of the same v3 sample also successful. 38 observed EXE/metadata hashes unchanged after the native sample.
+
+Evidence: `.local/phase4-v5-validation.json`, `.local/phase4-v5-native/result.json`, `.local/phase4-v5-rust-tests-final.log`, `.local/phase4-v5-cli-recovery.json`.
+
+
+## Phase 4 tests v0.4.3
+
+**96 Rust tests, 4 frontend unit tests and 15 headless UI flows passed**; Fmt/Clippy with `-D warnings` error-free. Four real file tests were actually performed. The 69 previous transaction breakpoints remain included.
+
+- Integrated session locks via Apply/Reapply/Restore/Recovery: EXE start,
+Source/Backupwrites and renaming of relevant parent folders blocked.
+- Already on-going own test copy detected before state/backup creation; Real estate
+Process paths are canonized on both sides. Process testing errors also lock recovery and restores; Handles remain held until the end of the session.
+- Abort after intent release with held locks, then recovery.
+- Simulated source update before recovery and after commit: new sources/registry
+byte-identical remain, old backup and own overlay files are not written back or removed via a foreign / new Zustand.
+- Manipulated protection manifests, v3 downgrades, damaged backups, hardlinks,
+Path breakouts and a claimed vanilla origin are rejected.
+- Real merchant data: own empty item selection and suppress original refresh
+global values; Another merchant outside the selection gets his own items and daily refresh. All other merchant records remain byte-identical.
+- UI: submit individual selection/refresh, then inherit again and
+Remove the exception; Protective/Update probe is displayed with its test scope.
+
+The first protection tests revealed that exclusive EXE opening alone does not detect already running images and attribute access does not hold an effective folder lock. Another test required the process path comparison, which was canonized on both sides. After these corrections, the tests passed without weakening their requirements.
+
+Proofs: `.local/phase4-v4-rust-tests.log`, `.local/phase4-v4-mods-tests.log`, `.local/phase4-v4-protected-tests.log`. Expiration and Limits: [Protected workspace rehearsals](PROTECTED_REHEARSALS.md). The final release EXE v0.4.3 also passed the native WebView2 test with real data: 34,488 previous changes, protected trial cycles with recovery, refusal to update, daily refresh, table growth, drop chances and manual warranties. The individual merchant selection correctly replaced the global item selection; Export and 1024px passed without JavaScript errors. An initially ambiguous test selector for nested details has been corrected; The same EXE then passed the complete run. The new CLI subsequently restored the same v3 sample idempotent. Documents under `.local/phase4-v4-native/`, `.local/phase4-v4-cli-recovery.json` and `.local/phase4-v4-validation.json`.
+
+Windows has actually been tested; no Linux version and still no live apply, no vanilla certification and no in-game acceptance.
+
+## Phase 4 tests v0.4.2 (historical)
+
+**87 Rust tests, 4 frontend unit tests and 14 headless UI flows.** Fmt/Clippy with `-D warnings` error-free. The full workspace run contains four actual real file tests; then passed the extended shop test for all 6,816 items at a dealer also.
+
+- New stock positions receive new list/save indices; existing gaps,
+Prices, conditions and original positions remain byte-identical. Double save indices and changed list order block additions.
+- A pure long position does not prevent a new purchaseable offer of the same
+items. Buyable/Sellable counts remain consistent.
+- Daily Fresh only changes the confirmed daily field; Sentinel intervals
+remain intact. Real global preview: exactly 246 changes.
+- Small addition and complete range at retailers 3101: body growth,
+recalculated header, encrypted overlay readback and all other merchant records unchanged.
+- Quantities ×3 and Opportunity ×2 at Set 175521: Rate 35,000 → 70,000
+generated bytes are tested. Exact scaling, zero factor, 100 % cap and wide intermediate values; manual warranty takes precedence over opportunity factor 0.
+- rejection of weighted/conditional odds, guarantee with quantity factor 0,
+unknown items, unsuitable dealer and oversized preview selection.
+- UI transfers daily replenishment, additional items and manual warranties
+jointly; Reset resets the options. Existing export/trial/exception tests and locked live apply remain green.
+
+The final release EXE v0.4.2 passed the native WebView2 test with real data: existing 34,488 change plan, two Apply/Reapply/Restore cycles plus recovery, 246 daily refresh changes, two new merchant items 3101, Opportunity ×2 and Quantity ×3 in a common plan, and explicit 100% base rate. The grown table also consisted of two test cycles plus recovery; Exports and 1024px checked without overflow. No JavaScript errors. The game continued.
+
+A first native test run failed due to incorrectly coded umlauts in the test script. After script correction, the same unchanged release EXE passed all exams. The launcher only closed its own invisible test instance.
+
+Evidence: `.local/phase4-v3-rust-tests.log`, `.local/phase4-v3-all-items-test.log`, `.local/phase4-v3-native/result.json` and `.local/phase4-v3-validation.json`. Static field documents: [PHASE4_FIELDS.md](research/PHASE4_FIELDS.md). Live B0, universal dealer coverage and in-game proofs remain open.
+
+## Phase 4 tests v0.4.1 (historical)
+
+Result: **83 Rust tests, 4 front-end unit tests and 13 headless UI flows green**; Fmt/Clippy error-free. Full workspace run with 82 tests plus final format suite with 18 instead of 17 tests after completion of the exact length test. The final release EXE v0.4.1 passed the native test with 34,488 changes, reapply/recovery, six file transitions, export and 1024px display.
+
+Additional checks on the new private transaction core:
+
+- Two encrypted overlay groups, reapplying modified content,
+Receive old files until registry commit, then restore byte-identical.
+- 69 injected quits at Apply, Reapply and Restore, including partial writes,
+Publication of the group, registry commit, cleanup and proof of financial statements.
+- Repeated cancellation during recovery before and after registry commit.
+- Protection against occupied IDs, outdated plans, foreign content, damaged backups,
+Parallel locks, hardlinks and failed process checks.
+- Testing of the entire PAMT/PAZ pair including the exact decompressed length, and
+Reject duplicate virtual table paths across multiple groups.
+- Public recovery command denied protected, misplaced,
+Unmarked and unknown versioned samples and linked markers.
+- Desktop sample with real data: two Apply/Reapply/Restore cycles, Recovery,
+six file transitions; Headless UI checks the display including remote files.
+
+New native proofs are under `.local/phase4-v2-native/`, Rust output under `.local/phase4-v2-rust-tests.log` and `.local/phase4-v2-format-tests.log`. `mod-recover` was also repeated by CLI on the native sample (idempotent, original registry obtained). The final comparison confirms unchanged hashes of all 38 observed EXE/metadata files; No complete ETA reconciliation. Injected abortions are not actual power outages or evidence of all file system/disc failures. Live launch protection and in-game acceptance remain open.
+
+## Phase 4 tests v0.4.0 (historical)
+
+Result: **74 Rust tests, 4 frontend unit tests and 13 headless UI flows green**, as well as native testing of the final release app v0.4.0. Fmt/Clippy error-free.
+
+- New `mods_live` test with actual tables: exact coverage, unchanged
+Table pairs, deterministic overlay, targeted merchant/dropset selection, all other records byte-identical, three friendly values and negative penalty, sentinel rejection, unknown option names and input limits.
+- Synthetic store test: unknown September bytes, optional block and
+The effect list is maintained exactly when the inventory is changed. Index growth preserves body prefix and nonphysical header key order.
+- Overlaytest reads encrypted LZ4 body/header via the real archive reader
+back, checks determinism, collisions, pairs, and forbidden file names.
+- Private transaction sample: six Apply/five Restore interruption limits,
+Reopen/recovery, damaged backup, competing lock, foreign registry/group change, hardlinks and ongoing/unclear process check.
+- Windows start protection test exclusively with a copied own test EXE:
+Start with exclusive file handle refused, successful after release.
+- Four additional headless UI flows: explicit preview, always blocked
+Live Apply, verified Plan ID during export/trial run, stale preview, selection and exceptions, input error, 1024px and backend rejection.
+
+`app/scripts/native-mods-smoke.mjs` checked the real interface in a separately launched invisible Workbench window: all shops 999, quantities ×2, Trust ×3, file plan, two trial runs, export with credits, Trust penalty unchanged and block an outdated preview. Result/screenshots under `.local/phase4-native/`. The script does not start and operate a game. The associated launcher then terminates only its own Workbench test instance.
+
+The interruption tests are not a power failure simulation. Full recovery of any cancellation during file I/O, live reapply, multiple groups and built-in protection against any launcher path are still necessary before live sharing.
+
+## Phase 3 detection
+
+65 Rust tests, 4 frontend unit tests and 9 headless edge flows passed. `crates/cd-core/tests/crafting_live.rs` checks the complete recipe/group round trip, all shared item dropsets, the concrete arrow/pot examples and the planning of each of the 1,108 shared recipes. Missing local configuration is explicitly skipped; Configured unknown builds fail.
+
+`app/scripts/native-crafting-smoke.mjs` checks the real app with the local data in an invisible own WebView2 window. Screenshots/result: `.local/phase3-native/`. Passed debug and final release EXE; the previous item browser including language change was then checked again with the release EXE (`.local/phase3-item-regression/`). No game start, no in-game action, no save access.
+
+Reproducible commands: same workspace/frontend commands at the bottom; Additional `cargo test -p cd-core --test crafting_live --locked -- --nocapture`.
+
+Manual view:
+
+- Production target arrow (50001), quantity 31, timber stock 3: 7 timber and
+2 Iron ore absent; 60 Arrows are made and 29 remain.
+- Choose mixed stew, change recipe 343, seafood alternative:
+Tree, Residual Requirements and Stock List must use the same item selected.
+- Intermediate product present / manually procure, change recipes, empty supplies.
+- Switch to the computer via item details → shortcuts → production.
+- Source gaps, unknown opportunities and cycle warnings not as secured
+Misunderstand world sites, 0 % or free production.
+
+Linux was still not running locally. The numbers of the earlier phases below are historical evidence.
+
+## Phase 2 detection
 
 ```powershell
 npm ci --prefix app
@@ -1458,30 +598,22 @@ cargo test --workspace --locked -- --test-threads=2 --nocapture
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
-57 Rust-Tests, 4 Frontend-Unit-Tests und 6 Headless-Edge-Flows bestanden unter
-Windows. Der neue Echtdateitest prüft deutsche FTS-Suche, vollständige Stringinfo-
-Roundtrips, tatsächliche DDS-Icondekodierung, Stats, Pagination, Rohfelder und
-JSON-Export in einem isolierten temporären Projekt. Keine Ausgabe ins Spiel.
+57 Rust tests, 4 frontend unit tests and 6 headless edge flows passed on Windows. The new real file test checks German AGV search, complete Stringinfo round trips, actual DDS icon decoding, stats, pagination, raw fields and JSON export in an isolated temporary project. No spending in the game.
 
-Zusätzlich lief die gebaute Tauri-App mit echtem WebView2 in einem **unsichtbaren
-eigenen Testfenster**, nicht im Browser-Mock: reales Item 2200, Icon, Rohfelder,
-JSON-Ausgabe und Sprachwechsel ger → eng bestanden, keine JavaScript-Fehler.
-Prüfer: `app/scripts/native-smoke.mjs`; Ergebnisse/Screenshots unter
-`.local/phase2-native/`. Der eigene Testprozess wurde anschließend geschlossen.
+In addition, the built Tauri app ran with real WebView2 in a **invisible own test window**, not in the browser mock: real item 2200, icon, raw fields, JSON output and language change ger → narrowly passed, no JavaScript errors. Tester: `app/scripts/native-smoke.mjs`; Results/screenshots under `.local/phase2-native/`. The own test process was then closed.
 
-Manuelle Durchsicht, ohne In-game-Eingriff:
+Manual view, without in-game intervention:
 
-- App starten; automatische Erkennung oder Pfadauswahl prüfen.
-- `Stumpfpfeil` suchen, Icon/Name/Felder ansehen; mehrere Filter kombinieren.
-- Liste weit scrollen, Sprachwechsel, unbekannte Felder und Itemlinks ausprobieren.
-- JSON speichern und den angezeigten `exports/`-Pfad prüfen.
-- Fehlende Händler-/Drop-/Rezeptbeziehungen sind sichtbar als offen markiert und
-  werden nicht als „keine Quellen vorhanden“ interpretiert.
+- Starting the app; Check for automatic detection or path selection.
+- `Stumpfpfeil` search, view icon/name/fields; Combine several filters.
+- Scroll list far, try language changes, unknown fields and item links.
+- Save JSON and check the `exports/` path displayed.
+- Missing merchant/drop/prescription relationships are visibly marked as open and
+are not interpreted as “no sources exist”.
 
-Linux-CI ist vorbereitet, hier nicht ausgeführt. Die folgenden Phase-1-Zahlen
-bleiben der damalige Nachweis; der aktuelle Gesamtstand steht oben.
+Linux-CI is prepared, not executed here. The following phase 1 numbers remain the proof at that time; The current overall status is above.
 
-## Phase-1-Nachweis und Wiederholung
+## Phase 1 Detection and repetition
 
 ```powershell
 cargo fmt --all -- --check
@@ -1492,121 +624,84 @@ cargo build --release --locked -p cd-cli
 .\target\release\cd-cli.exe search Stumpfpfeil
 ```
 
-51 Tests bestanden unter Windows, darunter der tatsächlich ausgeführte Test
-gegen die lokale Installation. Die CLI bestätigte 34 Bytevergleiche und die
-Feldabdeckung aller 6.816 Items. Release-CLI-End-to-End-Prüfungen kontrollierten
-auch FTS5, Cache-Wiederverwendung, Sprachwechsel, Builddiff, unbekannte Builds und
-Dateiausgabeschutz. Logs bleiben unter `.local/` und werden nicht eingecheckt.
+51 Tests passed on Windows, including the actual test against the local installation. The CLI confirmed 34 byte comparisons and the field coverage of all 6,816 items. Release CLI end-to-end checks also controlled FTS5, cache reuse, language change, builddiff, unknown builds, and file output protection. Logs remain under `.local/` and are not checked in.
 
-Der Echtdateitest liest `.env` im Projektroot und anschließend die Spielarchive.
-Fehlt `CD_GAME_DIR`, meldet er **SKIP**; `--nocapture` macht das im Log sichtbar.
-Ein gesetzter, aber ungültiger oder veränderter Build ist ein Fehler, kein Skip.
-Es werden keine Originaldateien zurückgeschrieben oder Saveinhalte geöffnet.
-Synthetische Fehler-/Pfadtests nutzen temporäre, isolierte Verzeichnisse.
+The real file test reads `.env` in the project root and then the game archives. If `CD_GAME_DIR` is missing, it reports **SKIP**; `--nocapture` makes this visible in the log. A set but invalid or modified build is an error, not a skip. No original files are written back or save contents are opened. Synthetic error/path tests use temporary, isolated directories.
 
-GitHub Actions prüft Windows und Ubuntu; Linux wurde lokal nicht ausgeführt.
-Frontendtests beginnen mit dem Frontend in Phase 2. Der 13-fache Rohdatenbody-
-Roundtrip ist keine semantische Editorfreigabe; PALOC-Neukompression ist nicht
-als byteidentisch nachgewiesen.
+GitHub Actions checks Windows and Ubuntu; Linux did not run locally. Frontend testing starts with the frontend in phase 2. The 13-fold raw data body round trip is not a semantic editor release; PALOC recompression is not detected as byte-identical.
 
-## Ausführungsgrenze
+## Execution limit
 
-Der Nutzer spielt während der Entwicklung. In Phase 0 und 1 bleiben Spielverzeichnis
-und Spielstände unverändert; auch Steam-Dateiprüfung, Apply, Restore und
-Spielneustart werden nicht automatisch ausgelöst. Manuelle Spieltests
-führt der Nutzer gemäß seiner späteren Entscheidung erst nach Abschluss der
-Entwicklung aller Phasen durch.
+The user plays during development. In phase 0 and 1, the game directory and saved games remain unchanged; Also Steam file verification, Apply, Restore and game restart are not triggered automatically. Manual in-game tests is carried out by the user according to his later decision only after completion of the development of all phases.
 
-## Phase 1: Core und Parser
+## Phase 1: Core and Parser
 
-- `cargo test --workspace`: synthetische valide/ungültige Daten, gekürzte Header,
-  ungültige Längen/Offsets/Referenzen, unbekannte Builds und Obergrenzen testen.
-- Reale Eingaben ausschließlich aus `CD_GAME_DIR` und `CD_SAVE_DIR` in `.env`;
-  fehlende Installation ausdrücklich als übersprungen ausgeben. Ein früher Return
-  eines Referenztests zählt nicht als bestandener Test mit echten Spieldaten.
-- Jeden unterstützten Tabellenbody und seinen Header parsen und serialisieren:
-  Bytevergleich, nicht nur gleiche Datensatzzahl oder gleiches JSON. Auch unbekannte
-  Felder, Padding und Reihenfolge müssen erhalten bleiben.
-- Für lossless bezeichnete Formate Hash und vollständige Leseposition prüfen.
-  Ein unveränderter Rohbyteblock allein belegt keine korrekte Feldinterpretation.
-- Lokalisierung mit deutschen Texten, Umlauten, fehlenden Schlüsseln und der
-  aktuellen LZ4-Hülle prüfen. Suchindex einschließlich FTS5 nach Buildwechsel
-  invalidieren und deterministisch neu aufbauen.
-- Lesecode erhält keine beschreibbaren Spiel-/Save-Handles. Tests nutzen nur
-  isolierte Testordner für ihre Ausgaben. Linux-Kompilation in CI separat prüfen.
+- `cargo test --workspace`: synthetic valid/invalid data, abbreviated headers,
+Test invalid lengths/offsets/references, unknown builds and limits.
+- Real input only from `CD_GAME_DIR` and `CD_SAVE_DIR` in `.env`;
+Missing installation is expressly skipped. An early return of a reference test does not count as a passed test with real game data.
+- Parse and serialize each supported table body and its header:
+Byte comparison, not just the same data set number or the same JSON. Also unknown fields, padding and order must be preserved.
+- Check hash and complete reading position formats designated for lossless.
+An unchanged raw byte block alone does not occupy a correct field interpretation.
+- localization with German texts, umlauten, missing keys and the
+Check the current LZ4 envelope. Invalidate search index including FTS5 after change of build and rebuild deterministically.
+- Read code does not receive writable game/save handles. Testing only uses
+isolated test folders for their expenses. Check Linux compilation in CI separately.
 
-## B0: vor dem ersten Modul-Apply erforderlich
+## B0: Required before the first module application
 
-- Unbekannter Build, fremde Hashes, ungeprüftes Backup, unzureichender Speicher,
-  fehlende Rechte und laufender/nicht zuverlässig prüfbarer Spielprozess müssen
-  vor der ersten Änderung abbrechen. Dies gilt auch für Restore und Recovery.
-- Dry Run darf keine Spieldatei ändern. Er nennt jede Datei, fachliche Änderung,
-  Vorher-/Nachher-Hashes, Overlay-ID und Konflikte.
-- Overlay in isolierter Kopie erzeugen und mit einem unabhängigen Reader prüfen:
-  Registry, PAMT, Checksums, PAZ-Offsets, Kompression, Body-/Headerkonsistenz.
-- Vanilla → Apply → Restore: alle betroffenen Originaldateien bytegleich;
-  anschließend Apply → Restore → Apply mit deterministischem Ergebnis testen.
-- Einstellungen ändern/Module deaktivieren: Neuberechnung aus Vanilla; keine
-  Multiplikation bereits modifizierter Werte, keine zurückbleibenden Module.
-- An jeder Transaktionsgrenze Crash/Abbruch simulieren: nach Backup, einzelnen
-  Stagingdateien, Overlaybereitstellung, Registrywechsel und Verifikation.
-- Gleichzeitiges Apply, Spielstart während Commit und fremde Änderungen zwischen
-  Vorschau und Commit testen. Prozessprüfung allein schützt diesen Ablauf nicht.
-- Update nach Apply simulieren; niemals Registry/Backups eines alten Builds über
-  neue Spielarchive schreiben. Sicher bereinigen oder mit genauer Diagnose sperren.
-- Endgültiger manueller Nachweis: Spiel mit kleinster reversibler Änderung starten,
-  Hauptmenü/Save laden, Wirkung prüfen, Spiel schließen, Restore, erneut starten.
-  Keine Freigabe allein aufgrund einer formal gültigen Overlaydatei.
+- Unknown build, foreign hashes, unchecked backup, insufficient memory,
+Missing rights and ongoing/unreliably verifiable game process must cancel before the first change. This also applies to restore and recovery.
+- Dry Run is not allowed to change a game file. He mentions every file, technical change,
+Before/after hashes, overlay ID and conflicts.
+- Create overlay in isolated copy and check with an independent reader:
+Registry, PAMT, checksums, PAZ offsets, compression, body/header consistency.
+- Vanilla → Apply → Restore: all affected original files byte-identical;
+then test Apply → Restore → Apply with deterministic result.
+- Change settings/deactivate modules: recalculation from vanilla; None
+Multiplication of already modified values, no remaining modules.
+- Simulate crash/abort at each transaction boundary: after backup, individual
+Staging files, overlay deployment, registry change and verification.
+- Simultaneous Apply, Game Launch During Commit and Third Party Changes Between
+Preview and commit test. Process testing alone does not protect this process.
+- Simulate update to Apply; never have registry/backups of an old build over
+Write new game archives. Safely clean up or lock down with accurate diagnosis.
+- Final manual proof: start game with the smallest reversible change,
+Load main menu/save, check effect, close game, restore, restart. No release solely due to a formally valid overlay file.
 
-## Manuelle Modulprüfungen (alle noch offen)
+## Manual module checks (all still open)
 
-Je Modul zuerst aktuelle Vanilla-Werte dokumentieren, nur dieses Modul aktivieren,
-Vorschau prüfen, Spiel schließen, Apply durchführen, Spiel starten und beobachten.
-Danach Spiel schließen und Restore samt Hashvergleich ausführen. Kombinationen
-erst nach erfolgreichen Einzeltests. Spielstände werden durch Workbench nie
-geschrieben; für Tests benutzt der Nutzer bei Bedarf eine eigene Sicherung.
+First document current vanilla values per module, activate only this module, preview, close game, perform Apply, start game and watch. After that, close the game and perform Restore together with the hash comparison. Combinations only after successful individual tests. saved games are never written by Workbench; For tests, the user uses his own backup if necessary.
 
-| Modul | Im Spiel zu prüfen |
+|Module|To be checked in game|
 |---|---|
-| B1 Shops | Ausgewählte Händler und Artikel, Preis unverändert falls nicht editiert, Bestand 999, Tageswechsel/Refresh, Kauf mehrerer Slots, ausgeschlossene und Questartikel; große Listen auf UI-/Enginegrenzen prüfen. |
-| B2 Drops | Ausgewähltes Dropset vor/nach Änderung; Chance/Anzahl und Gruppensemantik getrennt prüfen. 100 % an bestätigter Auswahl, keine unbelegte Bossklassifikation; statistische Tests für Zufallsdrops. |
-| B3 Trust | Derselbe NPC und dieselbe Aktion vor/nach Änderung; gemessener Vertrauenszuwachs, Grenzen/negative oder Sonderwerte, keine unbeabsichtigten Itemdrop-Änderungen. |
-| B4 World | Spawnanzahl, Ablauf des Respawn-Timers, mehrere Regionen, Mounts in Städten, Ridedauer/Cooldown; Missionen, Duelle, Zwischensequenzen und Interaktionen ausdrücklich prüfen. |
-| B5 Dragon | Blackstar rufen, erneut rufen, Ablauf der Ridedauer und Überschreiten mehrerer Regionsgrenzen; Spezialzonen und missionsbedingte Sperren getrennt prüfen. |
-| B6 Inventory | Inventar und Lager getrennt: freie Zahl, Kaufen/Beute/Umsortieren, Speichern/Neuladen, Grenzwerte. Kein Maximalwert als sicher freigeben, bevor er empirisch belegt ist. |
-| B7 Stacks | Konsumgüter und Materialien stapeln/teilen/kaufen/lagern/neuladen. Equipment mit Haltbarkeit, Verzauberung oder Sockeln ausschließlich im ausdrücklich experimentellen Test; Instanzwerte dürfen nicht verloren gehen. |
-| B8 Durability | Tatsächlichen Haltbarkeitswert mehrerer Waffen/Werkzeuge vor und nach Belastung vergleichen: akzeptiert wird kein Verlust, nicht bloß hohe Resthaltbarkeit durch max_endurance=65535. Reparaturpreis/-aktion getrennt; negative/ungültige Zustände ausschließen. |
-| B9 Stamina & Spirit | Sprinten, Klettern, Fliegen und Skills getrennt; Faktoren 0/0,5/1 sowie unbegrenzter Modus, UI-Anzeige und tatsächlichen Verbrauch prüfen. |
-| B10 Skills | Globaler und einzelner Cooldown, Überschneidungen, mehrere Skilltypen, numerische Sonderwerte; Effekte anderer Werte nur nach bestätigter Semantik testen. |
-| B11 God-item | Einzelnen bestätigten Stat/Buff ändern, dann mehrere hinzufügen; Anzeige und tatsächliche Wirkung, Ausrüsten/Neuladen, leere/mehrfach belegte Arrays, Größenänderung und Headeroffsets. Inkompatible Weapon-Condition-Passives auf Nicht-Waffen vor Apply ablehnen und diese Ablehnung automatisiert testen; dokumentierter Kandidat für Endlosladen/starken Speicherverbrauch. |
-| C Profile | Normal ↔ Farm mit Drops ×10/Spawns ×3; deaktivierte Module verschwinden, wiederholtes Apply identisch, laufendes Spiel sperrt Änderungen, JSON-Importfehler beschädigen kein Profil. |
+|B1 Shops|Selected dealers and items, price unchanged if not edited, stock 999, change of day/refresh, purchase of multiple slots, excluded and quest items; Check large lists for UI/engine boundaries.|
+|B2 Drops|Selected dropset before/after change; Check chance/number and group semantics separately. 100 % of confirmed selection, no unattested boss classification; Statistical tests for random drops.|
+|B3 Trust|The same NPC and the same action before/after change; Measured confidence growth, limits/negative or special values, no unintended item drop changes.|
+|B4 World|Spawn number, expiry of the respawn timer, multiple regions, mounts in cities, ride duration/cooldown; Explicitly check missions, duels, cutscenes and interactions.|
+|B5 Dragon|Blackstar call, re-call, expiration of ride duration and crossing several regional borders; Check special zones and mission-related barriers separately.|
+|B6 Inventory|Inventory and stock separately: free number, purchase/loot/resorting, storage/reloading, limit values. Do not release a maximum value as safe before it is empirically proven.|
+|B7 Stacks|Stack/share/buy/store/reload consumer goods and materials. Equipment with durability, enchantment or bases exclusively in the explicit experimental test; Instance values must not be lost.|
+|B8 Durability|Compare the actual durability of several weapons/tools before and after load: no loss is accepted, not just high durability through max_endurance=65535. repair price/action separately; Exclude negative/invalid states.|
+|B9 Stamina & Spirit|Sprinting, climbing, flying and skills separately; Check factors 0/0,5/1 as well as unlimited mode, UI display and actual consumption.|
+|B10 Skills|Global and individual cooldown, overlap, multiple skill types, special numerical values; Test effects of other values only after confirmed semantics.|
+|B11 God-item|Change individual confirmed Stat/Buff, then add several; Display and actual effect, equipment/reloading, empty/multiple occupied arrays, size change and header offsets. Reject incompatible Weapon condition passives on non-weapons before Apply and test this refusal automatically; documented candidate for continuous loading/heavy storage consumption.|
+|C Profile|Normal ↔ Farm with drops ×10/Spawns ×3; Disabled modules disappear, repeated Apply identical, running game blocks changes, JSON import errors do not damage a profile.|
 
-Zusätzliche v0.4.2-Abnahme für B1/B2, weiterhin offen:
+Additional v0.4.2 acceptance for B1/B2, still open:
 
-1. Kleines Artikelsortiment nur bei einem unterstützten Händler: neue Artikel
-   kaufbar, alter Bestand unverändert, Preise plausibel, keine doppelten Angebote.
-2. Kauf → Tageswechsel → erneuter Besuch: Auffüllen normaler Angebote; einmalige
-   Angebote bleiben einmalig. Speichern/Neuladen durch den Nutzer prüft, dass neue
-   Save-Indizes keine anderen Warenpositionen verändern.
-3. Pro Händler eigene Artikel setzen, mit leerer Liste globale Ergänzungen
-   unterdrücken und Originalrefresh erhalten; explizite Ausnahme außerhalb der
-   globalen Auswahl und anschließendes Zurücksetzen auf Vererbung prüfen.
-   Erst danach größere Artikelsets; Sonderitems und Oberflächengrenzen prüfen.
-   Alle Items bei allen Händlern ist in dieser Version nicht freigegeben.
-4. Kleines bekanntes Rolltyp-0-Set: Chance ×2 und Menge ×3 getrennt und kombiniert,
-   dann manuelle Basisrate 100 %. Übergeordneten Trigger und mögliche
-   Laufzeitmodifikatoren getrennt betrachten; kein automatisch erkannter Boss.
-5. Chance 0 ohne Garantie: kein entsprechender Eintrag; mit expliziter Garantie
-   hat diese Vorrang. Mengenfaktor 0 plus Garantie muss vor Export abgewiesen werden.
+1. Small range of items only at a supported retailer: new items
+buyable, old stock unchanged, prices plausible, no duplicate offers.
+2. Purchase → change of day → re-visit: replenishing normal offers; once a
+Offers remain unique. Save/Reload by the user checks that new save indices do not change other items of goods.
+3. Per merchant putting own items, with empty list global supplements
+suppress and receive original refresh; Check for explicit exception outside of global selection and subsequent reset for inheritance. Only then larger sets of articles; Test special items and surface boundaries. All items at all merchants are not released in this version.
+4. Small known roll type 0 set: chance ×2 and set ×3 separated and combined,
+then manual base rate 100 %. separately consider higher-level triggers and possible runtime modifiers; Not an automatically recognized boss.
+5. Chance 0 without guarantee: no corresponding entry; With an explicit guarantee
+has that priority. Volume factor 0 plus warranty must be rejected before export.
 
-## Weitere Funktionen
+## Other functions
 
-A1: Suche, Kategorien, Deutsch/Fallback, unbekannte Felder als Offset/Typ/Rohwert,
-verifizierte Querverweise. A2: alternative Rezepte, Zyklen, Ausgabemengen, Rundung
-und gemeinsam verbrauchter eigener Bestand. A4: Save wird beim Speichern nicht
-blockiert; unvollständiger Lesezeitpunkt wird erneut gelesen, letzter gültiger
-Stand bleibt sichtbar; Questfortschritt gegen bekannte Spielsituationen prüfen.
-A4 zusätzlich: falsches HMAC, unbekannte Saveversion und unvollständige Dateikopie
-müssen als ungültiger Lesestand erkannt werden, nicht als 0 % Fortschritt.
-A3: Transform aus mehreren bekannten Punkten kalibrieren, an unabhängigen
-Punkten prüfen; fehlende Positions-/Sammelzustände sichtbar als unbekannt führen.
+A1: Search, Categories, German/Fallback, unknown fields as offset/type/raw value, verified cross-references. A2: alternative recipes, cycles, output volumes, rounding and commonly used own stock. A4: Save is not blocked during storage; incomplete reading time is read again, last valid state remains visible; Check quest progress against known game situations. A4 additional: incorrect HMAC, unknown save version and incomplete file copy must be detected as invalid reading, not as 0% progress. A3: calibrate transform from several known points, check at independent points; missing position/collection states visible as unknown.

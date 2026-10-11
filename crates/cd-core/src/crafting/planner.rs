@@ -12,7 +12,7 @@ impl<'de> Deserialize<'de> for Quantity {
         let s = String::deserialize(d)?;
         if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) {
             return Err(serde::de::Error::custom(
-                "Menge muss eine ganze positive Zahl sein",
+                "Quantity must be a positive whole number",
             ));
         }
         s.parse().map(Self).map_err(serde::de::Error::custom)
@@ -82,7 +82,7 @@ fn add(map: &mut BTreeMap<u32, u64>, key: u32, amount: u64) -> Result<()> {
     let n = map.entry(key).or_default();
     *n = n
         .checked_add(amount)
-        .ok_or_else(|| invalid("Mengenüberlauf"))?;
+        .ok_or_else(|| invalid("Quantity overflow"))?;
     Ok(())
 }
 fn take(map: &mut BTreeMap<u32, u64>, key: u32, amount: u64) -> u64 {
@@ -95,9 +95,7 @@ impl State<'_> {
     fn expand(&mut self, key: u32, quantity: u64, path: &mut BTreeSet<u32>) -> Result<PlanNode> {
         self.nodes += 1;
         if self.nodes > 1000 || path.len() > 32 {
-            return Err(invalid(
-                "Rezeptbaum überschreitet 1.000 Knoten oder 32 Ebenen",
-            ));
+            return Err(invalid("Recipe tree exceeds 1,000 nodes or 32 levels"));
         }
         let item = self
             .catalog
@@ -131,7 +129,7 @@ impl State<'_> {
                 alternatives
                     .iter()
                     .find(|r| r.key == *wanted)
-                    .ok_or_else(|| invalid("Rezept gehört nicht zum Zielitem"))?
+                    .ok_or_else(|| invalid("Recipe does not belong to the target item"))?
                     .clone(),
             )
         } else {
@@ -149,7 +147,7 @@ impl State<'_> {
             .into();
             if cycle {
                 self.warnings.insert(format!(
-                    "Rezeptzyklus bei {}: Restmenge muss beschafft werden.",
+                    "Recipe cycle at {}: remaining quantity must be obtained separately.",
                     node.item.name
                 ));
             }
@@ -160,7 +158,7 @@ impl State<'_> {
         let batches = remaining.div_ceil(recipe.output_quantity.0);
         let produced = batches
             .checked_mul(recipe.output_quantity.0)
-            .ok_or_else(|| invalid("Mengenüberlauf"))?;
+            .ok_or_else(|| invalid("Quantity overflow"))?;
         path.insert(key);
         for ingredient in &recipe.ingredients {
             let choice = self
@@ -171,12 +169,12 @@ impl State<'_> {
                 .unwrap_or(ingredient.choices[0].key);
             if !ingredient.choices.iter().any(|c| c.key == choice) {
                 return Err(invalid(
-                    "Ausgewähltes Material gehört nicht zur Rezeptgruppe",
+                    "Selected material does not belong to the recipe group",
                 ));
             }
             let amount = batches
                 .checked_mul(ingredient.quantity.0)
-                .ok_or_else(|| invalid("Mengenüberlauf"))?;
+                .ok_or_else(|| invalid("Quantity overflow"))?;
             node.children.push(self.expand(choice, amount, path)?);
         }
         path.remove(&key);
@@ -191,7 +189,7 @@ impl State<'_> {
 pub(super) fn calculate(catalog: &CraftCatalog, request: PlanRequest) -> Result<Plan> {
     if request.quantity.0 == 0 || request.quantity.0 > 1_000_000_000_000 {
         return Err(invalid(
-            "Zielmenge muss zwischen 1 und 1.000.000.000.000 liegen",
+            "Target quantity must be between 1 and 1,000,000,000,000",
         ));
     }
     if request.owned.len() > 10_000

@@ -1,106 +1,71 @@
-# Reparatur 0.9.0 – Erfassung aus gehaltenen Referenzen
+# Repair 0.9.0 – capture from held references
 
-Historischer Stand. Eigene 2949-Nachweise der hier noch als Legacy-Fixtures
-bezeichneten Lesefelder sind inzwischen in [Modul 0.10.0](INVENTORY_2949.md) ergänzt.
+Historical status. Own 2949 proofs of the reading fields still referred to here as legacy fixtures are now supplemented in [Modul 0.10.0](INVENTORY_2949.md).
 
-Stand: 22.09.2026. Entwicklungsmodul, weiterhin **kein installierbarer Mod**.
-Desktop-App v0.5.9 und deren gesperrte Reparaturoption bleiben unverändert.
+Status: 22.09.2026. Development module, still **no installable mod**. Desktop app v0.5.9 and its locked repair option remain unchanged.
 
-## Behobene Lücke
+## Removed gap
 
-Der bisherige geschützte Leser erwarb beide Actor-Referenzen und Besitzersperren,
-rief anschließend aber den allgemeinen Diagnose-Leser auf. Dieser suchte die
-Server-Registry erneut ohne deren eigene Sperre ab. Eine Actor-Sperre schützt
-weder Registryknoten noch einen dort inzwischen eingetragenen anderen Actor.
+The previous protected reader acquired both Actor references and owner locks, but subsequently called the general diagnostic reader. This searched the server registry again without their own lock. An actor lock protects neither registry node nor another actor registered there.
 
-`capture_with_locks` erfasst jetzt ausschließlich das bereits gehaltene Paar.
-Eine gültige vollständige Kennung ist zwingend; Alive-/Zerstörungszustand werden
-vor und nach der Erfassung geprüft. Die Clientauswahl muss dem gehaltenen Client
-entsprechen. Eine andere Auswahl wird vor dem Lesen ihrer Charakterdaten
-abgewiesen. Der Clientanker und alle gelesenen Itemdaten bleiben Teil des
-Kontrolllesens; eine erkannte Änderung verwirft die gesamte Ausgabe.
+`capture_with_locks` now only captures the already held pair. A valid full identifier is mandatory; Alive/destructive state shall be checked before and after detection. The client selection must correspond to the held client. Another selection is rejected before reading their character data. The client anchor and all read item data remain part of the control read; A recognized change discards the entire output.
 
-Der allgemeine `capture`-Pfad bleibt für Diagnose-/Offlinefixtures bestehen und
-ist ausdrücklich keine Live-Erwerbsquelle. Beide Wege verwenden dieselbe
-Item-, UID-, Positions-, Definitions- und Spiegelprüfung. Keine Leseoperation
-ändert Haltbarkeit oder löst Spielereignisse aus.
+The general `capture` path remains for diagnostic/offline fixtures and is expressly not a live source of income. Both paths use the same item, UID, position, definition, and mirror check. No reading operation changes durability or triggers game events.
 
-## Gemeinsamer nativer Test
+## Common native test
 
-Die Probe aus [0.8.0](REGISTRY_NATIVE_INTEGRATION.md) ist um die vollständige
-WindowsRWLock-Try-Funktion des Builds 1.0.0.2949 erweitert:
+The sample from [0.8.0](REGISTRY_NATIVE_INTEGRATION.md) is extended with the full WindowsRWLock-Try function of the build 1.0.0.2949:
 
-| Eigenschaft | Nachweis |
+|Properties|Evidence|
 |---|---|
-| RVA / Größe | `0x1371c30` / 174 Bytes |
-| SHA-256 | `f928b8b10862b8348823b946709b6d75d7eed1f2a6665350a0cfa8d9cecbf606` |
-| pdata / Unwind | Exakte Grenze bis `0x1371cde`; Header `11140800` |
-| TLS-Lesezugriff | Nur neun Bytes bei `0x1371c5f` auf privaten TLS-Vektor umgeleitet |
-| Abhängigkeiten | Echte Windows-TryAcquireSRW-/ReleaseSRW-Funktionen und GetCurrentThreadId; ausschließlich eigene Sperrobjekte |
+|RVA/Size|`0x1371c30` / 174 Bytes|
+|SHA-256|`f928b8b10862b8348823b946709b6d75d7eed1f2a6665350a0cfa8d9cecbf606`|
+|pdata / Unwind|Exact limit up to `0x1371cde`; Header `11140800`|
+|TLS read access|Only nine bytes at `0x1371c5f` redirected to private TLS vector|
+|Dependencies|Real Windows TryAcquireSRW/ReleaseSRW features and GetCurrentThreadId; Exclusively own barrier objects|
 
-Insgesamt sind jetzt 16 Codebereiche, zehn pdata-Grenzen und fünf TLS-Lesestellen
-gepinnt. Die bisherigen originalen Referenzmethoden und Freigaben bleiben Teil
-derselben Probe. Es wird weder Spielcode in einen laufenden Prozess geladen noch
-dessen Speicher gelesen. Der vollständige Quelldateihash wird vorher und nachher
-geprüft; Codekopien liegen auf privaten RX-Seiten, Daten auf getrennten Seiten.
+In total, 16 code ranges, ten pdata boundaries and five TLS reading locations are now pinned. The previous original reference methods and releases remain part of the same sample. Neither game code is loaded into an ongoing process nor is its memory read. The full source file hash is checked before and after; Copies of code are on private RX pages, data on separate pages.
 
-18 zusätzliche Szenarien verbinden geschützte Registry-Suche, echte Actor-
-Referenzen, tatsächliche nicht wartende Besitzersperren, Leser und Reparaturplanung:
+18 additional scenarios combine protected registry search, real actor references, actual non-waiting owner locks, readers, and repair planning:
 
-- Normal-/User-Actors und direkter/registrierter Referenzmodus.
-- Beide Besitzer besitzen beim Itemlesen gültige Referenzen und echte exklusive
-  Windows-Sperren; auch das Kontrolllesen erfüllt diese Bedingung.
-- Ein konkurrierender Leser blockiert jeweils eine Besitzersperre. Die Erfassung
-  meldet `lock_busy`, liest keine Items und gibt bereits erworbene Mittel zurück.
-- Fehlender zweiter Besitz, alte Generationskennung, Tod und Zerstörungszustand.
-- Andere/fehlende Clientauswahl und Auswahlwechsel beim Kontrolllesen.
-- Ungültiger Sockelpointer, abweichende Item-UID und unzulässige Haltbarkeit.
-- Ein nach Referenzerwerb ersetzter Registryeintrag wird nicht erneut gelesen.
-  Das gehaltene Objekt bleibt in diesem Fixture lebendig; dies ist kein Beleg,
-  dass ein abgemeldetes Objekt noch geändert werden darf.
-- Sperren werden vor den Referenzen freigegeben; kein Restbesitz und keine
-  blockierte Windows-Sperre nach Erfolg oder Fehler. Quelldaten bleiben bytegleich.
+- Normal/User actuators and direct/registered reference mode.
+- Both owners have valid references and real exclusive
+Windows locks; Control reading also fulfils this condition.
+- A competing reader each blocks an owner lock. The registration
+reports `lock_busy`, does not read items and returns already acquired funds.
+- Lack of second possession, old generation identifier, death and state of destruction.
+- Other/missing client selection and change of selection during control reading.
+- Invalid base pointer, different item UID and impermissible durability.
+- A registry entry replaced after reference acquisition is not read again.
+The held object remains alive in this fixture; This is not proof that a logged-off object can still be changed.
+- blocks are released before the references; No remaining property and no
+Blocked Windows lock after success or error. Source data remains byte-identical.
 
-**Wichtige Grenze:** Inventar-, Equipment- und Clientankerlayout dieser kombinierten
-Probe sind private Fixtures des dokumentierten 2944-Lesers. Die native Erwerbs-
-und Sperrseite stammt aus 2949. Der gemeinsame Erfolg beweist das Zusammenspiel
-der Komponenten, **keine Live-Freigabe des Inventarlayouts für 2949**.
+**Important limit:**Inventory, equipment and client anchor layout of this combined sample are private fixtures of the documented 2944 reader. The native purchase and blocking page comes from 2949. The joint success proves the interaction of the components, **no live release of the inventory layout for 2949**.
 
-## Ergebnisse
+## Results
 
-- Sechs CTest-Suiten, MSVC Release mit `/W4 /WX` bestanden.
-- 362 synthetische Leser-/Referenzbedingungen; darunter ausdrücklich unlesbare
-  Registrybereiche und unbesessene Ersatzobjekte, auf die kein Leseversuch erfolgt.
-- 48 native Szenarien, 503 gezählte native Aufrufe, 3.867 Prüfbedingungen.
-  Die ursprünglichen 30 Registry-/Referenzfälle sind darin enthalten.
-- 1.481 Aktions-, 25 Sperrgruppen- und 55 Quellenadapterbedingungen bleiben bestanden.
-- Der Test ohne EXE prüft 48 Manifestbedingungen, führt aber keinen nativen
-  Spielcode aus. Die native Probe benötigt weiterhin den ausdrücklichen EXE-Pfad.
+- Six CTest suites, MSVC release with `/W4 /WX` passed.
+- 362 Synthetic reader/reference conditions; of which expressly illegible
+Registry areas and unobsessed replacement objects on which no read attempt is made.
+- 48 native scenarios, 503 counted native calls, 3,867 test conditions.
+The original 30 registry/reference cases are included.
+- 1,481 Action, 25 Lock Group and 55 Source adapter conditions remain.
+- The test without EXE checks 48 manifest conditions, but does not lead to native
+Game code from. The native sample still requires the express EXE path.
 
-Reproduktion:
+Reproduction:
 
 ```powershell
 ./runtime/repair/Test.ps1 -RegistryGameExe "C:/Program Files (x86)/Steam/steamapps/common/Crimson Desert/bin64/CrimsonDesert.exe"
 ```
 
-Nachweise: `.local/repair-runtime-v9-build-test.log`, `-native-result.json`,
-`-reader-result.json`, `-validation.json` mit demselben Präfix.
+Evidence: `.local/repair-runtime-v9-build-test.log`, `-native-result.json`, `-reader-result.json`, `-validation.json` with the same prefix.
 
-## Noch offen
+## Still open
 
-Manager-/Kontextlebensdauer, tatsächliche aktuelle Spielerauswahl, Engine-Thread
-und TLS-Modus müssen vom Spielhost gesichert werden. Referenzen auf Actors halten
-ihre Manager nicht automatisch am Leben. Vergleichslesen erkennt keinen
-unbemerkten A→B→A-Wechsel; jeder Lade-/Weltwechsel braucht ein echtes Hostsignal
-und eine neue Epoche, auch bei wiederverwendeten Adressen und Kennungen.
+Manager/context lifetime, actual current player selection, engine thread and TLS mode must be backed up by the game host. References on Actors do not automatically keep their managers alive. Comparison reading does not detect an unnoticed A→B→A change; Every charge/world change needs a real host signal and a new era, even with reused addresses and identifiers.
 
-Der untersuchte Bewegungshook der MIT-Referenz Trinity beschreibt selbst seine
-Spielerzuordnung als praktische Beobachtung ohne vollständige statische Kette.
-Er wurde deshalb nicht als bewiesener Dispatchpunkt übernommen. Die eigene
-Reparatur darf nicht bloß auf irgendeinem Bewegungs- oder Renderthread laufen.
+The MIT reference Trinity’s researched motion hook describes even its player assignment as a practical observation without a complete static chain. It was therefore not adopted as a proven dispatch point. Your own repair must not only run on any movement or render thread.
 
-Neue Inventar-/Ereignisnachweise, vollständige Änderungstransaktion und bestätigte
-Effekte, Eingabe, Loader sowie B0-Einbau fehlen weiterhin. Die Engine-Threadmap,
-Parent-Referenzen und endgültige Bereinigung sind nach wie vor Testabhängigkeiten.
-Manuelle Spieltests folgen wie vereinbart erst nach der Entwicklung aller Phasen;
-die Fälle stehen in der [Testcheckliste](../../TESTCHECKLISTE.md).
+New inventory/event proofs, complete change transaction and confirmed effects, input, loader and B0 installation are still missing. The engine threadmap, parent references and final cleanup are still test dependencies. Manuals in-game tests follow as agreed only after the development of all phases; The cases are in the [Testcheckliste](../../TESTCHECKLISTE.md).

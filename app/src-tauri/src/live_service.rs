@@ -97,17 +97,17 @@ impl LiveService {
         let mut jobs = self
             .job
             .lock()
-            .map_err(|_| error("Live-Auftragssperre beschädigt"))?;
+            .map_err(|_| error("Live job lock poisoned"))?;
         if let Some(job) = jobs.as_ref()
             && job
                 .snapshot
                 .lock()
-                .map_err(|_| error("Live-Status beschädigt"))?
+                .map_err(|_| error("Live status poisoned"))?
                 .phase
                 == "running"
         {
             return Err(error(
-                "Ein Live-Vorgang läuft bereits. Auf Abschluss oder Abbruch warten.",
+                "A live operation is already running. Wait for completion or cancellation.",
             ));
         }
         let initial = Snapshot {
@@ -121,14 +121,35 @@ impl LiveService {
         let state = snapshot.clone();
         let cancel = Arc::new(AtomicBool::new(false));
         let stop = cancel.clone();
-        std::thread::Builder::new().name("live-apply".into()).spawn(move||{
-            let result=std::panic::catch_unwind(std::panic::AssertUnwindSafe(||work(&stop)));
-            if let Ok(mut s)=state.lock(){match result {
-                Ok(Ok(value))=>{s.phase="complete";s.result=Some(value);},
-                Ok(Err(e))=>{s.phase=if stop.load(Ordering::Acquire){"cancelled"}else{"failed"};s.error=Some(e.to_string());},
-                Err(_)=>{s.phase="failed";s.error=Some("Live-Vorgang unerwartet beendet. Zustand und Wiederherstellung prüfen.".into());},
-            }}
-        }).map_err(|e|error(e.to_string()))?;
+        std::thread::Builder::new()
+            .name("live-apply".into())
+            .spawn(move || {
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| work(&stop)));
+                if let Ok(mut s) = state.lock() {
+                    match result {
+                        Ok(Ok(value)) => {
+                            s.phase = "complete";
+                            s.result = Some(value);
+                        }
+                        Ok(Err(e)) => {
+                            s.phase = if stop.load(Ordering::Acquire) {
+                                "cancelled"
+                            } else {
+                                "failed"
+                            };
+                            s.error = Some(e.to_string());
+                        }
+                        Err(_) => {
+                            s.phase = "failed";
+                            s.error = Some(
+                                "Live operation ended unexpectedly. Check status and recovery."
+                                    .into(),
+                            );
+                        }
+                    }
+                }
+            })
+            .map_err(|e| error(e.to_string()))?;
         *jobs = Some(Job { cancel, snapshot });
         Ok(initial)
     }
@@ -136,13 +157,13 @@ impl LiveService {
         let jobs = self
             .job
             .lock()
-            .map_err(|_| error("Live-Auftragssperre beschädigt"))?;
+            .map_err(|_| error("Live job lock poisoned"))?;
         jobs.as_ref()
             .map(|j| {
                 j.snapshot
                     .lock()
                     .map(|s| s.clone())
-                    .map_err(|_| error("Live-Status beschädigt"))
+                    .map_err(|_| error("Live status poisoned"))
             })
             .transpose()
             .map(|s| s.filter(|s| s.session == session))
@@ -151,14 +172,14 @@ impl LiveService {
         let jobs = self
             .job
             .lock()
-            .map_err(|_| error("Live-Auftragssperre beschädigt"))?;
+            .map_err(|_| error("Live job lock poisoned"))?;
         Ok(jobs
             .as_ref()
             .map(|j| {
                 j.snapshot
                     .lock()
                     .map(|s| s.phase == "running")
-                    .map_err(|_| error("Live-Status beschädigt"))
+                    .map_err(|_| error("Live status poisoned"))
             })
             .transpose()?
             .unwrap_or(false))
@@ -167,14 +188,14 @@ impl LiveService {
         let jobs = self
             .job
             .lock()
-            .map_err(|_| error("Live-Auftragssperre beschädigt"))?;
+            .map_err(|_| error("Live job lock poisoned"))?;
         let j = jobs.as_ref().ok_or_else(|| error("Kein Live-Vorgang"))?;
         let s = j
             .snapshot
             .lock()
-            .map_err(|_| error("Live-Status beschädigt"))?;
+            .map_err(|_| error("Live status poisoned"))?;
         if s.session != session || s.id != id {
-            return Err(error("Live-Vorgang ist veraltet"));
+            return Err(error("Live operation is stale"));
         }
         if s.phase == "running" {
             j.cancel.store(true, Ordering::Release);

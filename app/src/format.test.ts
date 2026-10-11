@@ -4,11 +4,11 @@ import { useCatalog } from './store';
 import type { RawField } from './types';
 describe('lossless display and field search', () => {
   it('formats u64 without floating point rounding', () => {
-    expect(integer('18446744073709551615')).toBe('18.446.744.073.709.551.615');
-    expect(integer('9007199254740993')).toBe('9.007.199.254.740.993');
+    expect(integer('18446744073709551615')).toBe('18,446,744,073,709,551,615');
+    expect(integer('9007199254740993')).toBe('9,007,199,254,740,993');
   });
   it('displays game markup as plain text, never HTML', () => {
-    expect(plainText('<PAColor>Öl</PAColor>\\nMaterial')).toBe('Öl\nMaterial');
+    expect(plainText('<PAColor>Ã–l</PAColor>\\nMaterial')).toBe('Ã–l\nMaterial');
     expect(plainText('<img src=x onerror="boom">Text')).toBe('Text');
   });
   it('intersects unknown status with path/value/offset searches', () => {

@@ -114,14 +114,14 @@ impl BrowserSession {
     }
     pub fn save_root(&self) -> Result<&Path> {
         self.save_root.as_deref().ok_or_else(|| crate::Error::Invalid(
-            "Bitte unter Datenquellen einen Spielstandordner auswählen und die Installation neu einlesen. Kein eindeutiger Saveordner erkannt.".into()
+            "Select a save folder under Data sources and reload the installation. No unique save folder was detected.".into()
         ))
     }
     pub fn mounts(&self) -> Result<Vec<crate::mounts::Mount>> {
         let mut catalog = self
             .mounts
             .lock()
-            .map_err(|_| crate::Error::Invalid("Reittierkatalog-Sperre beschädigt".into()))?;
+            .map_err(|_| crate::Error::Invalid("Mount catalog lock poisoned".into()))?;
         if catalog.is_none() {
             *catalog = Some(crate::mounts::catalog(self.workspace.data())?);
         }
@@ -253,7 +253,7 @@ impl BrowserSession {
             let built = c.build(request)?;
             if built.preview.plan_id != plan_id {
                 return Err(crate::Error::Invalid(
-                    "Vorschau ist veraltet; neu berechnen".into(),
+                    "Preview is stale; calculate it again".into(),
                 ));
             }
             crate::apply::export(&self.workspace, &built)
@@ -268,7 +268,7 @@ impl BrowserSession {
             let built = c.build(request)?;
             if built.preview.plan_id != plan_id {
                 return Err(crate::Error::Invalid(
-                    "Vorschau ist veraltet; neu berechnen".into(),
+                    "Preview is stale; calculate it again".into(),
                 ));
             }
             crate::apply::rehearse(&self.workspace, &built)
@@ -385,7 +385,7 @@ fn facets(values: impl Iterator<Item = u32>) -> Vec<Facet> {
 fn grant_restriction(key: u32, internal: &str) -> Option<&'static str> {
     match (key, internal) {
         (1001314, "Ice_Arrow") | (1001315, "Lightning_Arrow") | (1001316, "Fire_Arrow") => Some(
-            "Monstermunition: Diese Pfeilvariante ist in den Spieldaten für NPCs vorgesehen. Die Vergabe ins Inventar macht sie nicht zu regulärer Spielermunition. Verwende Pfeil (ID 50001), Giftpfeil (ID 50003) oder Explosionspfeil (ID 1001321).",
+            "Monster ammunition: this arrow variant is intended for NPCs in the game data. Adding it to inventory does not make it regular player ammunition. Use Arrow (ID 50001), Poison Arrow (ID 50003) or Explosive Arrow (ID 1001321).",
         ),
         _ => None,
     }

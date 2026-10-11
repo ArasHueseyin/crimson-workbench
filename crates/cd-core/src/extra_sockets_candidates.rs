@@ -16,7 +16,7 @@ fn number(o: &ObjectBlock, name: &str) -> Result<u64> {
         .fields
         .iter()
         .find(|f| f.name == name)
-        .ok_or_else(|| bad(format!("Item-Feld fehlt: {name}")))?;
+        .ok_or_else(|| bad(format!("Item field missing: {name}")))?;
     if !f.present {
         return Ok(0);
     }
@@ -62,20 +62,18 @@ fn shape(o: &ObjectBlock) -> Result<u8> {
         || number(o, "_stackCount")? != 1
     {
         return Err(bad(
-            "Nur einzeln gespeicherte Ausrüstung mit vollständig gelesenem Fünf-Sockel-Format ist unterstützt.",
+            "Only individually saved equipment with a fully parsed five-socket format is supported.",
         ));
     }
     let base = number(o, "_validSocketCount")?;
     if base > 5 {
-        return Err(bad(
-            "Vorhandene Sockelanzahl liegt außerhalb des geprüften Formats.",
-        ));
+        return Err(bad("Existing socket count is outside the verified format."));
     }
     let f = o
         .fields
         .iter()
         .find(|f| f.name == "_socketSaveDataList" && f.present)
-        .ok_or_else(|| bad("Sockelliste fehlt."))?;
+        .ok_or_else(|| bad("Socket list missing."))?;
     let FieldValue::ObjectList {
         count, elements, ..
     } = &f.value
@@ -83,14 +81,14 @@ fn shape(o: &ObjectBlock) -> Result<u8> {
         return Err(bad("Unbekannte Sockelliste."));
     };
     if *count != 5 || elements.len() != 5 {
-        return Err(bad("Sockelliste hat nicht fünf Einträge."));
+        return Err(bad("Socket list does not contain five entries."));
     }
     for (i, e) in elements.iter().enumerate() {
         if e.class_name != "ItemSocketSaveData" || !e.undecoded_ranges.is_empty() {
             return Err(bad("Unbekanntes Sockelformat."));
         }
         if i >= base as usize && number(e, "_itemKey")? != 0 {
-            return Err(bad("Ein gesperrter Basissockel enthält einen Stein."));
+            return Err(bad("A locked base socket contains a stone."));
         }
     }
     Ok(base as u8)
@@ -112,7 +110,7 @@ pub(crate) fn parse(data: &GameData, raw: &[u8]) -> Result<Vec<Candidate>> {
         if o.class_name == "ItemSaveData" {
             let uid = number(o, "_itemNo")?;
             let key =
-                u32::try_from(number(o, "_itemKey")?).map_err(|_| bad("Ungültiger Item-Key."))?;
+                u32::try_from(number(o, "_itemKey")?).map_err(|_| bad("Invalid item key."))?;
             if uid == 0 || uid == u64::MAX || !gear.contains(&key) {
                 return Ok(());
             }
@@ -136,9 +134,7 @@ pub(crate) fn parse(data: &GameData, raw: &[u8]) -> Result<Vec<Candidate>> {
                     || old.baseline != candidate.baseline
                     || old.eligible != candidate.eligible
                 {
-                    return Err(bad(
-                        "Widersprüchliche doppelte Gegenstandsinstanz im Spielstand.",
-                    ));
+                    return Err(bad("Conflicting duplicate item instance in save."));
                 }
             } else {
                 found.insert(candidate.uid.clone(), candidate);
@@ -154,7 +150,7 @@ pub(crate) fn parse(data: &GameData, raw: &[u8]) -> Result<Vec<Candidate>> {
                     count, elements, ..
                 } => {
                     if *count as usize != elements.len() {
-                        return Err(bad("Unvollständig gelesene Inventarliste."));
+                        return Err(bad("Inventory list not fully parsed."));
                     }
                     for e in elements {
                         walk(e, location, gear, names, found)?;
@@ -172,9 +168,9 @@ pub(crate) fn parse(data: &GameData, raw: &[u8]) -> Result<Vec<Candidate>> {
         )
     }) {
         let location = match b.class_name.as_str() {
-            "EquipmentSaveData" => "Ausgerüstet",
+            "EquipmentSaveData" => "Equipped",
             "MercenaryClanSaveData" => "Charakter / Begleiter",
-            _ => "Inventar / Lager",
+            _ => "Inventory / storage",
         };
         walk(b, location, &gear, &names, &mut found)?;
     }
@@ -193,7 +189,7 @@ pub fn candidates(
             saves
                 .iter()
                 .find(|s| s.id == id)
-                .ok_or_else(|| bad("Spielstand nicht gefunden."))?,
+                .ok_or_else(|| bad("Save not found."))?,
         ),
         None => saves.first(),
     };
@@ -216,9 +212,9 @@ pub fn candidates(
             item.eligible = false;
             item.reason = Some(
                 if r.item_key == item.item_key && r.baseline == item.baseline {
-                    "Bereits um zehn Sockel erweitert.".into()
+                    "Already expanded with ten sockets.".into()
                 } else {
-                    "Vorhandene Erweiterung stimmt nicht mit diesem Spielstand überein.".into()
+                    "Existing expansion does not match this save.".into()
                 },
             );
         }

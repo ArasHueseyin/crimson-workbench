@@ -1,71 +1,41 @@
-# Unterstützung der Spielbuilds
+# Support for game builds
 
-Stand: 22.09.2026, Workbench v0.5.9.
+Status: 22.09.2026, Workbench v0.5.9.
 
-| Steam-Build | EXE-Version | Leseschema | Stages | Quests |
+|Steam-Build|EXE-Version|reading schema|Stages|Quests|
 |---|---|---|---:|---:|
-| 25381195 | 1.0.0.2944 | `steam-25381195-gamedata-2.3-v2` | 52.080 | 1.097 |
-| 25455892 | 1.0.0.2949 | `steam-25455892-gamedata-2.3-v2` | 52.082 | 1.098 |
+|25381195|1.0.0.2944|`steam-25381195-gamedata-2.3-v2`|52,080|1,097|
+|25455892|1.0.0.2949|`steam-25455892-gamedata-2.3-v2`|52,082|1,098|
 
-Die Unterstützung umfasst Datenlesen, Modplanung und Proben an Projektkopien.
-Sie ist keine Vanilla-Zulassung der Installation, kein Nachweis der Wirkung im
-Spiel und keine Freigabe der nativen Reparaturfunktionen für den neuen Build.
+Support includes data reading, mod planning and samples on project copies. It is not a vanilla approval of the installation, no proof of the effect in the game and no release of the native repair functions for the new build.
 
-## Nachweis des Updates
+## Proof of the update
 
-Die neue EXE hat SHA-256
-`a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`.
-24 von 38 erfassten EXE-/Metadatendateien unterscheiden sich vom vorherigen Build.
-Diese Zahl beschreibt die erfassten Dateien, keine vollständige Inhaltsprüfung
-aller Spielarchive.
+The new EXE has SHA-256 `a9e5ca2076367e7995b81a3a4803f7259ab7dac3415df8ea949043ef635a174a`. 24 of 38 captured EXE/metadata files are different from the previous build. This number describes the recorded files, not a complete content check of all game archives.
 
-61 von der Workbench verwendete Tabellen-, Icon- und Sprachdateien wurden aus
-den Archiven gelesen und mit den bisherigen vollständigen Hashes verglichen:
-57 sind bytegleich. Nur Body und Header von `questinfo` und `stageinfo` ändern
-sich. Alle 14 indizierten Tabellenpaare lassen sich bytegleich rekonstruieren.
-Die Item-Lokalisierungen aller 15 Sprachen sowie die zusätzlich verwendeten
-Crafting- und Advanced-Tabellen bleiben identisch.
+61 table, icon and language files used by the Workbench were read from the archives and compared with the previous complete hashes: 57 are byte-identical. Only the body and header of `questinfo` and `stageinfo` change. All 14 indexed table pairs can be reconstructed byte-identical. The item localizations of all 15 languages as well as the additionally used crafting and advanced tables remain identical.
 
-- Stages: neue IDs `1001269` und `1003266`; kein bisheriger Datensatz geändert
-  oder entfernt. Die beiden bearbeitbaren Patrouillen `1002224` und `1017811`
-  bleiben vollständig bytegleich zum alten Build.
-- Quests: neue ID `1000320`, geänderte ID `1000107`, keine entfernte ID.
-  Die Workbench modifiziert diese Questdaten nicht.
-- Der Mod-Integrationstest prüft jede Stage gegen ihre Originalbytes. Nur die
-  beiden gewählten Patrouillen dürfen geändert werden. Beide neuen Stages
-  müssen erhalten bleiben; Questdateien dürfen nicht im Overlay erscheinen.
+- Stages: new IDs `1001269` and `1003266`; No previous data set changed
+or removed. The two editable patrols `1002224` and `1017811` remain completely byte-identical to the old build.
+- Quests: new ID `1000320`, changed ID `1000107`, no removed ID.
+The Workbench does not modify these quest data.
+- The mod integration test checks each stage against its original bytes. Only those
+Both selected patrols may be changed. Both new stages must be preserved; Quest files must not appear in the overlay.
 
-Reproduzierbare lesende Vergleichsprobe:
+Reproducible comparative reading sample:
 
 ```powershell
 cargo run --locked -j 2 -p cd-core --example audit_build_transition -- "C:\Program Files (x86)\Steam\steamapps\common\Crimson Desert"
 ```
 
-Der Datensatzvergleich benötigt die hashgeprüften alten Stage-/Questdateien in
-`.local/archive-probe/extracted`. Sie werden nicht mit dem Projekt verteilt.
-Der lokale Bericht liegt unter `.local/build-25455892-table-comparison.json`.
-Die Probe schreibt keine Spieldateien und erteilt selbst keine Buildfreigabe.
+The dataset comparison requires the hash-checked old stage/quest files in `.local/archive-probe/extracted`. They are not distributed with the project. The local report is below `.local/build-25455892-table-comparison.json`. The sample does not write game files and does not give build release itself.
 
-## Auswahl und Abweisung
+## Selection and rejection
 
-Die EXE-Version wählt einen bekannten Satz von Referenzhashes. Danach müssen
-sämtliche erfassten EXE-/Metadatendateien und die verwendeten Tabellen zu genau
-diesem Satz passen. Ein passender Versionsstring allein genügt nicht. Tabellen
-werden an die bereits geprüfte Identität gebunden; ein späteres erneutes Lesen
-der EXE-Version darf keinen anderen Satz auswählen.
+The EXE version selects a known set of reference hashes. After that, all captured EXE/metadata files and the tables used must fit exactly this set. A suitable version string alone is not enough. tables are bound to the already verified identity; a later re-reading of the EXE version may not select another sentence.
 
-Suchindex und JSON-Ausgaben führen die tatsächlich verwendete Schema-ID.
-Sicherungsberichte benötigen Build-ID, Dateigrößen und Hashes eines vollständigen
-bekannten Builds. Gemischte Metadaten beider Builds, fehlende Dateien und falsche
-Größen werden abgewiesen. Ein alter Bericht wird nicht zur neuen B0-Basis erklärt.
-Weitere unbekannte EXE-Versionen stoppen vor dem Öffnen einer Mod-Sicherung,
-damit ein Spielupdate nicht als fehlende Projektprobe gemeldet wird.
+Search index and JSON outputs carry the actual schema ID used. Backup reports require build ID, file sizes, and hashes of a full known build. Mixed metadata of both builds, missing files and incorrect sizes are rejected. An old report is not declared the new B0 base. Further unknown EXE versions stop before opening a mod backup so that a game update is not reported as missing workspace rehearsal.
 
-Der historische native Reparaturhost bleibt an EXE 1.0.0.2944 gebunden und
-verweigert die neue EXE. Ein getrennter Registry-/Referenzhost ist inzwischen
-für 1.0.0.2949 geprüft: 30 Szenarien und 263 native Aufrufe auf privaten Daten.
-Weitere Inventar-/Änderungs-/Ereignismethoden und die tatsächliche Spielanbindung
-bleiben offen. [Getrennter nativer Nachweis](../runtime/repair/REGISTRY_NATIVE_INTEGRATION.md).
+The historic native repair host remains tied to EXE 1.0.0.2944 and refuses the new EXE. A separate registry/reference host is now tested for 1.0.0.2949: 30 scenarios and 263 native calls to private data. Further inventory/modification/event methods and the actual game connection remain open. [Separate native detection](../runtime/repair/REGISTRY_NATIVE_INTEGRATION.md).
 
-Weitere Nachweise: [TESTING](TESTING.md). Spätere manuelle Abnahmen:
-[TESTCHECKLISTE](../TESTCHECKLISTE.md).
+Further evidence: [TESTING](TESTING.md). Later manual removals: [TESTCHECKLISTE](../TESTCHECKLISTE.md).

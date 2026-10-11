@@ -1,203 +1,77 @@
-# Modwerkstatt – B0 und B1–B3
+# Mod Workshop – B0 and B1–B3
 
-Seit v0.4.4 ergänzt **Dateiliste prüfen** die Modwerkstatt: Steam-Depotabgleich
-für Namen/Größen, EXE-Funde und Archivgruppen. Der Bericht liest keine PAZ-Inhalte
-und bestätigt noch kein Vanilla. [Bedienung und Grenzen](INSTALLATION_CHECK.md).
+Since v0.4.4 adds **check the file list** the mod workshop: Steamdepot comparison for names/sizes, EXE finds and archive groups. The report does not read PAZ content and does not yet confirm vanilla. [Operation and limits](INSTALLATION_CHECK.md).
 
-Stand: 21.09.2026, Desktop v0.5.8. Phase 4 ist im dokumentierten Umfang entwickelt;
-die Spielabnahme bleibt offen. Neue B4–B11-Funktionen und deren noch offene
-Punkte stehen in [ADVANCED_MODS.md](ADVANCED_MODS.md).
-Die Workbench berechnet eigene Tabellenänderungen und PAZ/PAMT-Overlays, zeigt
-ihre vollständige Dateiliste und kann sie im Projekt exportieren und proben.
-Die separate [Live-Anwendung mit Restore](LIVE_APPLY.md) besitzt einen kontrollierten
-Schreibpfad. Einrichtung und Schreibvorgänge benötigen ein beendetes Spiel.
-Vorschau und Projektproben dürfen während des Spielens laufen; Spielstände bleiben ungeöffnet.
+21.09.2026, desktop v0.5.8. Phase 4 is developed to the documented extent; The in-game validation remains open. New B4–B11 functions and their still open points are available in [ADVANCED_MODS.md](ADVANCED_MODS.md). The Workbench calculates its own table changes and PAZ/PAMT overlays, displays its complete file list and can export and sample them in the project. The separate [Live application with Restore](LIVE_APPLY.md) has a controlled write path. Setting up and writing operations require an ended game. Preview and workspace rehearsals may run while playing; saved games remain unopened.
 
-Nach dem Spielen kann **Dateiinhalte prüfen** die komplette Installation mit den
-lokalen Depothashes vergleichen. Fortschritt, Abbruch und Export sind vorhanden;
-bei laufendem Spiel gesperrt. [Umfang und Grenzen](CONTENT_AUDIT.md).
+After playing, **Check file contents** can compare the complete installation with the local depothashes. progress, abandonment and export are in place; blocked during ongoing play. [Scope and limits](CONTENT_AUDIT.md).
 
-## Bedienung
+## Operation
 
-**Ausgangsbasis & Registry-Sicherung** übernimmt einen exportierten Inhaltsbericht
-nach aktuellem Metadaten-/Registryvergleich. Bericht und geprüfte Registry-Kopie
-bleiben im Projekt erhalten und können später erneut geprüft werden.
-[Bedienung und Vertrauensgrenzen](BASELINE.md). Die manuellen Spieltests erfolgen
-auf Nutzerwunsch erst nach Ende der Entwicklung aller Phasen; sie gelten bis
-dahin als offen und blockieren die weitere Entwicklung nicht.
+**baseline & Registry-backup** takes over an exported content report after a current metadata/registry comparison. Report and verified registry copy will remain in the project and can be re-verified later. [Operation and confidence limits](BASELINE.md). The manual in-game tests take place on user request only after the end of the development of all phases; Until then, they are considered open and do not block further development.
 
-Unter **Sicherung & Wiederherstellung** lassen sich bestehende geschützte
-Projektproben laden, deren Backups prüfen und unterbrochene Proben nach einer
-konkreten Rücknahmevorschau wiederherstellen. Bereits zurückgesetzte Proben
-werden entsprechend angezeigt; fehlende Sicherungen und zwischenzeitliche
-Änderungen sperren den Vorgang. [Bedienung und Grenzen](BACKUP_RECOVERY.md).
+Under **backup & Restore**, you can load existing protected workspace rehearsals, check their backups and restore interrupted samples after a concrete return preview. Already reset samples are displayed accordingly; Missing fuses and intermediate changes block the process. [Operation and limits](BACKUP_RECOVERY.md).
 
-1. In der Desktop-App **Modwerkstatt** öffnen.
-2. Shopbestand (Vorgabe 999), täglichen Refresh, Zusatzartikel, Dropmengen-/
-   Chancenmultiplikator oder Trustmultiplikator einstellen.
-3. Optional Händler/Dropsets über Name oder ID eingrenzen. Keine Auswahl bedeutet
-   alle freigegebenen Datensätze. Einzelausnahmen haben ausdrücklich Vorrang vor
-   globalem Wert und Auswahl. Ein Faktor 1 bewahrt den Ausgangswert.
-   Zusatzartikel und garantierte Dropsets haben dagegen ohne Auswahl keine Wirkung.
-   Eine manuelle Garantie hat Vorrang vor Chancenmultiplikatoren; sie setzt die
-   Basisrate beim Auslösen des gewählten Sets auf 100 %. Unter **Händlerdetails**
-   lassen sich eigene Artikelsets sowie täglicher Refresh oder Originalintervall
-   je Händler festlegen, auch außerhalb der globalen Händlerauswahl.
-4. **Vorschau berechnen**. Feld, Datensatz, Vorher-/Nachherwert und Datei-Hashes
-   prüfen. Nach einer Einstellungsänderung muss die Vorschau neu berechnet werden.
-5. **Probe an Projektkopie** führt zweimal Apply → Archiv-Rücklesen → Reapply →
-   Archiv-Rücklesen → Restore und anschließend einen absichtlichen Abbruch mit Recovery
-   in einem neuen `.local/rehearsals/…`-Ordner aus. Keine Original-PAZ wird kopiert
-   oder verändert; die Registry liegt dort ausschließlich als Testkopie. Das Ergebnis
-   zeigt die sechs Datei-Übergänge einschließlich Hashes und entfernter Altgruppen.
-   Neue v3-Proben halten Start-/Quell-/Backupsperren an eigenen Testdateien und
-   prüfen die Ablehnung einer simulierten Quelländerung. Details:
-   [Geschützte Projektproben](PROTECTED_REHEARSALS.md).
-6. **Vorschau exportieren** erzeugt `exports/mod-preview-…/preview.json` und
-   `unapplied/…` mit den erzeugten Kandidatdateien. Das ist ein nicht angewendetes,
-   noch nicht im Spiel abgenommenes Overlay. Das Manifest enthält alle Änderungen,
-   offenen Gates und Quellenzuschreibungen.
+1. Open in the desktop app **Mod Workshop**.
+2. Shop inventory (default 999), daily refresh, additional items, drop quantities/
+Opportunity Multiplier or Trust Multiplier.
+3. Optional limit merchants/dropsets via name or ID. No choice means
+all released records. Individual exceptions expressly take precedence over global value and choice. A factor 1 preserves the baseline value. Additional articles and guaranteed dropsets, on the other hand, have no effect without selection. A manual guarantee shall take precedence over opportunity multipliers; it sets the base rate to 100 % when the selected set is triggered. Under **Merchant Details** you can set your own item sets as well as daily refresh or original interval per merchant, even outside the global merchant selection.
+4. **Predict**. Field, record, before/after value and file hashes
+check. After a change in settings, the preview must be recalculated.
+5. **Rehearse on workspace copy** performs Apply twice → Archive readback → Reapply →
+Archive Re-read → Restore and then an intentional cancellation with recovery in a new `.local/rehearsals/…` folder. No original ETA is copied or altered; The registry is there exclusively as a test copy. The result shows the six file transitions including hashes and remote altgroups. New v3 samples hold start/source/backup locks on their own test files and check the rejection of a simulated source change. Details: [Protected workspace rehearsals](PROTECTED_REHEARSALS.md).
+6. **Export preview** creates `exports/mod-preview-…/preview.json` and
+`unapplied/…` with the generated candidate files. This is an unapplied, not yet in the game taken overlay. The manifesto contains all changes, open gates and source attributions.
 
-Die Tabelle zeigt höchstens 150 gefilterte Änderungen gleichzeitig; der Export
-enthält alle. Große Spielwerte werden als Dezimalstrings übertragen. Faktoren
-sind derzeit ganze Zahlen 0–1000, Shopbestände 0–1.000.000. Diese Grenzen begrenzen
-die Workbench-Eingaben; sie sind **keine bestätigten Engine-Maxima**.
+The table shows at most 150 filtered changes at the same time; The export contains all. Large game values are transmitted as decimal strings. Factors are currently integers 0–1000, shop stocks 0–1.000.000. These limits limit the Workbench inputs; they are **not a confirmed engine maxima**.
 
-## Abdeckung des tatsächlichen Datenbuilds
+## Coverage of the actual data build
 
-Die bekannten EXE-/Metadaten- und Tabellenhashes werden vor der Interpretation
-geprüft. Ein passendes Leseschema ist weiterhin kein Vanilla-Nachweis.
+The known EXE/metadata and table hashes are tested before interpretation. A matching reading schema is still not a vanilla proof.
 
-| Bereich | Implementiert | Noch offen |
+|Area|Implemented|Still open|
 |---|---|---|
-| B0 | Deterministischer Byte-Builder, verschlüsseltes LZ4-Overlay, PAPGT-Registrierung, Dateivorschau; privater Kern mit Backup, unveränderlichen Transaktionsnachweisen, Reapply, bis zu acht Gruppen, Restore und Recovery; Windows-Start-/Quell-/Backupsperren, Updateablehnung, Live-Einrichtung per Steam-Nutzerbestätigung und frischen Quellhashes, Live-Apply/Restore, Originaldatenansicht nach Apply, Basiswechsel nach Updates, bereinigte Depot-Inventur und bestätigte fremde Zusätze | Tatsächliche Stromausfall-/In-game-Abnahme; unbekannte fremde Registry-/Originaländerungen bleiben gesperrt |
-| B1 | Bestand von 6.376 Positionen in 397 Händlern; Auswahl und Bestandsausnahmen; Zusatzartikel/Artikelsets und individuelle Sortimente bei 208 Händlern; Refresh-Ausnahmen pro Händler; Tagesrefresh bei 369 interpretierten Intervallen (246 Änderungen) | 39 opake Händler, Ergänzungen bei Sonderhändlern, kompletter Katalog bei allen Händlern gleichzeitig, In-game-Abnahme |
-| B2 | Mengenfaktoren in 12.736 Sets; Chancenfaktoren in 12.306 unabhängigen Sets, Auswahl/Ausnahmen und manuelle 100-%-Basisraten | Automatische Bosszuordnung, begrenzte/gewichtete Chancenvarianten und Sentinel-Mengen; In-game-Wirkung |
-| B3 | Positive Mengen der drei `DropSet_Friendly_*`-Records; negative Werte bleiben erhalten | Wirkung/Clamping im Spiel |
+|B0|Deterministic byte builder, encrypted LZ4 overlay, PAPGT registration, file preview; private core with backup, immutable transaction proof, reapply, up to eight groups, restore and recovery; Windows start/source/backup locks, update rejection, live setup via Steam user confirmation and fresh source hashes, live apply/restore, original data view to Apply, base change after updates, adjusted depot inventory and confirmed third-party additions|Actual power outage/in-game collection; Unknown foreign registry/original changes remain blocked|
+|B1|Stock of 6,376 positions in 397 traders; selection and stock exemptions; Additional items/article sets and individual assortments at 208 dealers; Refresh exceptions per trader; Daily refresh at 369 interpreted intervals (246 changes)|39 opaque dealers, additions at special dealers, complete catalogue at all dealers simultaneously, in-game acceptance|
+|B2|Quantity factors in 12,736 sets; Opportunity factors in 12,306 independent sets, selection/exceptions and manual 100% base rates|Automatic boss assignment, limited/weighted odds and sentinel sets; In-game effect|
+|B3|Positive sets of the three `DropSet_Friendly_*` records; Negative values are retained|Effect/clamping in the game|
 
-Von 14.747 Dropsetrecords werden 13.035 Item-Varianten byteidentisch typisiert
-rekonstruiert. Davon haben 299 leere Listen, Mengen-Sentinels oder nicht freigegebene
-Min-/Max-Verhältnisse. Sie bleiben bei globalen Mengenänderungen unverändert und
-werden bei expliziter Auswahl abgewiesen. Drei Friendly-Records werden separat
-interpretiert, 1.709 weitere Varianten bleiben opak. Auch Rezepte und
-Questbelohnungen verwenden Dropsets; eine globale Änderung betrifft diese mit.
-Es gibt keine automatische Bossklassifikation.
+From 14,747 Dropsetrecords 13,035 Item variants byte-identical are reconstructed in a typed manner. Of these, 299 have empty lists, quantity sentinels or unreleased min/max ratios. They remain unchanged in the event of global quantity changes and are rejected in the event of explicit selection. Three friendly records are interpreted separately, 1,709 further variants remain opaque. Recipes and quest rewards also use dropsets; A global change affects this with. There is no automatic boss classification.
 
-## Feld- und Formatnachweise
+## Field and format certificates
 
-**Store:** Key u16, Name mit u32-Länge; gemessene Listenpositionen relativ zum
-Namensende +47 (310 Records), +95 (85), +99 (1), +115 (1). Die Workbench akzeptiert
-nur genau einen passenden Kandidaten mit Besitzerkey, Itemduplikat und vollständigem
-Listenroundtrip. Sie wählt weder ein Legacyformat noch einen bestpassenden Parser.
-Der Bestand liegt im aktuellen Stockrecord bei +18 als u32. Der Diskriminator
-bei +42 muss 1 sein, Itemkeys bei +43 und +102 müssen übereinstimmen. Nach 114
-Headbytes folgen ein optionaler Block, **acht rohe September-Bytes** und eine
-Liste von 12-Byte-Einträgen. Alle unbekannten Bytes, Preise, Bedingungen und
-äußeren Recordteile bleiben erhalten. Die acht Bytes werden nicht als Refresh
-interpretiert. Die bestätigten Refresh-/Indexfelder, Angebotsvorlagen und ihre Grenzen stehen
-in [B1/B2-Feldnachweise](research/PHASE4_FIELDS.md).
+**Store:** Key u16, name with u32 length; measured list positions relative to the name end +47 (310 Records), +95 (85), +99 (1), +115 (1). The Workbench only accepts exactly one suitable candidate with owner key, item duplicate and complete list round trip. She chooses neither a legacy format nor a best-fitting parser. The stock is in the current stock record at +18 as u32. The discriminator at +42 must be 1, item keys at +43 and +102 must match. 114 Headbytes is followed by an optional block, **eight raw September bytes** and a list of 12 byte entries. All unknown bytes, prices, conditions and external record parts are preserved. The eight bytes are not interpreted as refresh. The confirmed refresh/index fields, offer templates and their limits are in [B1/B2 field evidence](research/PHASE4_FIELDS.md).
 
-**Drops:** Der bestätigte Itemzweig hat 64 Bytes pro Drop. Min/Max sind 64 Bit;
-die Vorschau verweigert Sentinel-/Überlaufwerte. Die separate Chancenoption
-ändert ausschließlich `rate` und die Gesamtsumme bei unterstütztem Rolltyp 0,
-mit Skala 1.000.000 und Deckelung auf 100 %. Rolltyp, Rollzahl und unbekannte
-Felder bleiben erhalten. Der Friendly-Zweig
-hat zusätzlich 28 rohe Bytes; diese werden erhalten. Seine Min/Max-Werte werden
-vorzeichenbehaftet interpretiert. Aktuelle Belege: Donate +50, Talk +5, Threat −200.
-Bei ×3 ergibt die isolierte Ausgabe +150, +15, unverändert −200. Das ist ein
-Byte-/Schemasnachweis, noch kein gemessener NPC-Vertrauenszuwachs im Spiel.
+**Drops:** The confirmed item branch has 64 bytes per drop. Min/Max are 64 bits; the preview refuses sentinel/overflow values. The separate odds option changes only `rate` and the total with supported roll type 0, with scale 1,000,000 and cap to 100 %. Roll type, roll number and unknown fields are retained. The friendly branch additionally has 28 raw bytes; These will be preserved. Its Min/Max values are interpreted with signs. Current evidence: Donate +50, Talk +5, Threat −200. At x3 the isolated output is +150, +15, unchanged −200. This is a byte/schema proof, not yet a measured NPC confidence gain in the game.
 
-**Tabellenpaar:** Leere Ersetzung rekonstruiert echte Bodies und Header bytegleich.
-Die allgemeine Rebuildfunktion bewahrt physische Recordreihenfolge, Präfix und
-ursprüngliche Header-Keyreihenfolge und berechnet Offsets bei Größenänderungen
-neu. Neben dem künstlichen Wachstumstest prüfen echte Shopergänzungen sowohl
-kleine Artikelsets als auch alle 6.816 Items bei einem einzelnen Händler samt
-unveränderten übrigen Records und lesbarem Overlay.
+**Pair of tables:** Empty replacement reconstructs real bodies and headers byte-identical. The general rebuild feature preserves physical record order, prefix, and original header key order, and recalculates offsets when size changes. In addition to the artificial growth test, real shop additions check both small item sets and all 6,816 items at a single retailer together with unchanged other records and readable overlay.
 
-**Overlay:** Eigene Implementierung über bestehende MIT-Krypto-/Kompressionsbasis,
-keine CDUMM-Laufzeit. LZ4-Blöcke, ChaCha pro korrektem Dateinamen, Alignment 16,
-Jenkins-Checksummen für PAZ/PAMT/PAPGT. SHA-256 dient getrennt als Identitätsnachweis.
-Die Verschlüsselungsheaderbytes und Sprachmaske stammen aus der geprüften
-Quellgruppe. Die neue Gruppe steht vorne in PAPGT, Originaleinträge und Headerbits
-bleiben erhalten. Die ID kollidiert weder mit registrierten/reservierten Gruppen
-noch mit existierenden Ordnern. Der Reader bestätigt die erzeugten Dateien in
-einer isolierten Kopie. Der Vorrang im laufenden Spiel ist damit nicht bewiesen.
+**Overlay:** Own implementation over existing MIT crypto/compression base, no CDUMM runtime. LZ4 blocks, ChaCha per correct filename, alignment 16, Jenkins checksums for PAZ/PAMT/PAPGT. SHA-256 serves separately as proof of identity. The encryption header bytes and speech mask come from the tested source group. The new group is at the forefront in PAPGT, original entries and headerbits remain. The ID does not conflict with registered/reserved groups or with existing folders. The reader confirms the generated files in an isolated copy. The priority in the current game is thus not proven.
 
-## Sortiment und Auswahlgrenzen
+## Range and limits of selection
 
-Zusatzartikel werden an vorhandene normale Verkaufsangebote angehängt. Bereits
-kaufbare Items werden nicht dupliziert. Die Vorlage stammt aus demselben Händler
-und bewahrt dessen Preisfaktoren. Bestehende Waren/Save-Indizes bleiben erhalten;
-neue Indizes folgen auf das bisherige Maximum. Eine reine Ankaufsposition
-verhindert ein neues Verkaufsangebot nicht. Der Bestand neuer Angebote folgt
-der Händlerausnahme, dem globalen Wert oder standardmäßig 999.
+Additional items are attached to existing normal sales offers. Already purchaseable items are not duplicated. The template comes from the same trader and preserves its price factors. Existing goods/save indices are retained; New indices follow the previous maximum. A pure long position does not prevent a new sale offer. The stock of new offers follows the merchant exception, the global value or, by default, 999.
 
-„Alle Artikel auswählen“ bezieht sich auf 6.816 Items. Ein Plan erlaubt maximal
-100.000 Kombinationen aus unterstütztem Händler und Item, ein Händler maximal
-9.999 Positionen. Für den vollständigen Katalog deshalb einzelne Händler wählen.
-Diese Grenzen schützen die Vorschau und sind keine nachgewiesenen Engine-Maxima.
-Explizit ausgewählte ungeeignete Händler/Dropsets führen zu einer Fehlermeldung.
-Globale Optionen erhalten nicht unterstützte Varianten; die Abdeckung bleibt sichtbar.
+“Select all items” refers to 6,816 items. A plan allows maximum 100,000 combinations of supported trader and item, a trader maximum 9,999 positions. For the complete catalogue, therefore, choose individual dealers. These limits protect the preview and are not proven engine maxima. Explicitly selected unsuitable merchants/dropsets lead to an error message. Global options receive unsupported variants; the cover remains visible.
 
-**Händlerdetails:** Eine eigene Artikelauswahl ersetzt für diesen Händler die
-gemeinsame Zusatzartikelauswahl. Eine leere eigene Liste fügt dort nichts hinzu.
-„Globale Einstellung“ bzw. deaktivierte eigene Auswahl erbt wieder Wert und
-Geltungsbereich der globalen Auswahl. Explizite Ausnahmen gelten auch außerhalb
-der ausgewählten Händler. „Originalintervall behalten“ unterdrückt den globalen
-Tagesrefresh, ohne ein neues Intervall zu erfinden. Bestandsausnahmen bleiben
-separat einstellbar. Die Planbegrenzung zählt die tatsächlich gewählten Itemsets.
+**Merchant Details:** An own product selection replaces the common additional product selection for this merchant. An empty list of its own adds nothing there. “Global attitude” or deactivated own selection again inherits value and scope of the global selection. Explicit exceptions also apply outside the selected merchants. “Keep the original interval” suppresses the global daily refresh without inventing a new interval. Exceptions remain separately adjustable. The plan limit counts the actually selected item sets.
 
-## Transaktionsprobe und Freigabegrenze
+## Transaction sample and release limit
 
-Der Kern ist über geschützte Projektproben und seit v0.4.8 über den separaten
-[Live-Adapter](LIVE_APPLY.md) erreichbar. Die Herkunftsbestätigung ist explizit;
-beobachtete Hashes allein genügen nicht. Fehler bei der Windows-Prozessprüfung
-verweigern den Vorgang. Die nachfolgenden Absätze beschreiben auch die älteren
-Projektproben und gelten nicht als Nachweis eines tatsächlichen Spieltests.
+The core can be reached via protected workspace rehearsals and since v0.4.8 via the separate [Live-Adapter](LIVE_APPLY.md). The confirmation of origin is explicit; Observed hashes alone are not enough. Windows Process Verification errors refuse the process. The following paragraphs also describe the older workspace rehearsals and are not considered proof of an actual in-game tests.
 
-Neue v0.4.3-Proben verwenden zusätzlich ein hashgebundenes Schutzmanifest sowie
-gehaltene Windows-Datei-/Ordnerhandles und Prozesspfadprüfungen. Die Sperren
-betreffen ausschließlich eine Kopie unserer eigenen EXE und eine synthetische
-Quelle; kein Handle sperrt während der Probe das laufende Spiel. Nach Erstellung
-und Hashprüfung wird auch das Registry-Backup gegen Änderungen gehalten.
+New v0.4.3 samples also use a hash-bound protection manifest as well as retained Windows file/folder handles and process path checks. The blocks concern only a copy of our own EXE and a synthetic source; no handle locks the running game during the rehearsal. After creation and hash checking, the registry backup is also held against changes.
 
-Seit v0.4.1 hält die Probe einen exklusiven Kopie-Lock und ein verifiziertes
-Registry-Backup. Jede Transaktion schreibt zuerst einen unveränderlichen
-`intent.json` mit Vorher-/Nachherzustand. Beide Overlaydateien entstehen in einem
-privaten Stagingordner; nach Prüfsummen-, Dekompressions- und Längenprüfung wird
-die vollständige Gruppe veröffentlicht. Unter Windows erfolgen Veröffentlichung
-und Registry-Ersetzung mit `MoveFileExW` und Write-through.
+Since v0.4.1, the sample has an exclusive copy lock and a verified registry backup. Each transaction first writes an immutable `intent.json` with a before/after state. Both overlay files are created in a private staging folder; After checksum, decompression and length checks, the complete group is published. In Windows, release and registry replacement are done with `MoveFileExW` and write-through.
 
-Reapply reserviert neue Gruppen-IDs und baut immer von der ursprünglichen Basis.
-Erst nach Bereitstellung aller neuen Gruppen wird die Registry atomar ersetzt;
-erst danach werden nachweislich eigene Altdateien entfernt. Der private Kern
-unterstützt bis zu acht Gruppen und verweigert doppelte virtuelle Tabellenpfade.
-Die aktuellen B1–B3-Module benötigen weiterhin nur eine Gruppe.
+Reapply reserves new group IDs and always builds from the original base. Only after provision of all new groups will the registry be replaced atomically; only then demonstrably own old files are removed. The private core supports up to eight groups and denies duplicate virtual table paths. The current B1–B3 modules still require only one group.
 
-Recovery entscheidet anhand der tatsächlichen Registry zwischen Vorher- und
-Nachherzustand. Ein unveränderlicher `complete.json` bindet den Abschluss an den
-Hash des Intents. Unvollständige private Stagingdateien bleiben zur Diagnose
-erhalten; bekannte Teilstücke von Backup und Abschlussnachweis können weiter-
-geschrieben werden. Fremde Änderungen, fremde Gruppeninhalte, Kollisionen,
-Reparse-Points, Hardlinks oder abweichende Registry/Backups verhindern weitere
-Änderungen. Nur eigene Dateien werden entfernt, ohne rekursives Löschen.
+Recovery decides on the basis of the actual registry between before and after state. An immutable `complete.json` binds the termination to the hash of the intent. Incomplete private staging files remain for diagnosis; known sections of backup and proof of completion can be written on. Foreign changes, foreign group content, collisions, reparse points, hardlinks or deviating registries/backups prevent further changes. Only own files are removed, without recursive deletion.
 
-Tests unterbrechen an **69 Apply-/Reapply-/Restore-Schreibgrenzen**, einschließlich
-halb geschriebener Dateien, und öffnen den Kern zur Recovery neu. Auch Abbrüche
-während Recovery werden wiederaufgenommen. Das beweist diese Ablaufgrenzen,
-**keine vollständige Robustheit gegen beliebige I/O-Ausfälle oder Stromausfall**.
-Die Historie bleibt erhalten; es gibt noch keine automatische Archivbereinigung.
-Der frühere v1-Kern bleibt unverändert als Testreferenz erhalten. Alte v1-Proben
-werden nicht migriert; für v2 wird eine neue Projektprobe erstellt.
-Auch der Test, dass ein exklusiver Windows-Dateihandle einen parallelen Start
-verhindert, läuft ausschließlich mit einer Kopie unserer eigenen Test-EXE.
-Seit v0.4.3 ist dieser Mechanismus zusammen mit einer vollständigen Prozesspfad-
-prüfung integriert. Live-B0 erfasst alle EXEs und Originaldateien des vollständigen
-Prüfberichts; tatsächlich beobachtet wurden drei EXEs. Beliebige externe oder
-umbenannte Startkopien sind damit nicht als geprüft behauptet.
+Tests break to **69 Apply/Reapply/Restore write limits**, including semi-written files, and reopen the core for recovery. Abortions during recovery are also resumed. This proves these discharge limits, **no complete robustness against any I/O failures or power failure**. The history shall be preserved; There is no automatic archive cleanup yet. The former v1 core remains unchanged as a test reference. Old v1 samples are not migrated; For v2, a new workspace rehearsal is created. The test that an exclusive Windows file handle prevents a parallel start also runs exclusively with a copy of our own test EXE. Since v0.4.3, this mechanism is integrated together with a complete process path check. Live B0 captures all EXEs and original files of the full test report; In fact, three EXEs were observed. Any external or renamed start copies are thus not claimed as checked.
 
-Eine fremde Änderung/Spielaktualisierung wird nicht mit einem alten Backup
-überschrieben. Die Live-Anbindung wird an künstlichen Installationen getestet; der echte Spieltest bleibt offen.
+A foreign change/game update is not overwritten with an old backup. The live connection is tested on artificial installations; The real in-game test remains open.
 
 ## CLI
 
@@ -209,15 +83,9 @@ cargo run -p cd-cli -- mod-export .local/mod-request.json
 cargo run -p cd-cli -- mod-recover .local/rehearsals/ORDNER-ID
 ```
 
-`mod-recover` akzeptiert ausschließlich markierte v2-/v3-Proben unter
-`.local/rehearsals/<id>` desselben Projekts. Es schließt eine offene Transaktion
-ab, stellt anschließend die ursprüngliche **Kopie** wieder her und speichert
-einen neuen Recovery-Bericht. Es benötigt keinen aktuellen Tabellenparser;
-geschützte Spiel-/Savepfade und unmarkierte Ordner bleiben ausgeschlossen.
-V3 verlangt zusätzlich den passenden Schutzmanifesthash und unveränderte
-Quelldateien. V2 wird nicht automatisch aufgewertet; ein v3-Downgrade wird abgelehnt.
+`mod-recover` only accepts marked v2-/v3-samples under `.local/rehearsals/<id>` of the same project. It completes an open transaction, then restores the original **copy** and saves a new recovery report. It does not require a current table parser; Protected game/save paths and unmarked folders remain excluded. V3 also requires the appropriate protection manifeststhash and unchanged source files. V2 is not automatically upgraded; A v3 downgrade is rejected.
 
-Beispiel für eine Konfiguration (alle anderen Werte sind unverändert):
+Example of a configuration (all other values are unchanged):
 
 ```json
 {
@@ -238,18 +106,8 @@ Beispiel für eine Konfiguration (alle anderen Werte sind unverändert):
 }
 ```
 
-Unbekannte Felder, nicht freigegebene explizite IDs und Werte außerhalb der Grenzen
-werden abgewiesen. Die Requestdatei ist auf 1 MiB begrenzt. Ausgaben landen
-ausschließlich in `.local/` oder `exports/`; das Originalspiel bleibt geschützt.
+Unknown fields, unreleased explicit IDs and values outside the boundaries are rejected. The request file is limited to 1 MiB. Expenditure ends up only in `.local/` or `exports/`; The original game remains protected.
 
-## Nächste notwendige Arbeiten
+## Next necessary work
 
-Unabhängig bestätigte vollständige Vanilla-Hashes und Backup-/Updatepfade sind
-Voraussetzung für einen Live-Schreibpfad. Ein lokal gecachter Steam-Manifestname
-allein zertifiziert diese Basis nicht. Danach sind umfassendere Transaktions-/
-Startschutztests und die manuelle In-game-Abnahme aus [TESTING.md](TESTING.md)
-nötig. Beide untersuchten lokalen Steam-Depotmanifeste enthalten keine
-Signaturdaten; ihr Hashbestand allein ist kein unabhängig bestätigter Nachweis.
-B1/B2 sind im beschriebenen Umfang implementiert, die universelle Händlerabdeckung
-und Gameplayabnahme bleiben offen. Eine Steam-Prüfung oder ein Spielstart wird
-während des Spielens nicht ausgelöst.
+Independently confirmed complete vanilla hashes and backup/update paths are a prerequisite for a live writing path. A locally cached Steam manifesto name alone does not certify this base. This requires more comprehensive transaction/start protection tests and manual in-game acceptance from [TESTING.md](TESTING.md). Both examined local Steam depot manifests contain no signature data; their hash stock alone is not independently verified proof. B1/B2 are implemented to the extent described, universal merchant coverage and gameplay acceptance remain open. A Steam check or game start is not triggered while playing.

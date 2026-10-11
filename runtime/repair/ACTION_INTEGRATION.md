@@ -1,152 +1,79 @@
-# Eigene Reparaturaktion – Integrationsvertrag
+# Own Repair Action – Integration Contract
 
-Stand 22.09.2026, Entwicklungsmodul 0.10.0. Der Nutzer hat ausdrücklich eine
-eigene Reparaturaktion für noch vorhandene, beschädigte Items freigegeben.
-Die Aktion benötigt keine Item-Reparaturregel und kein Reparaturmaterial.
-Verbrauchte/verschwundene Items werden nicht erzeugt. Direkte Save-Schreibzugriffe
-bleiben ausgeschlossen; spätere Persistenz muss über das Spiel erfolgen.
+Status: 22.09.2026, development module 0.10.0. The user has expressly released his own repair action for still existing, damaged items. The action requires no item repair rule and no repair material. Consumed/disappeared items are not generated. Direct save-write operations remain excluded; Later persistence must be done via the game.
 
-## Entwickelter Umfang
+## Developed scope
 
-`repair_action.h` / `src/action.cpp` enthalten die eigene Reparaturplanung,
-ein vollständiges Backend für **eigene Speicherabbilder** und die
-Befehlswarteschlange. Die statische Bibliothek `crimson_repair_action.lib`
-wird im isolierten Testhost verwendet. Sie ist noch nicht mit dem Spiel verbunden.
+`repair_action.h` / `src/action.cpp` contain your own repair planning, a complete backend for **own memory images** and the command queue. The static library `crimson_repair_action.lib` is used in the isolated test host. She is not yet connected to the game.
 
-- Einzelitem, mitgeführte Items, ausgerüstete Items oder beide Bereiche.
-- Hauptitem und jeder vorhandene Sockeleinsatz werden unabhängig auf das
-  jeweilige belegte Maximum repariert, auch bei aktueller Haltbarkeit 0.
-- Identität, Inventarposition, positive Menge und beide Zustandskopien müssen
-  passen. Leere Slots, verbrauchte Items und nicht passende Kopien werden abgewiesen.
-- Werte ohne Haltbarkeit, echte unbegrenzte Definitionen und Instanz-Sentinels
-  bleiben erhalten. Finite Maxima über 32.767 werden wegen der signed-16-Bit-
-  Engine-Arithmetik nicht akzeptiert. Dies ist kein nachgewiesenes Gesamtlimit.
-- „Kein Haltbarkeitsverlust“ ist kombinierbar: Ein verifiziertes ursprüngliches
-  Maximum und der bekannte aktive 65.535-Override erlauben die Reparatur auf
-  das ursprüngliche Maximum. Ein unerklärter Unterschied wird abgewiesen.
-- Nur die Haltbarkeitswörter `Item+0x40` und `Sockel+2` können sich ändern.
-  Pointer, Menge, ID, Verzauberung, Sockelbelegung/-zahl und Flags bleiben erhalten.
-- Der gesamte Batch wird vor dem ersten Schreibzugriff erneut verglichen.
-  Änderungen an einem späteren Item lehnen auch vorherige Änderungen ab.
-- Doppelte Eingaben werden zusammengefasst; jeder Auftrag läuft höchstens
-  einmal. Er verfällt nach fünf Sekunden und darf keinen Welt-/Charakterwechsel
-  überleben. Ausführung ausschließlich auf dem festgelegten Dispatch-Thread.
-- Ein unbestätigter Commit sperrt die Warteschlange dauerhaft; kein automatischer
-  Wiederholungsversuch. Der Host muss nach Aufbau einer neuen, geprüften Sitzung
-  eine neue Warteschlange anlegen.
+- Individual items, items carried, items equipped or both.
+- The main item and any socket insert available are independently attached to the
+Repairs the respective occupied maximum, even with current durability 0.
+- Identity, inventory position, positive amount and both must copy Zustand
+fit. Empty slots, consumed items and inappropriate copies are rejected.
+- Values without durability, true unlimited definitions and instance sentinels
+remain intact. Finite maxima above 32,767 are not accepted because of the signed-16 bit engine arithmetic. This is not a proven overall limit.
+- “No durability loss” can be combined: A verified original
+Maximum and the known active 65,535 override allow the repair to the original maximum. An unexplained difference is rejected.
+- Only the durability words `Item+0x40` and `Sockel+2` can change.
+Pointer, set, ID, enchantment, base occupancy/number and flags are preserved.
+- The entire batch is compared again before the first write access.
+Changes to a later item also reject previous changes.
+- Duplicate submissions shall be aggregated; each order shall not exceed:
+one time. It expires after five seconds and must not survive a world/character change. Execution only on the specified dispatch thread.
+- An unconfirmed commit permanently blocks the queue; No automatic
+Repeat test. The host must create a new queue after a new, tested session has been set up.
 
-Die Limits 2.048 Items und 64 Sockelplätze sind explizite Verarbeitungsbudgets,
-keine behaupteten Engine-/Save-Kapazitäten. Ein unbekanntes Layout wird abgewiesen.
+The limits 2,048 Items and 64 Base slots are explicit processing budgets, not claimed engine/save capacities. An unknown layout is rejected.
 
-Seit 0.3.0 liefert `crimson_repair_reader.lib` diese Abbilder aus der aktuellen
-Client-/Server-Struktur: gezielte Charakterkennungssuche, Besitzerprüfung,
-Character-Inventar und Equipment, UID-/Positionsabgleich und vollständiges
-Kontrolllesen. Native Inventargetter stimmen auf gemeinsamen Fixtures überein;
-die Server-Registry ist mit künstlichen Lock-/Zugriffsmethoden geprüft.
-Dieser lesende Teil ist **noch keine Engine-Lease oder Schreibtransaktion**.
-[Implementierte Pfade, Belege und Grenzen](READER_LAYOUT.md).
+Since 0.3.0, `crimson_repair_reader.lib` provides these images from the current client/server structure: targeted character identification search, owner verification, character inventory and equipment, UID/position matching and complete control reading. Native inventory getters match on common fixtures; The server registry is tested with artificial lock/access methods. This reading part is **not yet an engine lease or write transaction**. [Implemented Paths, Evidence and Boundaries](READER_LAYOUT.md).
 
-Seit 0.4.0 kann die Transaktion `pending` melden. Die Queue hält den Plan bis
-zur sitzungsgebundenen Bestätigung aller Nachherwerte und Engine-Ereignisse.
-Fremde/alte Rückmeldungen werden abgewiesen. Teilfehler, Weltwechsel und Timeout
-sperren Folgeaufträge ohne Wiederholung oder Rücksetzung. Ein nativer Client-
-Fehlerpfad kann Sockel bereits entfernt haben; deshalb ist Fehler != unverändert.
-[Implementierter Abschlussweg und native Befunde](ACK_INTEGRATION.md).
+Since 0.4.0 the transaction can report `pending`. The queue keeps the plan until the session-bound confirmation of all after values and engine events. Stranger/old feedback will be rejected. Partial error, world change and timeout block follow-up orders without repetition or resetting. A native client error path may have already removed sockets; Therefore, error != unchanged. [Implemented completion pathway and native findings](ACK_INTEGRATION.md).
 
-Seit 0.5.0 erfasst `capture_with_locks` die Daten unter beiden vom Host
-gebundenen Besitzer-Sperren. Diese werden bei jedem Rücksprung freigegeben.
-Originale Lock-Methoden sind mit echten Windows-SRW-Sperren im privaten Testhost
-geprüft. Der Host muss weiterhin die Lebensdauer der Besitzer unabhängig sichern
-und die Methodenbindungen validieren. [Sperrvertrag](LOCK_INTEGRATION.md).
+Since 0.5.0, `capture_with_locks` collects the data under both owner locks bound by the host. These are released upon each return. Original lock methods are tested with real Windows SRW locks in the private test host. The host must continue to independently secure the lifetime of the owners and validate the method bindings. [Non-binding contract](LOCK_INTEGRATION.md).
 
-Seit 0.6.0 hält `capture_with_references` zwei native Referenzbelege bis nach
-Freigabe der Inventarsperren. Kennung und Alive-/Zerstörungszustand werden unter
-den Sperren vor und nach Erfassung geprüft. Der Host muss noch den Erwerb aus
-geschützten Quellen und unveränderten Engine-TLS-Modus gewährleisten.
-[Implementierte Referenzverwaltung und native Belege](REFERENCE_INTEGRATION.md).
+Since 0.6.0 holds `capture_with_references` two native reference documents until after release of the inventory locks. Identifier and Alive/Destruction state are checked under the locks before and after detection. The host must still ensure the acquisition from protected sources and unchanged engine TLS mode. [Implemented Reference Management and Native Evidence](REFERENCE_INTEGRATION.md).
 
-Seit 0.7.0 bindet `crimson_repair_registry.lib` Manager-Lookup und Belegfreigabe
-als Quelle an. Acquire/Release verwenden denselben Quellenkontext.
-[Vertrag und damalige Updategrenze](REGISTRY_INTEGRATION.md).
+Since 0.7.0, `crimson_repair_registry.lib` connects manager lookup and document release as a source. Acquire/release use the same source context. [Contract and the former update limit](REGISTRY_INTEGRATION.md).
 
-Seit 0.8.0 besteht die gemeinsame native Client-/Server-Suche samt konkreten
-Referenzmethoden und Freigabe auf 1.0.0.2949. Echte Windows-Registry-Sperren
-schützen dabei private Testobjekte. Aktuelle Manager-/Spieler-/Threadbindung
-und weitere Reparaturmethoden sind weiterhin offen; der alte native Host
-akzeptiert die neue EXE nicht. [Gemeinsamer Nachweis und Grenzen](REGISTRY_NATIVE_INTEGRATION.md).
+Since 0.8.0, the common native client/server search with specific reference methods and release exists on 1.0.0.2949. True Windows registry locks protect private test objects. Current manager/player/thread binding and other repair methods remain open; The old native host does not accept the new EXE. [Common Evidence and Borders](REGISTRY_NATIVE_INTEGRATION.md).
 
-## Anforderungen an den noch fehlenden Spieladapter
+## Requirements for the missing game adapter
 
-Seit 0.9.0 durchsucht die geschützte Erfassung keine Registry erneut, sondern
-liest direkt aus dem gehaltenen Besitzerpaar. Gültige vollständige Kennung und
-Alive-/Zerstörungsprüfungen sind auch für `capture_with_locks` zwingend. Native
-Erwerbs-/Sperrmethoden von 2949 sind gemeinsam mit dem Leser auf privaten
-Legacy-Layoutfixtures geprüft. Das ist kein Nachweis des neuen Inventarlayouts.
-[Gemeinsame Erfassung und offene Hostpflichten](PINNED_CAPTURE_INTEGRATION.md).
+Since 0.9.0, the protected capture does not search a registry again, but reads directly from the owner pair. Valid full identifier and Alive/Destruction tests are also mandatory for `capture_with_locks`. Native acquisition/blocking methods of 2949 are tested together with the reader on private legacy layout fixtures. This is not proof of the new inventory layout. [Shared coverage and open hosting obligations](PINNED_CAPTURE_INTEGRATION.md).
 
-Der abstrakte `Transaction`-Vertrag ist **kein implementierter Spieladapter**.
-Seit 0.10.0 sind die Lesefelder und nativen Inventar-/Ausrüstungszugriffe für
-2949 separat belegt; Leseraufrufe benötigen einen expliziten bekannten Build.
-Die echte Manager-/Threadbindung und Änderungstransaktion bleiben offen.
-[Nachweis und Reichweite](INVENTORY_2949.md).
+The abstract `Transaction` contract is **not an implemented game adapter**. Since 0.10.0, the reading fields and native inventory/equipment accesses for 2949 are occupied separately; Reader views require an explicit known build. The real manager/thread binding and change transaction remains open. [Detection and range](INVENTORY_2949.md).
 
-Sein Commit muss alle folgenden Aufgaben selbst erfüllen, bevor die Funktion
-installierbar wird:
+Its commit must perform all of the following tasks itself before the function becomes installable:
 
-1. Den entwickelten lesenden Resolver mit echten Engine-Zugriffsfreigaben verbinden
-   und seine Client-/Server-Zuordnung für tatsächliche Spielzustände bestätigen.
-   Keine NPC-, Händler-, Lager- oder temporären Inventarplanerkopien.
-   Welt-/Charakterwechsel invalidieren die Sitzungskennung und ausstehende Aufträge;
-   die Epochennummer muss der Host bei jedem Übergang erneuern.
-2. Vollständigen EXE-Build, die aufgerufenen Funktionen und aktuelle Tabellen
-   prüfen. Die ursprünglichen Itemdefinitionen müssen aus dem über B0 zugelassenen
-   Vanilla-Bestand stammen. Der aktuelle lokale Bestand ist dafür noch nicht
-   zugelassen. Keine Adressübernahme aus einer älteren Community-Version.
-3. Zugriff und Änderungen in einer belegten Engine-Transaktion serialisieren.
-   Ein eigener C++-Mutex allein sperrt keine Engine-Threads. Der Input-/Render-
-   Thread darf nur einen Auftrag einstellen, keine Inventaränderungen ausführen.
-4. Gegen frisch aufgelöste Item-IDs und Vorherwerte prüfen, beide Repräsentationen
-   korrekt aktualisieren und die Engine-Benachrichtigungen/abgeleiteten Effekte
-   auslösen. Ein bloßer Speicherwrite oder ein späterer UI-Refresh genügt nicht.
-5. `applied` erst nach bestätigtem Abschluss melden. `rejected` verspricht keinerlei
-   Änderung. Bei unklarem/teilweisem Ergebnis `unknown`; keine spekulative
-   Rücksetzung nach einem möglicherweise schon ausgelösten Engine-Ereignis.
-   Alternativ `pending` und anschließend `Queue::confirm`: echte Meldungen mit
-   Auftragsnummer/Sitzung zuordnen, frische Daten unter neuer Engine-Lease erfassen
-   und alle notwendigen Ereignisse bestätigen. Diese Spielereigniszuordnung fehlt.
-6. Eigene Bedieneingabe anbinden, Loader nur beim nächsten Spielstart aktivieren
-   und Installation/Rücknahme über B0 inklusive Konflikt-/Updateprüfung abwickeln.
+1. Connecting the developed read resolver with real engine access shares
+and confirm his client/server assignment for actual game states. No NPC, dealer, warehouse or temporary inventory planner copies. world/character changes invalidate the session identifier and pending orders; the epoch number must be renewed by the host at each transition.
+2. Complete EXE build, the called functions and current tables
+check. The original item definitions must come from the vanilla stock approved above B0. The current local stock is not yet approved for this. No address transfer from an older community version.
+3. Serialize access and changes in a busy engine transaction.
+A C++-Mutex alone does not lock engine threads. The input/render thread is only allowed to set a job, not to make any inventory changes.
+4. Check against freshly resolved item IDs and prevalues, both representations
+correctly update and trigger the engine notifications/derived effects. A mere memory write or a later UI refresh is not enough.
+5. `applied` Report only after confirmed completion. `rejected` does not promise any
+Amendment. For unclear/partial result `unknown`; No speculative reset after a possibly already triggered engine event. Alternatively `pending` and then `Queue::confirm`: assign real messages with order number/session, collect fresh data under new engine lease and confirm all necessary events. This game event assignment is missing.
+6. Connect your own operating input, activate loader only at the next game start
+and process installation/return via B0 including conflict/update verification.
 
-`apply_to_owned_snapshot()` darf nicht durch Umdeuten fremder Speicheradressen
-als vermeintlicher Spieladapter eingesetzt werden. Es mutiert ausschließlich
-seine explizit besessenen Vektoren/Arrays und löst keine Engine-Ereignisse aus.
-Die Binärdateien im privaten Buildordner gehören nicht in den Spieleordner.
+`apply_to_owned_snapshot()` must not be used as an alleged game adapter by reinterpreting external memory addresses. It mutates only its explicitly owned vectors/arrays and does not trigger engine events. The binaries in the private build folder do not belong in the game folder.
 
-## Beleg im aktuellen Build
+## Evidence in the current build
 
-EXE 1.0.0.2944, SHA-256
-`6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`.
-Alle Adressen als RVA:
+EXE 1.0.0.2944, SHA-256 `6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`. All addresses as RVA:
 
-| Funktion / Feld | Nachweis |
+|Function / Field|Evidence|
 |---|---|
-| Item-Updater `0x240d650`, 405 Bytes | SHA-256 `cdbf73177286a1465e808e462c5465c06756ab9910183eb09c2321ee5a195a3f`; liest Hauptwert `+0x40`, Definition `+0x400`, Sockeldaten `+0x60`, Count `+0x68`, Kapazität `+0x70`, Sockelstride 6 |
-| Equipment-Wrapper `0x20c90e0` | Prüft vorhandenes Item; aktualisiert anschließend weitere Komponenten über virtuelle Methoden. Tabellenzeiger `+0x90`, Array `+8`, Count `+0x10`, Eintragsstride `0xd0`, Slottag `+0xc8` |
-| Client-Aufrufer `0x98fb70` | Verarbeitet Haltbarkeitsdelta und Sockelliste; daran hängt weitere UI-/Zustandsaktualisierung |
-| Alter Inventarreparaturpfad `0x2be41a0` | Materialauswahl, Transaktion, `repairItemEndurance`-Datenbankoperation, danach Instanzwrite bei `0x2be47f5` |
+|Item-Updater `0x240d650`, 405 Bytes|SHA-256 `cdbf73177286a1465e808e462c5465c06756ab9910183eb09c2321ee5a195a3f`; Reads main value `+0x40`, definition `+0x400`, socket data `+0x60`, count `+0x68`, capacity `+0x70`, socket stride 6|
+|Equipment-Wrapper `0x20c90e0`|Checks existing items; Subsequently, update further components via virtual methods. Table pointer `+0x90`, array `+8`, count `+0x10`, entry stride `0xd0`, slot tag `+0xc8`|
+|Client callers `0x98fb70`|Processes durability delta and base list; further UI-/Zustandupdate depends on this|
+|Alter Inventarreparaturpfad `0x2be41a0`|Material selection, transaction, `repairItemEndurance` database operation, then instancewrite at `0x2be47f5`|
 
-Der unveränderte Updater ist **kein allgemeiner RepairAll-Helfer**: Im nativen
-Test repariert Delta +65 das Hauptitem von 35 auf 100, lässt einen 0/100-Sockel
-bei 0 und setzt einen 10/100-Sockel auf 0. Die eigene Aktion setzt jeden Wert
-unabhängig korrekt auf 100. Danach bestätigt der Originalcode mit Delta 0
-unveränderte Werte und mit normalem Verschleiß -1 den Wert 99 bei allen drei
-Feldern. Mit dem bekannten No-Wear-Sentinel bleiben alle drei bei 100.
-Alle Aufrufe erfolgen nur im eigenen Speicher des Testhosts, mit künstlichen
-Definitionen. Damit ist die Feldnutzung geprüft, nicht die komplette Spieltransaktion.
+The unchanged updater is **not a general RepairAll helper**: In the native test, Delta +65 repairs the main item from 35 to 100, leaves a 0/100 socket at 0 and sets a 10/100 socket to 0. The own action sets each value independently correctly to 100. After that, the original code with delta 0 unchanged values and with normal wear -1 confirms the value 99 for all three fields. With the well-known No-Wear-Sentinel, all three remain at 100. All calls are made only in the test host's own memory, with artificial definitions. This checks the field use, not the complete game transaction.
 
-Die MIT-Referenz [Trinity, Commit 70c9a00](https://github.com/XeTrinityz/Trinity/tree/70c9a00dd6e10b2081d706a837756844c11f5c2b)
-liefert Hinweise auf getrennte Server-/Client-Kopien. Ihre älteren Layoutwerte
-`0x88/0xc8/0xc0` passen **nicht** zum hier nachgewiesenen Equipment-Layout
-`0x90/0xd0/0xc8`. Kein Code, Hook oder Loader daraus wurde übernommen.
+The MIT reference [Trinity, Commit 70c9a00](https://github.com/XeTrinityz/Trinity/tree/70c9a00dd6e10b2081d706a837756844c11f5c2b) provides indications of separate server/client copies. Your older layout values `0x88/0xc8/0xc0` match **not** to the proven equipment layout `0x90/0xd0/0xc8`. No code, hook or loader from it was adopted.
 
-Tests und Reproduktion: [README](README.md).
+Testing and reproduction: [README](README.md).

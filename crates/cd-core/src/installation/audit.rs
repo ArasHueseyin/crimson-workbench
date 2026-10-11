@@ -154,7 +154,7 @@ fn verify_scoped(
         let mut source = open_source(root, &wanted.path)?;
         let first = stamp(&source)?;
         if initial_stamps.get(&wanted.path) != Some(&first) || first.bytes != expected_size {
-            return Err(bad(format!("Quelle vor dem Lesen geändert: {}", wanted.path)).into());
+            return Err(bad(format!("Source changed before reading: {}", wanted.path)).into());
         }
         let mut sha1 = Sha1::new();
         let mut sha256 = Sha256::new();
@@ -195,11 +195,7 @@ fn verify_scoped(
         check_cancel(cancel)?;
         guard()?;
         if bytes != expected_size || first != stamp(&source)? {
-            return Err(bad(format!(
-                "Quelle während des Lesens geändert: {}",
-                wanted.path
-            ))
-            .into());
+            return Err(bad(format!("Source changed while reading: {}", wanted.path)).into());
         }
         let sha1 = format!("{:x}", sha1.finalize());
         let sha256 = format!("{:x}", sha256.finalize());
@@ -227,7 +223,7 @@ fn verify_scoped(
         || serde_json::to_vec(&before.foreign_files)? != serde_json::to_vec(&after.foreign_files)?
         || initial_stamps != stamps(root, &after)?
     {
-        return Err(bad("Installation oder Steam-Metadaten während der Inhaltsprüfung geändert; kein vollständiger Bericht erstellt").into());
+        return Err(bad("Installation or Steam metadata changed during content audit; no complete report created").into());
     }
     check_cancel(cancel)?;
     guard()?;
@@ -235,10 +231,10 @@ fn verify_scoped(
         all_files_match_cache:files.iter().all(|f|f.matches_cache),metadata_stable:true,certified_vanilla:false,can_apply:false,
         foreign_approval:if before.foreign_files.is_empty(){None}else{before.foreign_approval},manifest_sha256:before.depots.into_iter().map(|d|d.manifest_sha256).collect(),files,
         limitations:vec![
-            "Geprüft werden Depot-Originaldateien. foreign_approval kennzeichnet separat bestätigte Zusatzdateien; deren Inhalt wird von diesem Bericht nicht zertifiziert.".into(),
-            "SHA-1-Vergleich mit lokalen, nicht unabhängig authentifizierten Steam-Depotlisten. SHA-256 zusätzlich aufgezeichnet; kein Vanilla-Zertifikat und keine Schreibfreigabe.".into(),
-            "Lesende Beobachtung ohne Startsperren. Größen, Zeitstempel und Dateimetadaten vor/nach dem Lauf verglichen; kein atomarer oder gegen gezielte Manipulation abgesicherter Snapshot.".into(),
-            "Erneute Starts und Updates können den Befund sofort veralten lassen. Live-Apply prüft Herkunftsbestätigung, Basis, gehaltene Quellsperren und Backup separat.".into(),
+            "Checks original depot files. foreign_approval identifies separately approved additional files; this report does not certify their contents.".into(),
+            "SHA-1 comparison with local Steam depot lists that are not independently authenticated. SHA-256 also recorded; no vanilla certificate or write authorization.".into(),
+            "Read-only observation without launch locks. Sizes, timestamps and file metadata compared before and after; not an atomic snapshot or protected against deliberate tampering.".into(),
+            "Subsequent launches and updates may immediately invalidate the findings. Live apply checks origin confirmation, baseline, held source locks and backup separately.".into(),
         ]};
     state.phase = "complete";
     progress(state);
@@ -247,7 +243,7 @@ fn verify_scoped(
 fn check_cancel(cancel: &AtomicBool) -> Result<()> {
     if cancel.load(Ordering::Acquire) {
         Err(Error::Invalid(
-            "Inhaltsprüfung abgebrochen; kein vollständiger Bericht erstellt.".into(),
+            "Content audit cancelled; no complete report created.".into(),
         ))
     } else {
         Ok(())
@@ -261,7 +257,7 @@ pub(super) fn validate_inventory(report: &Inventory) -> Result<()> {
         || report.files.len() != report.expected_files
         || report.files.iter().any(|f| f.state != "size_matches")
     {
-        return Err(bad("Dateiliste ist unvollständig oder abweichend. Zuerst Dateiliste prüfen; keine Inhaltsprüfung gestartet.").into());
+        return Err(bad("File list is incomplete or differs. Check the file list first; content audit not started.").into());
     }
     Ok(())
 }
@@ -285,7 +281,7 @@ pub(super) struct Stamp {
 pub(super) fn stamp(file: &File) -> Result<Stamp> {
     let meta = file.metadata()?;
     if !meta.is_file() || linked(&meta) {
-        return Err(bad("Quelle ist keine reguläre Datei").into());
+        return Err(bad("Source is not a regular file").into());
     }
     #[cfg(windows)]
     let identity = {
@@ -334,7 +330,7 @@ pub(super) fn open_source(root: &Path, name: &str) -> Result<File> {
     let path = root.join(name);
     for part in path.ancestors() {
         if linked(&fs::symlink_metadata(part)?) {
-            return Err(bad("Verknüpfte Inhaltsquelle wird nicht geöffnet").into());
+            return Err(bad("Linked content source will not be opened").into());
         }
     }
     let mut options = OpenOptions::new();
@@ -349,7 +345,7 @@ pub(super) fn open_source(root: &Path, name: &str) -> Result<File> {
     // final-path lookup prevents a raced parent junction from redirecting reads.
     let actual = handle_path(&file, &path)?;
     if !actual.starts_with(root) || actual == root {
-        return Err(bad("Inhaltsquelle liegt außerhalb der Installation").into());
+        return Err(bad("Content source is outside the installation").into());
     }
     stamp(&file)?;
     Ok(file)
@@ -367,10 +363,9 @@ fn handle_path(file: &File, _path: &Path) -> Result<PathBuf> {
             return Err(std::io::Error::last_os_error().into());
         }
         if info.dwFileAttributes & 0x410 != 0 || info.nNumberOfLinks != 1 {
-            return Err(bad(
-                "Reparse-Punkt, Verzeichnis oder Hardlink als Inhaltsquelle abgelehnt",
-            )
-            .into());
+            return Err(
+                bad("Reparse point, directory or hardlink rejected as content source").into(),
+            );
         }
         let mut buf = vec![0u16; 32768];
         let n = GetFinalPathNameByHandleW(h, buf.as_mut_ptr(), buf.len() as u32, 0);

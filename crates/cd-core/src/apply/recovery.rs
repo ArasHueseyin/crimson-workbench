@@ -48,20 +48,40 @@ pub fn list(policy: &PathPolicy) -> Result<Listing> {
         let item = item?;
         if directories.len() >= 2000 {
             return Err(Error::Invalid(
-                "Mehr als 2.000 Projektproben; Liste nicht vollständig lesbar.".into(),
+                "More than 2,000 workspace rehearsals; list cannot be read completely.".into(),
             ));
         }
         directories.push(item.path());
     }
     directories.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
     let truncated = directories.len() > 200;
-    let entries = directories.into_iter().take(200).map(|directory| {
-        let name = directory.file_name().unwrap().to_string_lossy().into_owned();
-        match read_identity(policy, &directory) {
-            Ok((_, identity)) => Entry { directory, name, format: Some(identity.format), error: (identity.format != 3).then(|| "Ältere ungeschützte Probe; nicht für diese Wiederherstellung freigegeben.".into()) },
-            Err(error) => Entry { directory, name, format: None, error: Some(error.to_string()) },
-        }
-    }).collect();
+    let entries = directories
+        .into_iter()
+        .take(200)
+        .map(|directory| {
+            let name = directory
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned();
+            match read_identity(policy, &directory) {
+                Ok((_, identity)) => Entry {
+                    directory,
+                    name,
+                    format: Some(identity.format),
+                    error: (identity.format != 3).then(|| {
+                        "Older unprotected rehearsal; not supported for this recovery.".into()
+                    }),
+                },
+                Err(error) => Entry {
+                    directory,
+                    name,
+                    format: None,
+                    error: Some(error.to_string()),
+                },
+            }
+        })
+        .collect();
     Ok(Listing { entries, truncated })
 }
 
@@ -72,7 +92,7 @@ fn checked_identity(
     let (root, identity) = read_identity(policy, directory)?;
     if identity.format != 3 {
         return Err(Error::Invalid(
-            "Wiederherstellungsvorschau benötigt eine geschützte v3-Projektprobe.".into(),
+            "Recovery preview requires a protected v3 workspace rehearsal.".into(),
         ));
     }
     let baseline = read_protection(policy, &root, &identity)?;
@@ -93,7 +113,7 @@ fn make_review(
         plan_id: identity.plan_id.clone(),
         protected_source_files: sources,
         can_restore: restore.pending_outcome.is_some() || !restore.files.is_empty(),
-        scope: "Ausschließlich diese Projektkopie. Registry aus geprüfter Sicherung wiederherstellen und eigene Overlaydateien entfernen; Originalarchive bleiben erhalten. Kein Live-Restore.",
+        scope: "Only this workspace copy is affected. Restore the registry from a verified backup and remove owned overlay files; original archives are preserved. No live restore.",
         restore,
     })
 }
@@ -118,7 +138,7 @@ pub fn restore(
             .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
     {
         return Err(Error::Invalid(
-            "Gültige Wiederherstellungsvorschau erforderlich.".into(),
+            "A valid recovery preview is required.".into(),
         ));
     }
     let (root, identity, baseline) = checked_identity(policy, directory)?;
@@ -130,14 +150,16 @@ pub fn restore(
         session.restore_review()?,
     )?;
     if review.review_id != expected_review {
-        return Err(Error::Invalid("Projektprobe seit der Vorschau geändert. Bitte erneut prüfen; nichts wiederhergestellt.".into()));
+        return Err(Error::Invalid(
+            "Workspace rehearsal changed since preview. Check again; nothing restored.".into(),
+        ));
     }
     let pending = !session.recover(None)?.is_empty();
     session.restore(None)?;
     let after = session.restore_review()?;
     if !after.files.is_empty() || after.pending_outcome.is_some() {
         return Err(Error::Invalid(
-            "Wiederherstellung nicht vollständig; Projektprobe erneut prüfen.".into(),
+            "Recovery incomplete; check the workspace rehearsal again.".into(),
         ));
     }
     // The receipt is emitted before dropping source/backup/directory protection.

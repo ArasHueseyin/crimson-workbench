@@ -74,7 +74,7 @@ fn cancellation_never_returns_complete_report() {
     )
     .err()
     .unwrap();
-    assert!(err.to_string().contains("abgebrochen"));
+    assert!(err.to_string().contains("cancelled"));
     assert!(!completed);
 }
 #[test]
@@ -155,7 +155,7 @@ fn update_and_already_hashed_source_change_invalidate_whole_run() {
         .err()
         .unwrap();
         assert!(changed);
-        assert!(e.to_string().contains("geändert") || e.to_string().contains("abweichend"));
+        assert!(e.to_string().contains("changed") || e.to_string().contains("abweichend"));
     }
 }
 #[test]

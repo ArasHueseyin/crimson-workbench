@@ -3,7 +3,7 @@ import { api, asError } from './api';
 import type { AuditSnapshot, InstallationInventory } from './mod-types';
 
 const active = (s: AuditSnapshot | null) => s !== null && ['preparing','hashing','validating'].includes(s.phase);
-function size(value: string) { const gib=Number(value)/1073741824;return gib>=1?`${gib.toLocaleString('de-DE',{maximumFractionDigits:2})} GiB`:`${(Number(value)/1048576).toLocaleString('de-DE',{maximumFractionDigits:1})} MiB`; }
+function size(value: string) { const gib=Number(value)/1073741824;return gib>=1?`${gib.toLocaleString('en-US',{maximumFractionDigits:2})} GiB`:`${(Number(value)/1048576).toLocaleString('en-US',{maximumFractionDigits:1})} MiB`; }
 export function ContentAudit({session,inventory}:{session:number;inventory:InstallationInventory|null}) {
   const [job,setJob]=useState<AuditSnapshot|null>(null),[error,setError]=useState(''),[exported,setExported]=useState('');
   const [pending,setPending]=useState(false),[cancelling,setCancelling]=useState(false);
@@ -38,16 +38,16 @@ export function ContentAudit({session,inventory}:{session:number;inventory:Insta
   }
   const running=active(job), result=job?.phase==='complete'?job.report:null;
   const progress=job?.progress, fraction=progress&&Number(progress.total_bytes)>0?Math.min(100,Number(progress.bytes_done)/Number(progress.total_bytes)*100):0;
-  return <section className="content-audit" aria-label="Inhaltsprüfung">
-    <h3>Vollständige Inhaltsprüfung</h3>
-    <p>Liest sämtliche Dateien aus den Depotlisten und vergleicht ihre Inhalte. {inventory?.expected_bytes&&`Umfang: ${size(inventory.expected_bytes)}. `}Nur nach dem Spielen starten; der Lauf kann länger dauern. Ein erkannter Spielstart bricht die Prüfung ab.</p>
-    <div className="audit-actions"><button className="secondary" type="button" disabled={!eligible||running||pending} onClick={()=>void start()}>Dateiinhalte prüfen</button>
-      {running&&<button className="secondary" type="button" disabled={cancelling} onClick={()=>void cancel()}>{cancelling?'Abbruch angefordert …':'Inhaltsprüfung abbrechen'}</button>}
-      {result&&<button className="secondary" type="button" disabled={pending} onClick={()=>void save()}>Prüfbericht exportieren</button>}</div>
-    {!eligible&&!running&&<p>{!inventory?'Zuerst die Dateiliste prüfen.':inventory.game_running!==false?'Spiel läuft oder Status unbekannt. Nach dem Beenden die Dateiliste erneut prüfen.':'Die Dateiliste ist unvollständig oder abweichend. Hinweise oben prüfen.'}</p>}
-    {running&&progress&&<div role="status"><p>{job?.phase==='preparing'?'Prüfung wird vorbereitet …':job?.phase==='validating'?'Abschließender Metadatenvergleich …':`${progress.files_done} / ${progress.total_files} Dateien · ${size(progress.bytes_done)} / ${size(progress.total_bytes)}`}</p><progress aria-label="Inhaltsprüfung Fortschritt" max={100} value={fraction}/><code>{progress.current_path}</code><p>Die Prüfung läuft bei einem Wechsel der Ansicht weiter. Ein Wechsel der Installation oder Sprache bricht sie ab.</p></div>}
+  return <section className="content-audit" aria-label="Content audit">
+    <h3>Full content audit</h3>
+    <p>Reads every file in the depot lists and compares their contents. {inventory?.expected_bytes&&`Scope: ${size(inventory.expected_bytes)}. `}Start after closing the game; this may take a while. A detected game launch cancels the audit.</p>
+    <div className="audit-actions"><button className="secondary" type="button" disabled={!eligible||running||pending} onClick={()=>void start()}>Check file contents</button>
+      {running&&<button className="secondary" type="button" disabled={cancelling} onClick={()=>void cancel()}>{cancelling?'Cancellation requested …':'Cancel content audit'}</button>}
+      {result&&<button className="secondary" type="button" disabled={pending} onClick={()=>void save()}>Export audit report</button>}</div>
+    {!eligible&&!running&&<p>{!inventory?'Check the file list first.':inventory.game_running!==false?'Game running or status unknown. Check the file list again after closing the game.':'The file list is incomplete or differs. Check the notes above.'}</p>}
+    {running&&progress&&<div role="status"><p>{job?.phase==='preparing'?'Preparing audit …':job?.phase==='validating'?'Final metadata comparison …':`${progress.files_done} / ${progress.total_files} files · ${size(progress.bytes_done)} / ${size(progress.total_bytes)}`}</p><progress aria-label="Content audit progress" max={100} value={fraction}/><code>{progress.current_path}</code><p>The audit continues when switching views. Changing the installation or item language cancels it.</p></div>}
     {(error||job?.error)&&<p role="alert" className="craft-error">{error||job?.error}</p>}
-    {result&&<div className="audit-result" role="status"><strong>{result.all_files_match_cache?'Alle Dateiinhalte stimmen mit dem lokalen Steam-Cache überein.':'Inhaltsabweichungen gefunden.'}</strong><p>{result.files.length} Depotdateien geprüft. Stand: {new Date(result.finished_at*1000).toLocaleString('de-DE')}. Kein Vanilla-Zertifikat · Live-Apply bleibt gesperrt.</p>{result.foreign_approval&&<p>Zusätzliche Fremddateien sind separat bestätigt. Dieser Bericht prüft ausschließlich die Depot-Originale und bestätigt keine Kompatibilität.</p>}<ul>{result.files.filter(f=>!f.matches_cache).map(f=><li key={f.path}><code>{f.path}</code> · Inhalt weicht ab</li>)}</ul><details><summary>Grenzen dieses Berichts</summary><ul>{result.limitations.map(s=><li key={s}>{s}</li>)}</ul></details></div>}
-    {exported&&<p className="audit-export" role="status">Prüfbericht gespeichert: <code>{exported}</code></p>}
+    {result&&<div className="audit-result" role="status"><strong>{result.all_files_match_cache?'All file contents match the local Steam cache.':'Content differences found.'}</strong><p>{result.files.length} depot files checked. As of: {new Date(result.finished_at*1000).toLocaleString('en-US')}. Not a vanilla certificate · Live apply remains blocked.</p>{result.foreign_approval&&<p>Additional third-party files were approved separately. This report checks only depot originals and does not confirm compatibility.</p>}<ul>{result.files.filter(f=>!f.matches_cache).map(f=><li key={f.path}><code>{f.path}</code> · Content differs</li>)}</ul><details><summary>Report limitations</summary><ul>{result.limitations.map(s=><li key={s}>{s}</li>)}</ul></details></div>}
+    {exported&&<p className="audit-export" role="status">Audit report saved: <code>{exported}</code></p>}
   </section>;
 }

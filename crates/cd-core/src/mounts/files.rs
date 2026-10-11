@@ -36,14 +36,14 @@ fn plain(path: &Path, directory: bool) -> Result<()> {
     {
         use std::os::windows::fs::MetadataExt;
         if m.file_attributes() & 0x400 != 0 {
-            return Err(bad("Verknüpfter Pfad: keine Änderung."));
+            return Err(bad("Linked path: nothing changed."));
         }
     }
     if m.file_type().is_symlink() || m.is_dir() != directory {
-        return Err(bad("Kein regulärer Pfad."));
+        return Err(bad("Not a regular path."));
     }
     if !directory && crate::paths::link_count(path, &m)? != 1 {
-        return Err(bad("Hardlink: keine Änderung."));
+        return Err(bad("Hardlink: nothing changed."));
     }
     Ok(())
 }
@@ -63,7 +63,7 @@ fn slot(root: &Path, id: &str) -> Result<PathBuf> {
             .strip_prefix("slot")
             .is_some_and(|s| !s.is_empty() && s.len() <= 3 && s.bytes().all(|b| b.is_ascii_digit()))
     {
-        return Err(bad("Ungültiger Spielstandpfad."));
+        return Err(bad("Invalid save path."));
     }
     let p = root.join(parts[0]).join(parts[1]);
     ancestors(&p)?;
@@ -105,7 +105,7 @@ pub(crate) fn choices(root: &Path) -> Result<Vec<SaveChoice>> {
             out.push(SaveChoice {
                 id,
                 label: format!(
-                    "Slot {} · Konto {}",
+                    "Slot {} · Account {}",
                     name.trim_start_matches("slot"),
                     account.file_name().to_string_lossy()
                 ),
@@ -121,14 +121,14 @@ fn read(path: &Path) -> Result<Vec<u8>> {
     let mut f = File::open(path)?;
     let n = f.metadata()?.len();
     if n == 0 || n > crimson_format::MAX_FILE_BYTES as u64 {
-        return Err(bad("Spielstandgröße außerhalb des Limits."));
+        return Err(bad("Save size outside the limit."));
     }
     let mut bytes = Vec::new();
     (&mut f)
         .take(crimson_format::MAX_FILE_BYTES as u64 + 1)
         .read_to_end(&mut bytes)?;
     if bytes.len() as u64 != n {
-        return Err(bad("Spielstand wird gerade geändert. Erneut einlesen."));
+        return Err(bad("Save is being modified. Reload it."));
     }
     Ok(bytes)
 }
@@ -139,7 +139,7 @@ pub(crate) fn read_pair(root: &Path, id: &str) -> Result<(Vec<u8>, Vec<u8>)> {
 fn stopped() -> Result<()> {
     if crate::apply::guard::game_running()? {
         return Err(bad(
-            "Crimson Desert läuft. Erst speichern und vollständig schließen.",
+            "Crimson Desert is running. Save and fully close the game first.",
         ));
     }
     Ok(())
@@ -162,7 +162,7 @@ fn put_new(path: &Path, bytes: &[u8]) -> Result<()> {
     f.sync_all()?;
     drop(f);
     if read(path)? != bytes {
-        return Err(bad("Readback fehlgeschlagen."));
+        return Err(bad("Readback failed."));
     }
     Ok(())
 }
@@ -209,7 +209,7 @@ fn commit_pair(
         if read(&directory.join("save.save"))? != before_save
             || read(&directory.join("lobby.save"))? != before_lobby
         {
-            return Err(bad("Spielstand seit Vorschau geändert."));
+            return Err(bad("Save changed since preview."));
         }
         // Counter first: a crash between these replacements leaves an advanced
         // counter and the unchanged save. It cannot reuse a newly allocated ID.
@@ -221,7 +221,7 @@ fn commit_pair(
         if read(&directory.join("save.save"))? != save
             || read(&directory.join("lobby.save"))? != lobby
         {
-            return Err(bad("Installierter Spielstand stimmt nicht."));
+            return Err(bad("Installed save does not match."));
         }
         Ok(())
     })();
@@ -246,7 +246,7 @@ fn recover_pair(
         || ![before_lobby, after_lobby].contains(&current_lobby.as_slice())
     {
         return Err(bad(format!(
-            "Fremde Spielstandänderung: nicht überschrieben. Sicherung: {}",
+            "External save change: not overwritten. Backup: {}",
             backup.display()
         )));
     }
@@ -270,7 +270,7 @@ fn recover_pair(
     if read(&directory.join("save.save"))? != before_save
         || read(&directory.join("lobby.save"))? != before_lobby
     {
-        return Err(bad("Wiederherstellung unvollständig."));
+        return Err(bad("Recovery incomplete."));
     }
     Ok(())
 }
@@ -297,7 +297,7 @@ pub(super) fn register(
     if hash_bytes(&exe_bytes) != "57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7"
     {
         return Err(bad(
-            "Reittierregistrierung ist nur für den geprüften Build 2976 freigegeben.",
+            "Mount registration supports only the verified build 2976.",
         ));
     }
     drop(exe_bytes);
@@ -324,7 +324,7 @@ pub(super) fn register(
         plain(&backup, true)?;
         let intent: Intent = serde_json::from_slice(&read(&backup.join("intent.json"))?)?;
         if &intent.request != request {
-            return Err(bad("Anfrage-ID wurde für eine andere Auswahl verwendet."));
+            return Err(bad("Request ID was used for another selection."));
         }
         if backup.join("receipt.json").try_exists()? {
             return Ok(serde_json::from_slice(&read(
@@ -348,7 +348,7 @@ pub(super) fn register(
             &read(&backup.join("original.lobby"))?,
         )?;
         return Err(bad(
-            "Unterbrochene Registrierung zurückgesetzt. Neu einlesen und erneut auswählen.",
+            "Interrupted registration rolled back. Reload and select again.",
         ));
     }
     // Serialize against another Workbench operation and hold both original
@@ -362,7 +362,7 @@ pub(super) fn register(
     if hash_bytes(&before_save) != request.save_sha256
         || hash_bytes(&before_lobby) != request.lobby_sha256
     {
-        return Err(bad("Spielstand seit Auswahl geändert. Erst neu einlesen."));
+        return Err(bad("Save changed since selection. Reload first."));
     }
     let candidate = edit::build(&before_save, &before_lobby, mount, mounts)?;
     stopped()?;
@@ -383,13 +383,13 @@ pub(super) fn register(
         donor_key: candidate.donor_key,
         backup: backup.clone(),
         message: format!(
-            "{} im Stall von {} registriert ({} → {} Tiere). Diesen Spielstand im Spiel laden.{}",
+            "{} registered in the stable of {} ({} → {} animals). Load this save in game.{}",
             mount.name,
             request.save,
             candidate.count_before,
             candidate.count_after,
             if candidate.donor_key == 0 {
-                " Basiseintrag: Herbeirufen und Reiten im Spiel prüfen."
+                " Base entry: test summoning and riding in game."
             } else {
                 ""
             }

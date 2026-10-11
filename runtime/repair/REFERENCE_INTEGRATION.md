@@ -1,108 +1,49 @@
-# Actor-Referenzen und Lebensdauer 0.6.0
+# Actor references and lifetime 0.6.0
 
-Stand 22.09.2026. Separates Entwicklungsmodul; Workbench weiterhin v0.5.8.
-Kein installierbarer Mod, kein Zugriff auf den Spielprozess oder Saves.
+Status: 22.09.2026. Separate development module; Workbench continues to v0.5.8. No installable mod, no access to the game process or saves.
 
-## Implementiert
+## Implemented
 
-`crimson_repair_reference.lib` verwaltet zwei native 32-Byte-Referenzbelege
-(`PaPtr`) als nicht kopierbare/verschiebbare Eigentümer. Ein Host muss sie über
-geprüfte Acquire-/Release-Callbacks liefern. Eine ungültige Referenz kann einen
-nichtleeren Actorpointer enthalten: Maßgeblich ist das Gültigkeitsbyte `+0x10`.
-Die Quellen benötigen dieselbe vollständige Charakterkennung; gleiche Actor-
-Adressen für Client und Server werden abgewiesen. Alle Quellen werden vorab geprüft.
+`crimson_repair_reference.lib` manages two native 32 byte reference documents (`PaPtr`) as non-copiable/movable owners. A host must deliver them via verified Acquire/Release Callbacks. An invalid reference can contain a non-empty actor pointer: The validity byte `+0x10` is decisive. The sources shall have the same full character identifier; The same actor addresses for client and server are rejected. All sources are checked in advance.
 
-Scheitert die zweite Quelle, werden ihr Ergebnis und die erste Referenz in
-umgekehrter Reihenfolge aufgeräumt. Öffentliche Aufrufe auf einem fremden Thread
-werden abgewiesen. Zerstörung eines noch haltenden Eigentümers auf einem fremden
-Thread ist ein Programmierfehler und führt zu `std::terminate`. Der Host muss
-zusätzlich den TLS-Referenzmodus während des gesamten Besitzes unverändert halten;
-gleiche Thread-ID allein beweist das nicht.
+If the second source fails, its result and the first reference are cleaned up in reverse order. Public calls on a foreign thread are rejected. Destroying a still holding owner on a foreign thread is a programming error and leads to `std::terminate`. In addition, the host must keep the TLS reference mode unchanged throughout ownership; The same thread ID alone does not prove this.
 
-`capture_with_references` hält beide Referenzen über die vollständige geschützte
-Inventarerfassung. Der innere Leser gibt zuerst die Inventarsperren zurück,
-danach werden die Referenzen freigegeben; das gilt auch für Ablehnung und
-C++-Exception. Unter den Sperren werden die vollständige Kennung, `Alive+0x4a`
-und der Zerstörungsindikator `+0x4b` vor und nach der Erfassung geprüft.
-Das Ergebnis enthält private Datenkopien und keine anhaltende Schreibfreigabe.
+`capture_with_references` holds both references over full protected inventory capture. The inner reader returns the inventory locks first, after which the references are released; This also applies to rejection and C++ exception. Under the locks, the full identifier, `Alive+0x4a` and the destruction indicator `+0x4b` are checked before and after the acquisition. The result contains private data copies and no persistent write authorization.
 
-## Native Befunde und Funktionsgrenzen
+## Native findings and functional limits
 
-Gepinnte EXE 1.0.0.2944 / Steam 25381195, SHA-256
-`6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`.
-Alle Adressen als RVA:
+Pinned EXE 1.0.0.2944 / Steam 25381195, SHA-256 `6d348be9d52f81bd35cf7c55e73a5dbfc96cc8268438387c91f7f62c82381fa7`. All addresses as RVA:
 
-| Funktion | Bytes | SHA-256 |
+|Function|Bytes|SHA-256|
 |---|---:|---|
-| NormalActor-Zugriffswrapper `0x4f9000` | 12 | `90521d0c1b64f081e463c6d47ce1ce830aadf6a417b7607269319860382e5eb6` |
-| Kennungsgebundener Erwerb `0x1436bf0` | 246 | `30eec32cccb2b3447885935521b2c92e9c951f9a7d6fb729b09f81833beca0d9` |
-| Vorhandene Referenz prüfen `0x1436990` | 152 | `17015ad6da39a35b7248364f8e9622fe0d6e221284e201acb38a08f3abc0386b` |
-| Konkrete Actor-Freigabe `0x1436690` | 757 | `0a7467851808949a1dddfbbda6f4d1270cefe1262ce80c796da571a171a7b8ad` |
-| PaPtr-Freigabe `0x1434900` | 156 | `58962428c45832afd42ef53dbda8feeef6d8bebb53c709f1d79c683bbdc49860` |
+|NormalActor access wrapper `0x4f9000`|12|`90521d0c1b64f081e463c6d47ce1ce830aadf6a417b7607269319860382e5eb6`|
+|Identifier-related acquisition `0x1436bf0`|246|`30eec32cccb2b3447885935521b2c92e9c951f9a7d6fb729b09f81833beca0d9`|
+|Check existing reference `0x1436990`|152|`17015ad6da39a35b7248364f8e9622fe0d6e221284e201acb38a08f3abc0386b`|
+|Concrete actor release `0x1436690`|757|`0a7467851808949a1dddfbbda6f4d1270cefe1262ce80c796da571a171a7b8ad`|
+|PaPtr release `0x1434900`|156|`58962428c45832afd42ef53dbda8feeef6d8bebb53c709f1d79c683bbdc49860`|
 
-Die überprüften Common-/Client-/Server-Actor-VTables zeigen bei `+8` auf
-`0x1436690`. Der einfachere Basispfad `0x14345c0` ist **kein Ersatz**: Der
-konkrete Pfad kann zusätzlich Zustand `0x20` nach `0x40` überführen und bei
-Serverobjekten eine ausstehende Bereinigung aufrufen. Der PaPtr-Destruktor ruft
-die virtuelle Freigabe auf und schützt die abschließende Zerstörung mit einem
-atomaren Vergleich von `Actor+0x4b`. Das Gültigkeitsbyte wird anschließend gelöscht.
-Der gesonderte PaPtr-Modus `+0x11` hat eine eigene Freigabeverzweigung.
+The checked Common-/Client-/Server-Actor-VTables point at `+8` to `0x1436690`. The simpler base path `0x14345c0` is **no replacement**: The specific path can also move Zustand `0x20` to `0x40` and call up a pending cleanup for server objects. The PaPtr destructor calls the virtual release and protects the final destruction with an atomic comparison of `Actor+0x4b`. The validity byte is then deleted. The separate PaPtr mode `+0x11` has its own release branch.
 
-Je nach TLS-Flags `+0x1d2`/`+0x1d4` erfolgt der Erwerb über den direkten
-Referenzzähler `Actor+0x10` oder über Thread-Registrierung plus `Actor+0x48`
-unter der eingebetteten Sperre `Actor+0x18`. Der direkte Pfad prüft **nicht**
-das Alive-Feld. Die zusätzliche Ablehnung im Leser ist deshalb erforderlich.
-NormalActor- und UserActor-Erwerb verwenden verschiedene virtuelle Wrapper;
-der getestete Erwerbswrapper ist ausdrücklich der NormalActor-Pfad.
+Depending on the TLS flag `+0x1d2`/`+0x1d4`, the purchase takes place via the direct reference counter `Actor+0x10` or via thread registration plus `Actor+0x48` under the embedded lock `Actor+0x18`. The direct path checks **not** the Alive field. The additional rejection in the reader is therefore necessary. NormalActor and UserActor purchase use various virtual wrappers; The tested purchase wrapper is expressly the NormalActor path.
 
-## Isolierte Ausführungsprobe und Grenzen
+## Isolated sample and boundaries
 
-Die fünf obigen Funktionen werden aus der hashgeprüften Datei in privaten
-Testprozess-Speicher kopiert. Drei neun Byte große TLS-Lesezugriffe werden per
-registererhaltendem `lea` auf einen privaten Test-TLS-Vektor umgeleitet.
-Alle übrigen Funktionsbytes bleiben unverändert. Keine echte TEB-/TLS-Änderung.
-Spiel-Cleanup-Handler werden nur aus den privaten Unwind-Kopien entfernt;
-Ausnahmen aus nativen Spielabhängigkeiten sind damit nicht als geprüft behauptet.
+The five functions above are copied from the hash-checked file to private test process memory. Three nine-byte TLS read accesses are redirected to a private test TLS vector via register-maintaining `lea`. All other function bytes remain unchanged. No real TEB/TLS change. Game cleanup handlers are only removed from the private Unwind copies; Exceptions from native game dependencies are thus not claimed as tested.
 
-13 Szenarien prüfen vollständige Kennungen, abgewiesenen Zugriff, bestehende
-äußere Referenzen, beide direkten TLS-Modi, Thread-Registrierungszweig,
-abgemeldete Objekte, verzögerte Zerstörung und die zusätzliche Zustandsbereinigung.
-Der Sonderbeleg und erneute Freigabe nach Invalidierung sind ebenfalls geprüft.
-Ein ungültiger Beleg mit Adresse 1 bestätigt, dass kein Pointerzugriff stattfindet.
+13Scenarios check full identifiers, rejected access, existing external references, both direct TLS modes, thread registration branch, logged-out objects, delayed destruction, and the additional Zustandclean-up. The special document and re-release after disability are also checked. An invalid document with an address 1 confirms that there is no pointer access.
 
-**Testabhängigkeiten:** Thread-Registrierung/Lookup, eingebettete Sperrmethoden,
-Elternobjektauflösung, erneuter Erwerb bei Bereinigung, Bereinigung und endgültige
-Zerstörung sind ausdrücklich Fixture-Callbacks. Die Tests beweisen die nativen
-Entscheidungswege und balancierte Aufrufe, nicht die vollständige Engine-
-Threadmap, tatsächliche Objektzerstörung oder reale Spielereignisse. Die separate
-WindowsRWLock-Probe aus 0.5.0 verwendet weiterhin echte Windows-SRW-Imports.
+**Test dependencies:** Thread registration/lookup, embedded blocking methods, parent object resolution, re-purchase upon cleanup, cleanup and final destruction are expressly fixture callbacks. The tests prove the native decision paths and balanced calls, not the full engine threadmap, actual object destruction or real game events. The separate WindowsRWLock sample from 0.5.0 continues to use real Windows SRW imports.
 
-## Ergänzung 0.7.0
+## Supplement 0.7.0
 
-Der Quellenadapter für Manager-Lookup und passende Freigabemethode ist inzwischen
-implementiert und synthetisch geprüft. Die neue installierte EXE 1.0.0.2949
-verhindert einen weiteren Nachweis mit dem bisher auf 1.0.0.2944 gepinnten Host.
-[Registry-Adapter und Buildwechsel](REGISTRY_INTEGRATION.md).
+The source adapter for manager lookup and appropriate release method has now been implemented and synthetically tested. The newly installed EXE 1.0.0.2949 prevents further detection with the previously pinned host on 1.0.0.2944. [Registry adapter and build change](REGISTRY_INTEGRATION.md).
 
-## Was vor Nutzung im Spiel fehlt
+## What is missing before use in the game
 
-Der Host muss aktuelle Client-/Server-Referenzen **aus geschützten Quellen**
-erwerben. Eine ungeschützte Actoradresse an den Acquire-Callback zu übergeben
-wäre bereits vor dem Referenzerwerb unsicher. Dieser Live-Quellenresolver,
-konkrete Methodenbindung, initialisierter Engine-Thread und konstante TLS-Modi
-sind noch nicht implementiert. Der bestehende lesende Layoutresolver ersetzt
-keine Registry-Lebensdauersperre. Die C++-Callbacks sind kein fertiger Spielhost.
+The host must purchase current client/server references **from protected sources**. Handing over an unprotected actor address to the Acquire Callback would be unsafe even before the reference purchase. This live source resolver, concrete method binding, initialized engine thread and constant TLS modes are not yet implemented. The existing reading layout resolver does not replace a registry lifetime lock. The C++ callbacks are not a finished game host.
 
-Danach fehlen weiterhin vollständige Reparaturtransaktion, Spielereignisse und
-Auftragszuordnung, Eingabe, Loader und B0-Installation. Die Referenzbibliothek
-ist nicht mit der Desktop-App verbunden; `installable` bleibt `false`.
+After that, complete repair transaction, game events and order assignment, input, loader and B0 installation are still missing. The reference library is not connected to the desktop app; `installable` remains `false`.
 
-## Prüfergebnis
+## Test result
 
-Vier CTest-Suiten und MSVC Release `/W4 /WX` bestanden. 249 Leser-/Referenzbedingungen,
-25 Sperrgruppenbedingungen, 1.481 Aktionsbedingungen. Nativer Host insgesamt
-203 Aufrufe und 3.859 Bedingungen. Die Reader-Suite prüft unter anderem
-Freigabereihenfolge, beide fehlgeschlagenen Erwerbe, Sperrkonflikt, falsche/alte
-Kennung, beginnende Zerstörung während der Erfassung, Threadwechsel und Exceptions.
-Nachweise: `.local/repair-runtime-v6-build-test.log` und
-`.local/repair-runtime-v6-validation.json`.
+Four CTest suites and MSVC release `/W4 /WX` passed. 249 Reader/Reference Conditions, 25 Lock Group Conditions, 1,481 Action Conditions. Native host total 203 views and 3,859 conditions. The reader suite checks, among other things, share order, both failed acquisitions, blocking conflict, false/old identifier, incipient destruction during capture, thread change and exceptions. Evidence: `.local/repair-runtime-v6-build-test.log` and `.local/repair-runtime-v6-validation.json`.

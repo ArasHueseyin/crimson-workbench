@@ -40,7 +40,7 @@ fn read(bytes: &[u8], disabled: bool) -> Result<(Record, usize, [u8; 3])> {
     r.end()?;
     let mut row = Record::new("conditioninfo", key, name, "world", vec![]);
     row.town_dismount = true;
-    row.description="Gemeinsame Stadtflug-Regel für Flugreittiere. Wird durch die Stadt- oder Drachen-Regionsoption aufgehoben; andere Stadtbedingungen bleiben erhalten.".into();
+    row.description="Shared city flight rule for flying mounts. Removed by the city or dragon region option; other city conditions are preserved.".into();
     Ok((row, start, flags))
 }
 pub(super) fn inspect(bytes: &[u8]) -> Result<Record> {

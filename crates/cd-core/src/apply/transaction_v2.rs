@@ -201,7 +201,7 @@ impl Engine {
             fs::create_dir(&directory)?;
         } else {
             return Err(bad(
-                "Keine vorhandene Sicherung; Projektprobe nicht initialisiert.",
+                "No existing backup; workspace rehearsal not initialized.",
             ));
         }
         if directory.join("journal.json").try_exists()? {
@@ -240,9 +240,7 @@ impl Engine {
             super::guard::publish(&partial, &backup)?;
             read_plain(&backup)?
         } else {
-            return Err(bad(
-                "Registry-Sicherung fehlt; keine automatische Neuerstellung.",
-            ));
+            return Err(bad("Registry backup missing; no automatic recreation."));
         };
         if hash_bytes(&registry) != expected_baseline {
             return Err(bad("backup verification failed"));

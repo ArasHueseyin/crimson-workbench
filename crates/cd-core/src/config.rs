@@ -21,7 +21,7 @@ impl Default for Preferences {
             version: 1,
             game_dir: None,
             save_dir: None,
-            language: "ger".into(),
+            language: "auto".into(),
         }
     }
 }
@@ -37,18 +37,19 @@ impl Preferences {
         if metadata.len() > 32 * 1024 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                "Einstellungsdatei ist zu groß.",
+                "Settings file is too large.",
             ));
         }
         let preferences: Self = serde_json::from_slice(&fs::read(path)?)?;
         if preferences.version != 1
-            || !crate::supported_languages()
-                .iter()
-                .any(|l| l.language == preferences.language)
+            || (preferences.language != "auto"
+                && !crate::supported_languages()
+                    .iter()
+                    .any(|l| l.language == preferences.language))
         {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                "Unbekannte Einstellungsversion oder Sprache.",
+                "Unknown settings version or language.",
             ));
         }
         for value in [&preferences.game_dir, &preferences.save_dir]
@@ -58,7 +59,7 @@ impl Preferences {
             if !value.is_absolute() {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    "Gespeicherte Pfade müssen absolut sein.",
+                    "Saved paths must be absolute.",
                 ));
             }
         }
@@ -133,7 +134,7 @@ fn ordinary_settings_file(path: &Path, metadata: &fs::Metadata) -> io::Result<()
         if metadata.file_attributes() & 0x400 != 0 {
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
-                "Verknüpfte Einstellungsdatei wird nicht verwendet.",
+                "Linked settings file will not be used.",
             ));
         }
     }
@@ -143,7 +144,7 @@ fn ordinary_settings_file(path: &Path, metadata: &fs::Metadata) -> io::Result<()
     {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
-            "Einstellungsdatei muss eine eigene reguläre Datei sein.",
+            "Settings must be stored in an owned regular file.",
         ));
     }
     Ok(())
@@ -214,6 +215,20 @@ fn parse_env(text: &str) -> io::Result<BTreeMap<String, String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn fresh_preferences_follow_game_language_and_keep_manual_overrides() {
+        let project = tempfile::tempdir().unwrap();
+        let defaults = Preferences::load(project.path()).unwrap();
+        assert_eq!(defaults.language, "auto");
+        defaults.store(project.path()).unwrap();
+        assert_eq!(Preferences::load(project.path()).unwrap().language, "auto");
+        let manual = Preferences {
+            language: "eng".into(),
+            ..defaults
+        };
+        manual.store(project.path()).unwrap();
+        assert_eq!(Preferences::load(project.path()).unwrap().language, "eng");
+    }
     #[test]
     fn windows_paths_and_bom_are_literal() {
         let env = parse_env(

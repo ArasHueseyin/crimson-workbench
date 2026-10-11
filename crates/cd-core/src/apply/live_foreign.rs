@@ -66,24 +66,24 @@ fn safe(path: &str) -> bool {
 }
 fn validate(set: &Set) -> Result<()> {
     if set.files.len() > MAX_FILES || set.directories.len() > 1024 {
-        return Err(bad("Zu viele Fremdeinträge"));
+        return Err(bad("Too many third-party entries"));
     }
     let mut paths = BTreeSet::new();
     let mut total = 0u64;
     for file in &set.files {
         if !safe(&file.path) || !digest(&file.sha256) || !paths.insert(file.path.to_lowercase()) {
-            return Err(bad("Ungültiger Fremddateinachweis"));
+            return Err(bad("Invalid third-party file evidence"));
         }
         total = total
             .checked_add(file.bytes)
-            .ok_or_else(|| bad("Fremddateigröße läuft über"))?;
+            .ok_or_else(|| bad("Third-party file size overflow"))?;
     }
     if total > MAX_BYTES {
-        return Err(bad("Zusatzdateien überschreiten 512 MiB; manuell prüfen"));
+        return Err(bad("Additional files exceed 512 MiB; review manually"));
     }
     for dir in &set.directories {
         if !safe(dir) || !paths.insert(dir.to_lowercase()) {
-            return Err(bad("Ungültiger Fremdordner"));
+            return Err(bad("Invalid third-party folder"));
         }
     }
     Ok(())
@@ -109,27 +109,27 @@ pub(super) fn accepted(policy: &PathPolicy, game: &Path) -> Result<Accepted> {
         let name = entry
             .file_name()
             .into_string()
-            .map_err(|_| bad("Ungültiges Bestätigungsprotokoll"))?;
+            .map_err(|_| bad("Invalid approval log"))?;
         if files.len() >= MAX_RECORDS
             || name.len() != 21
             || !name.ends_with(".json")
             || !name[..16].bytes().all(|b| b.is_ascii_digit())
         {
-            return Err(bad("Unbekannter Eintrag im Bestätigungsprotokoll"));
+            return Err(bad("Unknown entry in approval log"));
         }
         files.insert(name, entry.path());
     }
     let mut result = Accepted::default();
     for (i, (name, path)) in files.into_iter().enumerate() {
         if name != format!("{:016}.json", i + 1) {
-            return Err(bad("Lücke im Bestätigungsprotokoll"));
+            return Err(bad("Gap in approval log"));
         }
         let mut raw = Vec::new();
         fs::File::open(policy.check_cache(&path)?)?
             .take(1_048_577)
             .read_to_end(&mut raw)?;
         if raw.len() > 1_048_576 {
-            return Err(bad("Bestätigungsprotokoll zu groß"));
+            return Err(bad("Approval log too large"));
         }
         let record: Record = serde_json::from_slice(&raw)?;
         validate(&record.set)?;
@@ -138,7 +138,7 @@ pub(super) fn accepted(policy: &PathPolicy, game: &Path) -> Result<Accepted> {
             || record.approved_at == 0
             || record.sequence != i + 1
         {
-            return Err(bad("Bestätigung gehört nicht zur Installation"));
+            return Err(bad("Approval does not belong to this installation"));
         }
         result = Accepted {
             revision: Some(hash_bytes(&raw)),
@@ -153,7 +153,7 @@ fn token(root: &Path, set: &Set, previous: &Option<String>) -> Result<String> {
 }
 fn candidate(report: &Inventory) -> Result<Set> {
     if !report.directory_scan_complete || !report.depot_comparison_available {
-        return Err(bad("Vollständige Steam-Dateiliste erforderlich"));
+        return Err(bad("A complete Steam file list is required"));
     }
     let extras: BTreeSet<_> = report
         .files
@@ -171,7 +171,7 @@ fn candidate(report: &Inventory) -> Result<Set> {
         )
     }) {
         return Err(bad(
-            "Originaldateien, Verknüpfungen oder Workbench-Historie weichen ab. Keine Bestätigung möglich; Originalzustand und Dateiliste zuerst prüfen.",
+            "Original files, links or Workbench history differ. Approval blocked; check original state and file list first.",
         ));
     }
     if !report.managed_registry {
@@ -181,14 +181,14 @@ fn candidate(report: &Inventory) -> Result<Set> {
             .iter()
             .find(|f| f.path == "meta/0.papgt")
             .and_then(|f| f.expected_sha1.as_ref())
-            .ok_or_else(|| bad("Registry fehlt im Depotnachweis"))?;
+            .ok_or_else(|| bad("Registry missing from depot evidence"))?;
         let mut raw = Vec::new();
         fs::File::open(transaction::checked(&report.game_path, "meta/0.papgt")?)?
             .take(1_048_577)
             .read_to_end(&mut raw)?;
         if raw.len() > 1_048_576 || format!("{:x}", sha1::Sha1::digest(&raw)) != *expected {
             return Err(bad(
-                "Registry ist nicht als Original oder eigener Mod belegt. Fremde registrierte Mods zuerst entfernen und Steam-Dateiprüfung abschließen.",
+                "Registry is not verified as original or a Workbench mod. Remove registered third-party mods and complete Steam file verification first.",
             ));
         }
     }
@@ -199,7 +199,7 @@ fn candidate(report: &Inventory) -> Result<Set> {
         }
         if !safe(&file.path) {
             return Err(bad(format!(
-                "Zusatzpfad wird nicht gelesen oder freigegeben: {}",
+                "Additional path will not be read or approved: {}",
                 file.path
             )));
         }
@@ -208,7 +208,9 @@ fn candidate(report: &Inventory) -> Result<Set> {
             transaction::plain(&absolute, false)?;
             set.files.push(FileHash {
                 path: file.path.clone(),
-                bytes: bytes.parse().map_err(|_| bad("Ungültige Zusatzgröße"))?,
+                bytes: bytes
+                    .parse()
+                    .map_err(|_| bad("Invalid additional file size"))?,
                 sha256: "0".repeat(64),
             });
         } else {
@@ -249,7 +251,7 @@ pub fn inspect(policy: &PathPolicy, game: &Path) -> Result<Inspection> {
         Ok(r) if r.previous_approval == state.revision => (Some(r), None),
         Ok(_) => (
             None,
-            Some("Bestätigung zwischenzeitlich geändert; erneut prüfen".into()),
+            Some("Approval changed in the meantime; check again".into()),
         ),
         Err(e) => (None, Some(e.to_string())),
     };
@@ -267,7 +269,7 @@ pub fn inspect(policy: &PathPolicy, game: &Path) -> Result<Inspection> {
 pub(super) fn unchanged(policy: &PathPolicy, e: &Evidence) -> Result<()> {
     if accepted(policy, &e.admission.game)?.revision != e.foreign_revision {
         return Err(bad(
-            "Fremddateibestätigung geändert oder widerrufen; Live-Vorgang angehalten",
+            "Third-party file approval changed or revoked; live operation stopped",
         ));
     }
     Ok(())
@@ -291,7 +293,7 @@ fn prepared(policy: &PathPolicy, game: &Path) -> Result<(Set, Accepted)> {
             file.bytes,
         )?;
         if bytes != file.bytes {
-            return Err(bad("Zusatzdatei während der Vorschau geändert"));
+            return Err(bad("Additional file changed during preview"));
         }
         file.sha256 = sha256;
     }
@@ -299,7 +301,7 @@ fn prepared(policy: &PathPolicy, game: &Path) -> Result<(Set, Accepted)> {
     if serde_json::to_vec(&candidate(&after)?)? != serde_json::to_vec(&candidate(&report)?)?
         || previous.revision != accepted(policy, game)?.revision
     {
-        return Err(bad("Fremddateibestand während der Vorschau geändert"));
+        return Err(bad("Third-party file inventory changed during preview"));
     }
     Ok((set, previous))
 }
@@ -325,19 +327,19 @@ fn save(
 ) -> Result<Receipt> {
     validate(&set)?;
     if previous.sequence >= MAX_RECORDS {
-        return Err(bad("Bestätigungsprotokoll voll"));
+        return Err(bad("Approval log full"));
     }
     // Never consume the last slot with consent that could no longer be revoked.
     if previous.sequence == MAX_RECORDS - 1
         && (!set.files.is_empty() || !set.directories.is_empty())
     {
         return Err(bad(
-            "Bestätigungsprotokoll voll; letzter Eintrag für Widerruf reserviert",
+            "Approval log full; final entry reserved for revocation",
         ));
     }
     if accepted(policy, game)?.revision != previous.revision {
         return Err(bad(
-            "Bestätigung inzwischen geändert; Vorschau erneut erstellen",
+            "Approval changed in the meantime; create a new preview",
         ));
     }
     let files = set.files.len();
@@ -372,25 +374,25 @@ pub fn confirm(
     preserve_confirmed: bool,
 ) -> Result<Receipt> {
     if !preserve_confirmed {
-        return Err(bad("Zusatzdateien müssen ausdrücklich bestätigt werden"));
+        return Err(bad("Additional files require explicit approval"));
     }
     let root = game.canonicalize()?;
     let (set, previous) = prepared(policy, &root)?;
     if !digest(review_id) || token(&root, &set, &previous.revision)? != review_id {
-        return Err(bad("Fremddateivorschau veraltet; nichts bestätigt"));
+        return Err(bad("Third-party file preview is stale; nothing approved"));
     }
     if set.files.is_empty() && set.directories.is_empty() {
-        return Err(bad("Keine Zusatzdateien zu bestätigen"));
+        return Err(bad("No additional files to approve"));
     }
     save(policy, &root, set, previous, "preserve_foreign")
 }
 pub fn revoke(policy: &PathPolicy, game: &Path, approval_id: &str) -> Result<Receipt> {
     let previous = accepted(policy, game)?;
     if previous.set.files.is_empty() && previous.set.directories.is_empty() {
-        return Err(bad("Keine aktive Fremddateibestätigung"));
+        return Err(bad("No active third-party file approval"));
     }
     if previous.revision.as_deref() != Some(approval_id) {
-        return Err(bad("Bestätigung nicht mehr aktuell"));
+        return Err(bad("Approval is no longer current"));
     }
     save(policy, game, Set::default(), previous, "revoke_foreign")
 }
@@ -436,7 +438,7 @@ pub(crate) fn classify(policy: &PathPolicy, report: &mut Inventory) -> Result<()
             || !i.path.as_ref().is_some_and(|p| attributed.contains(p))
     });
     if !report.foreign_files.is_empty() {
-        report.limitations.push("Fremde Zusätze wurden ausdrücklich zum Beibehalten bestätigt. Metadatenzuordnung ohne erneuten Inhaltsvergleich; keine Vanilla- oder Kompatibilitätsbestätigung. Vor Live-Schreibzugriffen werden auch diese Dateien frisch gehasht und geschützt.".into());
+        report.limitations.push("Third-party additions were explicitly approved for keeping. Metadata mapping without a fresh content comparison; no vanilla or compatibility confirmation. These files are hashed again and protected before live writes.".into());
     }
     Ok(())
 }
