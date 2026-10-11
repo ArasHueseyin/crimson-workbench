@@ -16,9 +16,16 @@ for (let attempt = 0; attempt < 60; attempt++) {
 }
 if (!browser) throw new Error('Packaged WebView2 did not expose its private debug endpoint');
 try {
-  const page = browser.contexts().flatMap(context => context.pages())
-    .find(candidate => !candidate.url().startsWith('devtools:'));
-  if (!page) throw new Error('Packaged Workbench webview missing');
+  // WebView2 can expose CDP before creating its first page on a fresh machine.
+  // Wait for that target separately; connecting successfully is not app readiness.
+  let page;
+  for (let attempt = 0; attempt < 120; attempt++) {
+    page = browser.contexts().flatMap(context => context.pages())
+      .find(candidate => !candidate.url().startsWith('devtools:'));
+    if (page) break;
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  if (!page) throw new Error('Packaged Workbench webview missing after 60 seconds');
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.waitForURL(/^(https?:\/\/tauri\.localhost|tauri:\/\/localhost)(\/|$)/, { timeout: 60000 });
