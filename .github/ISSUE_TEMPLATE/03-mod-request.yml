@@ -1,0 +1,25 @@
+name: Mod request
+description: Suggest a new game mod for the free marketplace.
+title: "[Mod request]: "
+labels: ["mod-request"]
+body:
+  - type: markdown
+    attributes:
+      value: Please check existing requests first and describe the change you want to see in the game.
+  - type: textarea
+    id: desired-behavior
+    attributes:
+      label: What should the mod change?
+      description: Describe how the game behaves now and how you would like it to behave.
+    validations:
+      required: true
+  - type: textarea
+    id: affected-content
+    attributes:
+      label: Affected items, mounts, skills, or locations
+      description: Include exact names or IDs if you know them, and explain where the change should apply.
+  - type: textarea
+    id: references
+    attributes:
+      label: Examples or existing mods
+      description: Add screenshots or links if you have examples of the behavior you want.
