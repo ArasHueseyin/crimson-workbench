@@ -52,9 +52,10 @@ $mod.priorHashes = @($legacyHash)
 [IO.File]::WriteAllText($manifestFile, ($manifest | ConvertTo-Json -Depth 6))
 
 $game = Game "friend's game & mods"
-foreach ($id in @('blackstar', 'sleep_cooldown', 'sleep_duration')) { Run $game Install $id | Out-Null }
+foreach ($id in @('blackstar', 'sleep_cooldown', 'sleep_duration')) { Run ('\\?\' + $game) Install $id | Out-Null }
 $snapshot = (Run $game).snapshot
 Assert (@($snapshot.mods | Where-Object state -eq installed).Count -eq 3) 'All three cards must report installed.'
+Assert (@((Run ('\\?\' + $game)).snapshot.mods | Where-Object state -eq installed).Count -eq 3) 'Canonical Windows path failed.'
 $receipt = Join-Path $game 'bin64/CrimsonWorkbench-mods/blackstar/receipt.json'
 $receiptHash = Hash $receipt
 Run $game Install blackstar | Out-Null

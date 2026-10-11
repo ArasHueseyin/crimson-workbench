@@ -8,6 +8,8 @@ param(
 )
 . (Join-Path $PSScriptRoot 'RuntimeMods.Common.ps1')
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+if ($GameDirectory.StartsWith('\\?\UNC\', [StringComparison]::OrdinalIgnoreCase)) { $GameDirectory = '\\' + $GameDirectory.Substring(8) }
+elseif ($GameDirectory.StartsWith('\\?\')) { $GameDirectory = $GameDirectory.Substring(4) }
 
 function Read-MarketplaceManifest {
     $path = Join-Path $PSScriptRoot 'marketplace-manifest.json'

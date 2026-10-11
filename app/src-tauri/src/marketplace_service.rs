@@ -44,6 +44,20 @@ fn parse_response(bytes: &[u8]) -> Result<Snapshot> {
         .ok_or_else(|| error("The mod installer returned no status."))
 }
 
+// std::fs::canonicalize returns verbatim Windows paths; Windows PowerShell's
+// filesystem provider does not accept that prefix. Preserve Unicode and spaces.
+#[cfg(any(windows, test))]
+fn powershell_path(path: &Path) -> std::path::PathBuf {
+    let text = path.to_string_lossy();
+    if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+        return std::path::PathBuf::from(format!(r"\\{rest}"));
+    }
+    if let Some(rest) = text.strip_prefix(r"\\?\") {
+        return rest.into();
+    }
+    path.to_owned()
+}
+
 pub fn invoke(resources: &Path, game: &Path, action: Option<(&str, bool)>) -> Result<Snapshot> {
     if let Some((id, _)) = action
         && !["blackstar", "sleep_cooldown", "sleep_duration"].contains(&id)
@@ -55,7 +69,7 @@ pub fn invoke(resources: &Path, game: &Path, action: Option<(&str, bool)>) -> Re
 #[cfg(windows)]
 fn run(resources: &Path, game: &Path, action: Option<(&str, bool)>) -> Result<Snapshot> {
     use std::{os::windows::process::CommandExt, process::Command};
-    let script = resources.join("runtime-mods/Marketplace-Mods.ps1");
+    let script = powershell_path(resources).join("runtime-mods/Marketplace-Mods.ps1");
     if !script.is_file() {
         return Err(error(
             "This build has no bundled marketplace modules. Install the latest complete Workbench setup.",
@@ -77,7 +91,7 @@ fn run(resources: &Path, game: &Path, action: Option<(&str, bool)>) -> Result<Sn
         ])
         .arg(script)
         .arg("-GameDirectory")
-        .arg(game);
+        .arg(powershell_path(game));
     if let Some((id, enabled)) = action {
         command
             .arg("-Mode")
@@ -117,6 +131,21 @@ mod tests {
         assert!(parse_response(b"not JSON").is_err());
         assert!(invoke(Path::new("."), Path::new("."), Some(("../other", true))).is_err());
     }
+    #[test]
+    fn verbatim_local_and_network_paths_become_powershell_paths() {
+        assert_eq!(
+            powershell_path(Path::new(r"\\?\C:\friend's game & data\Crimson Desert")),
+            Path::new(r"C:\friend's game & data\Crimson Desert")
+        );
+        assert_eq!(
+            powershell_path(Path::new(r"\\?\UNC\server\games\Crimson Desert")),
+            Path::new(r"\\server\games\Crimson Desert")
+        );
+        assert_eq!(
+            powershell_path(Path::new(r"C:\Game")),
+            Path::new(r"C:\Game")
+        );
+    }
     #[cfg(windows)]
     #[test]
     fn powershell_bridge_passes_paths_literally_and_parses_utf8() {
@@ -128,8 +157,11 @@ param([string]$GameDirectory)
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 @{ok=$true;snapshot=@{game_running=$false;mods=@(@{id='blackstar';state='not_installed';message=$GameDirectory;can_install=$false;can_remove=$false})}} | ConvertTo-Json -Depth 6 -Compress
 "#).unwrap();
-        let game = Path::new("C:\\friend's game & data\\Crimson Desert");
-        let status = invoke(directory.path(), game, None).unwrap();
-        assert_eq!(status.mods[0].message, game.to_string_lossy());
+        let game = Path::new("\\\\?\\C:\\friend's gämé & data\\Crimson Desert");
+        let status = invoke(&directory.path().canonicalize().unwrap(), game, None).unwrap();
+        assert_eq!(
+            status.mods[0].message,
+            powershell_path(game).to_string_lossy()
+        );
     }
 }
