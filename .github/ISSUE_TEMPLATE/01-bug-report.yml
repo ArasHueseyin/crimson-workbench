@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a problem with Workbench, installation, or a mod.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Please check existing issues first. Include enough detail to help us reproduce the problem.
+  - type: input
+    id: workbench-version
+    attributes:
+      label: Workbench version
+      description: Which release did you install? Enter "unknown" if you are unsure.
+      placeholder: "e.g. 0.8.0"
+    validations:
+      required: true
+  - type: input
+    id: game-version
+    attributes:
+      label: Game version
+      description: Include the game EXE version if known, especially for item picker or runtime mod problems.
+      placeholder: "e.g. 1.0.0.2976"
+  - type: dropdown
+    id: affected-feature
+    attributes:
+      label: Affected feature
+      options:
+        - Installation or removal
+        - Item picker
+        - Mounts
+        - Extra sockets
+        - Mod marketplace
+        - Mod workshop
+        - Other or unsure
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: List the steps that lead to the problem. If it only happened once, describe what you were doing.
+      placeholder: |
+        1. Open...
+        2. Click...
+        3. The problem appears...
+    validations:
+      required: true
+  - type: textarea
+    id: supporting-details
+    attributes:
+      label: Screenshots, errors, or other details
+      description: Paste the exact error message or attach screenshots and relevant logs if available. Mention other installed mods if relevant.
