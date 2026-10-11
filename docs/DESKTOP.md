@@ -4,7 +4,7 @@ The application connects Tauri 2, React/TypeScript/Vite, Zustand, TanStack Table
 
 The new page **Crafting planner** and the recipe shortcuts are described in [CRAFTING.md](CRAFTING.md). The **Mod Workshop** with its conscious release limits is in [MODS.md](MODS.md). Total 31 native commands are allowed; `craft_info`, `craft_plan` and `craft_item` load recipes as needed. An installation/language change also discards the manual manufacturing plan and mod configuration. `mod_info`, `mod_preview`, `mod_export` and `mod_rehearse` interpret verified tables and write only project files if necessary. Six new live commands serve status, setup, file preview and a cancelable task. Only B0 is allowed to write controlled game paths. There is still no general FS/Shell plugin. [Live operation and limits](LIVE_APPLY.md).
 
-## Current language behavior (v0.6.3)
+## Current language behavior (v0.7.0)
 
 The interface and installer use English. The catalog defaults to **Automatic** and reads the installed game language from the selected installation's Steam manifest. When detection is unavailable, it uses English. Existing manual preferences are retained; choose **Automatic** in the top bar to enable detection. Separate in-game overrides and Epic/Game Pass language settings are not detected yet. The optional selector still supports all 15 catalog languages. Changing the language reloads the catalog and discards the current crafting/mod draft.
 
