@@ -24,7 +24,7 @@ async function fixture(page:Page,{running=false,version='1.0.0.2976',stale=false
 }
 test('four English free mods, combined selection and reviewed export without automatic writes',async({page})=>{
  await fixture(page);await expect(page.locator('.market-card')).toHaveCount(4);await expect(page.locator('.market-free')).toHaveCount(4);
- await page.getByRole('button',{name:'Add to plan',exact:true}).first().click();await page.getByRole('button',{name:'Add to plan',exact:true}).first().click();
+ await page.getByRole('button',{name:'Select mod',exact:true}).first().click();await page.getByRole('button',{name:'Select mod',exact:true}).first().click();
  await page.getByRole('button',{name:'Review combined plan'}).click();await expect(page.locator('.market-changes')).toContainText('0.90 → 1.17');
  await page.getByRole('button',{name:'Export local package'}).click();await expect(page.getByRole('status')).toContainText('exports/market-package');
  const calls=await page.evaluate(()=> (window as unknown as {marketCalls:{command:string;args:Record<string,unknown>}[]}).marketCalls);
@@ -32,7 +32,7 @@ test('four English free mods, combined selection and reviewed export without aut
  expect(request.marketplace).toEqual({larger_lion:true,faster_mounts:true,no_mount_stamina:false});
  expect(calls.find(c=>c.command==='mod_export')!.args.planId).toBe('reviewed-plan');
  expect(calls.some(c=>['live_start','skill_unlock_apply'].includes(c.command))).toBe(false);
- await page.getByRole('button',{name:'Remove from plan'}).first().click();await expect(page.getByRole('button',{name:'Export local package'})).toHaveCount(0);
+ await page.getByRole('button',{name:'Deselect mod'}).first().click();await expect(page.getByRole('button',{name:'Export local package'})).toHaveCount(0);
  await page.screenshot({path:'../.local/marketplace-preview.png',fullPage:true});
 });
 test('skills require a selected reviewed save and explicit confirmation; completed action cannot grant again',async({page})=>{
@@ -53,7 +53,7 @@ test('running game blocks skill editing and unsupported build disables every rec
 });
 test('unknown version gives a clear explanation and no enabled install actions',async({page})=>{
  await fixture(page,{version:'1.0.0.9999'});await expect(page.getByRole('alert')).toContainText('require game version 1.0.0.2976');
- for (const button of await page.getByRole('button',{name:'Add to plan',exact:true}).all())await expect(button).toBeDisabled();
+ for (const button of await page.getByRole('button',{name:'Select mod',exact:true}).all())await expect(button).toBeDisabled();
  await expect(page.getByRole('button',{name:'Choose save & review'})).toBeDisabled();
 });
 test('stale save is refused and retry keeps the same request ID',async({page})=>{

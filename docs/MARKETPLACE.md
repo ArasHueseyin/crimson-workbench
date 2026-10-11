@@ -15,7 +15,7 @@ If the current registry contains unmanaged modifications, an in-memory preview o
 
 ## Apply game mods
 
-1. Open **Mod marketplace** and add the desired game mods to the plan.
+1. Open **Mod marketplace** and use the **Select mod** switches for the desired game mods. **Deselect mod** removes a recipe from the draft; neither action installs or removes game files on its own.
 2. Choose **Review combined plan**. This prepares files in memory and changes no game files.
 3. Review the changes and use **Live apply & restore**. Its existing setup requires a saved content baseline and Steam verification confirmation. Setup and source checks are performed in the application; no PowerShell commands are needed.
 4. Close the game, calculate the live file preview and apply the reviewed plan.

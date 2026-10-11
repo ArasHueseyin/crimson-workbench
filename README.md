@@ -1,6 +1,6 @@
 # Crimson Workbench
 
-The current public packages are **Version 0.6.3 Preview**. Development version **0.7.0 Preview** adds the free mod marketplace. [Download a release](https://github.com/ArasHueseyin/crimson-workbench/releases) or read the [installation guide](docs/INSTALLATION.md). The setup includes Live Items, Extra Sockets and their loader, detects the Steam game folder, and installs WebView2 if needed. No development tools, separate mod ZIP or PowerShell commands are required for the normal installation.
+The current release is **Version 0.7.0**, including the free mod marketplace. [Download a release](https://github.com/ArasHueseyin/crimson-workbench/releases) or read the [installation guide](docs/INSTALLATION.md). The setup includes Live Items, Extra Sockets and their loader, detects the Steam game folder, and installs WebView2 if needed. No development tools, separate mod ZIP or PowerShell commands are required for the normal installation.
 
 The interface and installer are in **English**. Item names and descriptions automatically follow the installed language in the selected game's Steam manifest. If it cannot be detected, the catalog uses English. You can still choose any of the 15 item languages manually. Separate in-game language overrides and Epic/Game Pass language settings are not detected yet.
 

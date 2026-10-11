@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {ArrowUpRight,Check,Footprints,Gauge,Gift,LoaderCircle,Package,ShieldCheck,Sparkles,Zap} from 'lucide-react';
+import {Footprints,Gauge,ListChecks,LoaderCircle,Package,ShieldCheck,Sparkles,ToggleLeft,ToggleRight,Zap} from 'lucide-react';
 import {api,asError} from './api';
 import {useCatalog,useMods} from './store';
 import {LiveApply} from './LiveApply';
@@ -36,10 +36,10 @@ export function Marketplace({catalog}:{catalog:Catalog}) {
   <div className="market-grid">{mods.map(mod=>{const Icon=mod.icon;return <article className={`market-card ${selected[mod.id]?'selected':''}`} key={mod.id}>
    <div className="market-card-top"><div className={`market-icon ${mod.id}`}><Icon size={28}/></div><span className="market-free">FREE</span></div>
    <small>{mod.tag} · GAME MOD</small><h2>{mod.title}</h2><p>{mod.description}</p><div className="market-detail">{mod.detail}</div>
-   <button className={selected[mod.id]?'secondary':'primary'} disabled={busy||!supported} aria-pressed={selected[mod.id]} onClick={()=>toggle(mod.id)}>{selected[mod.id]?<Check size={16}/>:<Gift size={16}/>} {selected[mod.id]?'Remove from plan':'Add to plan'}</button>
+   <button className={`secondary market-toggle ${selected[mod.id]?'selected':''}`} disabled={busy||!supported} aria-pressed={selected[mod.id]} onClick={()=>toggle(mod.id)}>{selected[mod.id]?<ToggleRight size={24}/>:<ToggleLeft size={24}/>} {selected[mod.id]?'Deselect mod':'Select mod'}</button>
    <span className="market-hint">{selected[mod.id]?'Selected in draft · not an installation status':'Combine with the other game mods'}</span>
   </article>})}
-   <article className="market-card skills-card"><div className="market-card-top"><div className="market-icon all-skills"><Sparkles size={28}/></div><span className="market-free">FREE</span></div><small>PROGRESSION · SAVE ACTION</small><h2>All skills</h2><p>Max out all 140 abilities in the Kliff, Oongka and Damiane skill trees. Keep your available points, inventory and other save progress.</p><div className="market-detail">One selected save · backup before changes</div><button className="primary" disabled={!supported} onClick={()=>setSkills(true)}>Choose save & review <ArrowUpRight size={16}/></button><span className="market-hint">A save edit; it cannot be toggled off like a game mod</span></article>
+   <article className="market-card skills-card"><div className="market-card-top"><div className="market-icon all-skills"><Sparkles size={28}/></div><span className="market-free">FREE</span></div><small>PROGRESSION · SAVE ACTION</small><h2>All skills</h2><p>Max out all 140 abilities in the Kliff, Oongka and Damiane skill trees. Keep your available points, inventory and other save progress.</p><div className="market-detail">One selected save · backup before changes</div><button className="primary" disabled={!supported} onClick={()=>setSkills(true)}>Choose save & review <ListChecks size={16}/></button><span className="market-hint">A save edit; it cannot be toggled off like a game mod</span></article>
   </div>
   <section className="market-plan"><div><small>YOUR COMBINED PLAN</small><h2>{n} marketplace {n===1?'mod':'mods'} selected</h2><p>Workshop settings are kept in the same plan. Applying a new plan replaces the previous Workbench overlay. To remove one mod, remove it from the plan and apply again. Restore removes the complete Workbench overlay. Unmanaged mods remain untouched.</p></div><div className="mod-actions"><button className="primary" disabled={busy||!supported} onClick={()=>void work(calculate)}>{busy?<LoaderCircle size={16} className="spin"/>:<Package size={16}/>}Review combined plan</button><button className="secondary" onClick={()=>setView('mods')}>Open mod workshop</button></div>
    {error&&<p role="alert" className="craft-error">{error}</p>}

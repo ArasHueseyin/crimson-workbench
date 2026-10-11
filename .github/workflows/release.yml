@@ -51,11 +51,11 @@ jobs:
         with:
           name: crimson-workbench-windows
           path: release
-      - name: Publish tested preview release
+      - name: Publish tested release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "$GITHUB_REF_NAME" release/assets/* --verify-tag --prerelease \
-            --title "Crimson Workbench $GITHUB_REF_NAME (Preview)" \
+          gh release create "$GITHUB_REF_NAME" release/assets/* --verify-tag --latest \
+            --title "Crimson Workbench $GITHUB_REF_NAME" \
             --notes-file docs/RELEASE_NOTES.md
