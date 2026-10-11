@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$OutputDirectory,
-    [string]$Version = '0.6.3'
+    [string]$Version = '0.8.0'
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -49,6 +49,16 @@ CMakeRun @('--build', $live, '--config', 'Release', '--target', 'CrimsonLiveItem
 if ($LASTEXITCODE -ne 0) { throw 'Native policy tests failed.' }
 $liveAsi = Join-Path $live 'Release/CrimsonLiveItems.asi'
 $liveHash = Hash $liveAsi
+$market = Join-Path $build 'marketplace'
+CMakeRun @('-S', (Join-Path $repo 'runtime/marketplace'), '-B', $market, '-G', 'Visual Studio 17 2022', '-A', 'x64', "-DMINHOOK_ROOT=$minhook")
+CMakeRun @('--build', $market, '--config', 'Release', '--target', 'CrimsonBlackstar', 'CrimsonSleepCooldown', 'CrimsonSleepDuration', 'marketplace-policy-tests', '--parallel')
+& $ctest --test-dir $market -C Release --output-on-failure
+if ($LASTEXITCODE -ne 0) { throw 'Marketplace native policy tests failed.' }
+$marketModules = @(
+    @{ id = 'sleep_cooldown'; file = 'CrimsonSleepCooldown.asi'; priorHashes = @('a66c149adb7f304e7c6ae3fc80e45169bd6bd98a0cbedd4531f75613cc7d8201') },
+    @{ id = 'sleep_duration'; file = 'CrimsonSleepDuration.asi'; priorHashes = @('d250918a898702c2cd79a03c574c8be7a9184285cd2dabd4bde4d3d643f2e56e') },
+    @{ id = 'blackstar'; file = 'CrimsonBlackstar.asi'; priorHashes = @('8e1b254874c27022f6746b01f0520b31ed3ee44447d2919dce15f090ed8a886f') }
+)
 CMakeRun @('-S', (Join-Path $repo 'runtime/extra-sockets'), '-B', $sockets, '-G', 'Visual Studio 17 2022', '-A', 'x64', "-DMINHOOK_ROOT=$minhook", "-DCRIMSON_LIVE_ITEMS_SHA256=$liveHash")
 CMakeRun @('--build', $sockets, '--config', 'Release', '--target', 'CrimsonExtraSockets')
 $socketsAsi = Join-Path $sockets 'Release/CrimsonExtraSockets.asi'
@@ -60,6 +70,7 @@ if (-not [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($socketsAsi)).
 $smoke = Join-Path $build ('loader-smoke-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $smoke | Out-Null
 Copy-Item -LiteralPath $liveAsi, $socketsAsi -Destination $smoke
+foreach ($mod in $marketModules) { Copy-Item -LiteralPath (Join-Path $market ('Release/' + $mod.file)) -Destination $smoke }
 Copy-Item -LiteralPath $loader -Destination (Join-Path $smoke 'winmm.dll')
 # The runtime also pins the process basename. This is still our tiny test host,
 # not a copied game executable; its PE/header/hash must be rejected by both ASIs.
@@ -73,6 +84,15 @@ try { $sha.ComputeHash([byte[]]@()).CopyTo($empty, 16) } finally { $sha.Dispose(
 & (Join-Path $smoke 'CrimsonDesert.exe')
 if ($LASTEXITCODE -ne 0) { throw 'Pinned loader + native ASI smoke failed.' }
 Copy-Item -LiteralPath $liveAsi, $socketsAsi -Destination $OutputDirectory
+$addons = Join-Path $OutputDirectory 'addons'
+New-Item -ItemType Directory -Path $addons -Force | Out-Null
+$addonManifest = @($marketModules | ForEach-Object {
+    $source = Join-Path $market ('Release/' + $_.file)
+    Copy-Item -LiteralPath $source -Destination $addons
+    [ordered]@{ id = $_.id; file = $_.file; sha256 = (Hash $source); bytes = (Get-Item -LiteralPath $source).Length; priorHashes = $_.priorHashes }
+})
+[IO.File]::WriteAllText((Join-Path $OutputDirectory 'marketplace-manifest.json'), (([ordered]@{ schema = 1; version = $Version; gameExeSha256 = '57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7'; mods = $addonManifest }) | ConvertTo-Json -Depth 6), [Text.UTF8Encoding]::new($false))
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Marketplace-Mods.ps1') -Destination $OutputDirectory
 [IO.File]::WriteAllBytes((Join-Path $OutputDirectory 'CrimsonExtraSockets.dat'), $empty)
 New-Item -ItemType Directory -Path (Join-Path $OutputDirectory 'loader') | Out-Null
 Copy-Item -LiteralPath $loader -Destination (Join-Path $OutputDirectory 'loader/winmm.dll')

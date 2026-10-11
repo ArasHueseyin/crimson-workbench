@@ -1,5 +1,7 @@
 # Black Star – Implementation of 01.10.2026
 
+Workbench 0.8.0 distributes this existing implementation as **Blackstar anywhere** in the free marketplace. Public source is under [`runtime/marketplace/blackstar`](../runtime/marketplace/blackstar), without the private assembly fixtures or earlier personal save edits. The card lifts the implemented area restrictions, but original placement, indoor and quest/state checks can still refuse summoning. This packaging update does not establish new in-game summon locations. Install/import/remove the ASI from its card with the game closed.
+
 **Current diagnostic/invocation update installed, passed technical examinations; Unrestricted external summoning still unconfirmed.** After the city flight update, the user still reports approximately "mounts cannot be called here". The new version also detects Black Star during the previous summon action and captures the error code of the game message. The desired summoning time is 1,000 minutes. Installation and previous save changes took place when the game was closed.
 
 ## Behaviour

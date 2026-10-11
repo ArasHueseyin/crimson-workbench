@@ -107,6 +107,7 @@ if ($InstallerPath) {
     }
     # Exercise the actual installed resources through private synthetic fixtures.
     & (Join-Path $PSScriptRoot 'test-runtime-package.ps1') -PackageDirectory $bundledRuntime
+    & (Join-Path $PSScriptRoot 'test-marketplace-package.ps1') -PackageDirectory $bundledRuntime
     # Drive the real install hook with explicit opt-in, but an unsupported fake
     # game. Its nonzero exit proves the bundled helper ran and refused writes.
     $fakeGame = Join-Path $testRoot "unsupported friend's game"
@@ -137,6 +138,7 @@ if ($PortablePath) {
     $destination = Join-Path $testRoot 'portable-app'
     Expand-Archive -LiteralPath $zip -DestinationPath $destination
     $portable = Test-App $destination 'portable'
+    & (Join-Path $PSScriptRoot 'test-marketplace-package.ps1') -PackageDirectory (Join-Path (Split-Path $portable.exe -Parent) 'runtime-mods')
     $report.portable = @{ passed = $true; executable = $portable.exe }
 }
 $report | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $output 'package-result.json') -Encoding utf8NoBOM

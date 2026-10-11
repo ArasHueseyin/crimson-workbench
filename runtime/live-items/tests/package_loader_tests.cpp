@@ -21,7 +21,7 @@ int main() {
     }
     for (unsigned i = 0; i < 250; ++i) {
         bool done = true;
-        for (const auto name : {L"CrimsonLiveItems", L"CrimsonExtraSockets"}) {
+        for (const auto name : {L"CrimsonLiveItems", L"CrimsonExtraSockets", L"CrimsonBlackstar", L"CrimsonSleepCooldown", L"CrimsonSleepDuration"}) {
             const auto module = GetModuleHandleW((std::wstring(name) + L".asi").c_str());
             if (!module || !GetProcAddress(module, "InitializeASI")) { done = false; continue; }
             std::ifstream file(root / (std::wstring(name) + L".log"));
@@ -30,7 +30,7 @@ int main() {
             if (log.find("DISABLED:") == std::string::npos) done = false;
         }
         if (done) {
-            std::cout << "PASS: pinned winmm loader forwards and loads both ASIs; unsupported synthetic EXE rejected before hooks; tick=" << tick << "\n";
+            std::cout << "PASS: pinned winmm loader forwards and loads all five ASIs; unsupported synthetic EXE rejected before hooks; tick=" << tick << "\n";
             return 0;
         }
         Sleep(20);

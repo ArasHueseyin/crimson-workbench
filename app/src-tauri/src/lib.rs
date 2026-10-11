@@ -1,5 +1,6 @@
 mod audit_service;
 mod live_service;
+mod marketplace_service;
 mod service;
 mod settings;
 mod spawn_service;
@@ -20,6 +21,42 @@ async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T> + Send + 'sta
 async fn bootstrap(state: State<'_, SharedService>) -> Result<Bootstrap> {
     let state = Arc::clone(&state);
     blocking(move || state.bootstrap()).await
+}
+#[tauri::command]
+async fn marketplace_mod_status(
+    app: tauri::AppHandle,
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<marketplace_service::Snapshot> {
+    let resources = app.path().resource_dir().map_err(|e| AppError {
+        code: "marketplace_mod",
+        message: e.to_string(),
+    })?;
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| Ok(s.game_root().to_path_buf()))?;
+        marketplace_service::invoke(&resources, &game, None)
+    })
+    .await
+}
+#[tauri::command]
+async fn marketplace_mod_change(
+    app: tauri::AppHandle,
+    state: State<'_, SharedService>,
+    session: u64,
+    id: String,
+    enabled: bool,
+) -> Result<marketplace_service::Snapshot> {
+    let resources = app.path().resource_dir().map_err(|e| AppError {
+        code: "marketplace_mod",
+        message: e.to_string(),
+    })?;
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| Ok(s.game_root().to_path_buf()))?;
+        marketplace_service::invoke(&resources, &game, Some((&id, enabled)))
+    })
+    .await
 }
 #[tauri::command]
 async fn skill_unlock_preview(
@@ -282,6 +319,8 @@ pub fn run() {
         .manage(Arc::new(AppService::new(service::project_root())))
         .invoke_handler(tauri::generate_handler![
             bootstrap,
+            marketplace_mod_status,
+            marketplace_mod_change,
             save_settings,
             extra_sockets_snapshot,
             extra_socket_set,

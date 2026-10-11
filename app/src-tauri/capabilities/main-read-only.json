@@ -7,6 +7,8 @@
   ],
   "permissions": [
     "allow-bootstrap",
+    "allow-marketplace-mod-status",
+    "allow-marketplace-mod-change",
     "allow-save-settings",
     "allow-extra-sockets-snapshot",
     "allow-extra-socket-set",
