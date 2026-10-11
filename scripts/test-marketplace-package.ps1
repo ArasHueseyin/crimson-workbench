@@ -162,4 +162,8 @@ Assert ((Run $game).snapshot.game_running) 'Running-game status not reported.'
 # Both source integrity and fixed receipt paths are checked before mutation.
 [IO.File]::AppendAllText((Join-Path $fixture 'addons/CrimsonSleepCooldown.asi'), 'tampered')
 Run $game Install sleep_cooldown $false | Out-Null
+Copy-Item -LiteralPath (Join-Path $package 'addons/CrimsonSleepCooldown.asi') -Destination (Join-Path $fixture 'addons/CrimsonSleepCooldown.asi') -Force
+Assert ((Run $game).ok) 'Status did not recover after the synthetic package was restored.'
 Write-Host "PASS: three module lifecycles, Windows PowerShell paths, legacy backups, foreign/modified refusal, copy and receipt rollback, interruption recovery, running-game and tampered-package refusal. Evidence: $testRoot"
+# Expected child refusals are asserted above, not this test script's outcome.
+$global:LASTEXITCODE = 0
