@@ -2,6 +2,7 @@
 //! Unsupported semantics are errors, never silently approximated.
 pub mod advanced;
 mod chance;
+pub mod marketplace;
 mod store;
 use crate::{
     Error, GameData, Result,
@@ -33,6 +34,8 @@ pub struct ModRequest {
     pub guaranteed_dropsets: BTreeSet<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub advanced: Option<advanced::AdvancedRequest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub marketplace: Option<marketplace::Selection>,
 }
 impl Default for ModRequest {
     fn default() -> Self {
@@ -51,6 +54,7 @@ impl Default for ModRequest {
             chance_overrides: BTreeMap::new(),
             guaranteed_dropsets: BTreeSet::new(),
             advanced: None,
+            marketplace: None,
         }
     }
 }
@@ -141,6 +145,7 @@ pub struct ModCatalog {
     advanced: advanced::Catalog,
     blobs: BTreeMap<String, Vec<u8>>,
     registry: Vec<u8>,
+    observed_registry_sha256: String,
     encryption: [u8; 4],
     stores: BTreeMap<u32, Store>,
     drops: BTreeMap<u32, DropRow>,
@@ -173,6 +178,8 @@ impl ModCatalog {
     }
     pub fn open(data: &GameData) -> Result<Self> {
         let (blobs, registry, encryption) = data.mod_inputs()?;
+        let observed_registry_sha256 =
+            hash_bytes(&crimson_format::Archive::open(data.game_root())?.serialize_registry()?);
         let mut stores = BTreeMap::new();
         let mut drops = BTreeMap::new();
         let mut trust = BTreeMap::new();
@@ -230,6 +237,7 @@ impl ModCatalog {
             advanced: advanced::Catalog::open(&blobs)?,
             blobs,
             registry,
+            observed_registry_sha256,
             encryption,
             stores,
             drops,
@@ -614,7 +622,16 @@ impl ModCatalog {
             feature_warnings.extend(self.advanced.info().limitations);
         }
         let mut files = BTreeMap::new();
-        if !changes.is_empty() {
+        if let Some(selection) = &request.marketplace {
+            if selection.active()
+                && crate::fingerprint::known_for_game(&self.game)?.exe_version != "1.0.0.2976"
+            {
+                return Err(bad("Marketplace recipes support game build 1.0.0.2976"));
+            }
+            marketplace::apply(&self.blobs, selection, &mut replacements, &mut changes)?;
+        }
+        let larger_lion = request.marketplace.as_ref().is_some_and(|m| m.larger_lion);
+        if !changes.is_empty() || larger_lion {
             let mut payload = BTreeMap::new();
             for (name, rows) in replacements {
                 let (body, header) = table(&self.blobs, name)?.rebuild(&rows)?;
@@ -623,36 +640,74 @@ impl ModCatalog {
                     payload.insert(format!("{name}.staticinfoheader"), header);
                 }
             }
-            let overlay = crimson_format::overlay::build(&payload, self.encryption)?;
-            let archive = match crate::apply::original_registry(&self.game)? {
-                Some(bytes) => crimson_format::Archive::with_registry(&self.game, bytes)?,
-                None => crimson_format::Archive::open(&self.game)?,
+            let mut overlays = Vec::new();
+            if !payload.is_empty() {
+                overlays.push((
+                    "0008",
+                    crimson_format::overlay::build(&payload, self.encryption)?,
+                ));
+            }
+            let current = crimson_format::Archive::open(&self.game)?;
+            if hash_bytes(&current.serialize_registry()?) != self.observed_registry_sha256 {
+                return Err(bad(
+                    "Installation changed since reading; reload data source",
+                ));
+            }
+            let archive = match crate::apply::original_registry(&self.game) {
+                Ok(Some(bytes)) => crimson_format::Archive::with_registry(&self.game, bytes)?,
+                Ok(None) => current,
+                Err(_) => {
+                    // GameData already verified the original snapshot. An export
+                    // or in-memory preview has no game-write authority. Live B0
+                    // independently rejects unowned registry changes.
+                    feature_warnings.push("Preview uses verified original data. The current registry contains unmanaged changes; Live apply is blocked until those changes are resolved. Existing manual mods are not adopted or removed.".into());
+                    crimson_format::Archive::with_registry(&self.game, self.registry.clone())?
+                }
             };
             if archive.serialize_registry()? != self.registry {
                 return Err(bad(
                     "Installation changed since reading; reload data source",
                 ));
             }
-            let group = (1..=9999)
-                .map(|n| format!("{n:04}"))
-                .find(|n| {
-                    !archive.groups().iter().any(|g| &g.name == n) && !self.game.join(n).exists()
-                })
-                .ok_or_else(|| bad("no free overlay group"))?;
-            let language = archive
-                .groups()
-                .iter()
-                .find(|g| g.name == "0008")
-                .ok_or_else(|| bad("source group absent"))?
-                .language;
-            let registry = crimson_format::overlay::register(
-                &self.registry,
-                &group,
-                language,
-                overlay.checksum,
-            )?;
-            files.insert(format!("{group}/0.paz"), overlay.paz);
-            files.insert(format!("{group}/0.pamt"), overlay.pamt);
+            if larger_lion {
+                overlays.push(("0009", marketplace::lion(&archive)?));
+                changes.push(Change {
+                    module: "Marketplace",
+                    table: "lion appearance",
+                    key: 1002316,
+                    name: "Shared lion model".into(),
+                    field: "Character scale (+30%)".into(),
+                    before: "0.9".into(),
+                    after: "1.17".into(),
+                });
+            }
+            let mut registry = self.registry.clone();
+            let mut reserved = BTreeSet::new();
+            let mut registrations = BTreeMap::new();
+            for (source_group, overlay) in overlays {
+                let group = (1..=9999)
+                    .map(|n| format!("{n:04}"))
+                    .find(|n| {
+                        !archive.groups().iter().any(|g| &g.name == n)
+                            && !self.game.join(n).exists()
+                            && !reserved.contains(n)
+                    })
+                    .ok_or_else(|| bad("no free overlay group"))?;
+                let language = archive
+                    .groups()
+                    .iter()
+                    .find(|g| g.name == source_group)
+                    .ok_or_else(|| bad("source group absent"))?
+                    .language;
+                registrations.insert(group.clone(), (language, overlay.checksum));
+                files.insert(format!("{group}/0.paz"), overlay.paz);
+                files.insert(format!("{group}/0.pamt"), overlay.pamt);
+                reserved.insert(group);
+            }
+            for (group, (language, checksum)) in registrations.iter().rev() {
+                registry =
+                    crimson_format::overlay::register(&registry, group, *language, *checksum)?;
+            }
             files.insert("meta/0.papgt".into(), registry);
         }
         let planned: Vec<_> = files

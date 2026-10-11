@@ -83,6 +83,16 @@ pub struct BrowserSession {
     mounts: std::sync::Mutex<Option<Vec<crate::mounts::Mount>>>,
 }
 impl BrowserSession {
+    pub fn skill_unlock_preview(&self, save: Option<&str>) -> Result<crate::skill_unlock::Preview> {
+        crate::skill_unlock::preview(self.game_root(), self.save_root()?, save)
+    }
+    pub fn skill_unlock_apply(
+        &self,
+        project: &Path,
+        request: &crate::skill_unlock::Request,
+    ) -> Result<crate::skill_unlock::Receipt> {
+        crate::skill_unlock::apply(self.game_root(), project, self.save_root()?, request)
+    }
     pub fn extra_sockets(&self) -> Result<crate::extra_sockets::Snapshot> {
         crate::extra_sockets::snapshot(self.workspace.data())
     }

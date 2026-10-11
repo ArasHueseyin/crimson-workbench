@@ -58,15 +58,41 @@ pub fn build_uncompressed(
     build_with_storage(files, encryption_header, true)
 }
 
+pub const LION_DIRECTORY: &str = "character/appearance/2_mon/cd_m0002_00_fourfeet/cd_m0002_00_lion";
+pub const LION_FILE: &str = "cd_m0002_00_lion_0001_00000.app_xml";
+
+/// The one verified appearance recipe. No arbitrary archive paths are accepted.
+pub fn build_lion(bytes: Vec<u8>, encryption_header: [u8; 4]) -> io::Result<Overlay> {
+    build_in_directory(
+        &BTreeMap::from([(LION_FILE.into(), bytes)]),
+        encryption_header,
+        true,
+        LION_DIRECTORY,
+    )
+}
+
 fn build_with_storage(
     files: &BTreeMap<String, Vec<u8>>,
     encryption_header: [u8; 4],
     raw: bool,
 ) -> io::Result<Overlay> {
+    build_in_directory(
+        files,
+        encryption_header,
+        raw,
+        "gamedata/binarystaticinfo__/bin",
+    )
+}
+
+fn build_in_directory(
+    files: &BTreeMap<String, Vec<u8>>,
+    encryption_header: [u8; 4],
+    raw: bool,
+    directory: &str,
+) -> io::Result<Overlay> {
     if files.is_empty() || files.len() > 64 {
         return Err(invalid("overlay needs 1..64 files"));
     }
-    let directory = "gamedata/binarystaticinfo__/bin";
     let mut paz = Vec::new();
     let mut names = Vec::new();
     let mut records = Vec::new();
@@ -75,21 +101,27 @@ fn build_with_storage(
         let (stem, ext) = name
             .split_once('.')
             .ok_or_else(|| invalid("table filename required"))?;
-        if stem.is_empty()
-            || !stem
-                .bytes()
-                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
-            || !matches!(ext, "staticinfobody" | "staticinfoheader")
-        {
-            return Err(invalid("only table body/header filenames allowed"));
-        }
-        let partner = if ext == "staticinfobody" {
-            "staticinfoheader"
+        if directory == LION_DIRECTORY {
+            if name != LION_FILE || files.len() != 1 || !raw {
+                return Err(invalid("only the verified lion appearance is allowed"));
+            }
         } else {
-            "staticinfobody"
-        };
-        if !files.contains_key(&format!("{stem}.{partner}")) {
-            return Err(invalid("table body/header must be supplied together"));
+            if stem.is_empty()
+                || !stem
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+                || !matches!(ext, "staticinfobody" | "staticinfoheader")
+            {
+                return Err(invalid("only table body/header filenames allowed"));
+            }
+            let partner = if ext == "staticinfobody" {
+                "staticinfoheader"
+            } else {
+                "staticinfobody"
+            };
+            if !files.contains_key(&format!("{stem}.{partner}")) {
+                return Err(invalid("table body/header must be supplied together"));
+            }
         }
         total = total
             .checked_add(bytes.len())

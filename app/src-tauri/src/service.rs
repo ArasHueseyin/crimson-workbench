@@ -63,6 +63,20 @@ pub struct AppService {
     settings_lock: Mutex<()>,
 }
 impl AppService {
+    pub fn skill_unlock_preview(
+        &self,
+        id: u64,
+        save: Option<&str>,
+    ) -> Result<cd_core::skill_unlock::Preview> {
+        self.with_session(id, |s| s.skill_unlock_preview(save))
+    }
+    pub fn skill_unlock_apply(
+        &self,
+        id: u64,
+        request: &cd_core::skill_unlock::Request,
+    ) -> Result<cd_core::skill_unlock::Receipt> {
+        self.with_session(id, |s| s.skill_unlock_apply(&self.project, request))
+    }
     pub fn new(project: PathBuf) -> Self {
         Self {
             live: crate::live_service::LiveService::default(),

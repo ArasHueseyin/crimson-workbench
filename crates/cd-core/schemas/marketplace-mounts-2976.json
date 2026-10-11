@@ -1,0 +1,160 @@
+[
+  {
+    "key": 1002316,
+    "name": "Circus lion",
+    "sha256": "d1f908b2c9d650be5c62c3a429f196f34a60dda70dc92b539e6520b5d71e3970",
+    "fields": [
+      {
+        "offset": 1872,
+        "before": 1000000000,
+        "after": 1300000000,
+        "recipe": "faster_mounts",
+        "level": 1,
+        "name": "MoveSpeedRate"
+      },
+      {
+        "offset": 2392,
+        "before": 0,
+        "after": 1000000000,
+        "recipe": "no_mount_stamina",
+        "level": 1,
+        "name": "Stamina_UseResourceDecreaseRate"
+      },
+      {
+        "offset": 3228,
+        "before": 3000,
+        "after": 30000000,
+        "recipe": "no_mount_stamina",
+        "level": 1,
+        "name": "Stamina"
+      }
+    ]
+  },
+  {
+    "key": 31378,
+    "name": "Rokade",
+    "sha256": "2377d4ad08cf994dbc16f3dfd871eb2fde07270865cc7e6fee7300261817b5ae",
+    "fields": [
+      {
+        "offset": 1748,
+        "before": 1000000000,
+        "after": 1300000000,
+        "recipe": "faster_mounts",
+        "level": 1,
+        "name": "MoveSpeedRate"
+      },
+      {
+        "offset": 2468,
+        "before": 0,
+        "after": 1000000000,
+        "recipe": "no_mount_stamina",
+        "level": 1,
+        "name": "Stamina_UseResourceDecreaseRate"
+      },
+      {
+        "offset": 3664,
+        "before": 0,
+        "after": 30000000,
+        "recipe": "no_mount_stamina",
+        "level": 1,
+        "name": "Stamina"
+      },
+      {
+        "offset": 4508,
+        "before": 1000000000,
+        "after": 1300000000,
+        "recipe": "faster_mounts",
+        "level": 2,
+        "name": "MoveSpeedRate"
+      },
+      {
+        "offset": 5228,
+        "before": 0,
+        "after": 1000000000,
+        "recipe": "no_mount_stamina",
+        "level": 2,
+        "name": "Stamina_UseResourceDecreaseRate"
+      },
+      {
+        "offset": 6424,
+        "before": 0,
+        "after": 30000000,
+        "recipe": "no_mount_stamina",
+        "level": 2,
+        "name": "Stamina"
+      },
+      {
+        "offset": 7268,
+        "before": 1000000000,
+        "after": 1300000000,
+        "recipe": "faster_mounts",
+        "level": 3,
+        "name": "MoveSpeedRate"
+      },
+      {
+        "offset": 7988,
+        "before": 0,
+        "after": 1000000000,
+        "recipe": "no_mount_stamina",
+        "level": 3,
+        "name": "Stamina_UseResourceDecreaseRate"
+      },
+      {
+        "offset": 9184,
+        "before": 0,
+        "after": 30000000,
+        "recipe": "no_mount_stamina",
+        "level": 3,
+        "name": "Stamina"
+      },
+      {
+        "offset": 10020,
+        "before": 1000000000,
+        "after": 1300000000,
+        "recipe": "faster_mounts",
+        "level": 4,
+        "name": "MoveSpeedRate"
+      },
+      {
+        "offset": 10740,
+        "before": 0,
+        "after": 1000000000,
+        "recipe": "no_mount_stamina",
+        "level": 4,
+        "name": "Stamina_UseResourceDecreaseRate"
+      },
+      {
+        "offset": 11936,
+        "before": 0,
+        "after": 30000000,
+        "recipe": "no_mount_stamina",
+        "level": 4,
+        "name": "Stamina"
+      },
+      {
+        "offset": 12784,
+        "before": 1000000000,
+        "after": 1300000000,
+        "recipe": "faster_mounts",
+        "level": 5,
+        "name": "MoveSpeedRate"
+      },
+      {
+        "offset": 13504,
+        "before": 0,
+        "after": 1000000000,
+        "recipe": "no_mount_stamina",
+        "level": 5,
+        "name": "Stamina_UseResourceDecreaseRate"
+      },
+      {
+        "offset": 14700,
+        "before": 0,
+        "after": 30000000,
+        "recipe": "no_mount_stamina",
+        "level": 5,
+        "name": "Stamina"
+      }
+    ]
+  }
+]

@@ -48,6 +48,8 @@
     "allow-mount-icon",
     "allow-knowledge-snapshot",
     "allow-mount-register",
+    "allow-skill-unlock-preview",
+    "allow-skill-unlock-apply",
     "allow-foreign-preview",
     "allow-foreign-confirm",
     "allow-foreign-revoke",

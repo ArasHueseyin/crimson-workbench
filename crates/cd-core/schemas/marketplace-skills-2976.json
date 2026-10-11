@@ -1,0 +1,1376 @@
+[
+  {
+    "key": 40003,
+    "maximum": 6,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3,
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40069,
+    "maximum": 2,
+    "costs": [
+      0,
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40013,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40039,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40024,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40036,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40004,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40072,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001789,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40018,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40014,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40034,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40114,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40063,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40064,
+    "maximum": 3,
+    "costs": [
+      1,
+      2,
+      3
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40065,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1003279,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40090,
+    "maximum": 3,
+    "costs": [
+      1,
+      1,
+      2
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1000000,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40028,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1000001,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40001,
+    "maximum": 4,
+    "costs": [
+      0,
+      1,
+      2,
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1003108,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40068,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1002348,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1003359,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40002,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40082,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1004772,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001710,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40906,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1000100,
+    "maximum": 4,
+    "costs": [
+      0,
+      1,
+      2,
+      2
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1002710,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001116,
+    "maximum": 2,
+    "costs": [
+      0,
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 40086,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      2,
+      1,
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1003526,
+    "maximum": 2,
+    "costs": [
+      0,
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001756,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1003090,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1002351,
+    "maximum": 3,
+    "costs": [
+      1,
+      2,
+      3
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001051,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001744,
+    "maximum": 3,
+    "costs": [
+      1,
+      1,
+      2
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001565,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001567,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001568,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001570,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1003281,
+    "maximum": 4,
+    "costs": [
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001760,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1005840,
+    "maximum": 14,
+    "costs": [
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1005841,
+    "maximum": 18,
+    "costs": [
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1005839,
+    "maximum": 12,
+    "costs": [
+      1,
+      2,
+      2,
+      3,
+      3,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 0
+  },
+  {
+    "key": 1001522,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001556,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001529,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1004767,
+    "maximum": 3,
+    "costs": [
+      1,
+      1,
+      2
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001520,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001467,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001533,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001534,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001575,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1000415,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1004784,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1003332,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1002459,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001561,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001294,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001300,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001466,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001462,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1000353,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 40203,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1003329,
+    "maximum": 3,
+    "costs": [
+      1,
+      2,
+      3
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1003326,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1003201,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1000374,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1005333,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1000866,
+    "maximum": 2,
+    "costs": [
+      0,
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1003207,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1003210,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001437,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1003322,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001263,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001526,
+    "maximum": 4,
+    "costs": [
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001535,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001536,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001537,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001538,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1004762,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1004779,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1004765,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1004782,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001015,
+    "maximum": 2,
+    "costs": [
+      0,
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001524,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1005149,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1005845,
+    "maximum": 12,
+    "costs": [
+      1,
+      2,
+      2,
+      3,
+      3,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1005846,
+    "maximum": 14,
+    "costs": [
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1005847,
+    "maximum": 18,
+    "costs": [
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 1
+  },
+  {
+    "key": 1001543,
+    "maximum": 4,
+    "costs": [
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001560,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001559,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001558,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001557,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001463,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003497,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003500,
+    "maximum": 3,
+    "costs": [
+      1,
+      2,
+      3
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001562,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003341,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001297,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001458,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003493,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003494,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001290,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003473,
+    "maximum": 2,
+    "costs": [
+      0,
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003475,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003470,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003467,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1000373,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1005252,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1000375,
+    "maximum": 5,
+    "costs": [
+      0,
+      1,
+      1,
+      2,
+      3
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003492,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001590,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1000738,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001464,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001704,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1004783,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1003334,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001554,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001550,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001555,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001539,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1004766,
+    "maximum": 3,
+    "costs": [
+      1,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1004764,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1004778,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1004760,
+    "maximum": 3,
+    "costs": [
+      0,
+      1,
+      2
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1004781,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001541,
+    "maximum": 2,
+    "costs": [
+      0,
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1001540,
+    "maximum": 1,
+    "costs": [
+      0
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1005148,
+    "maximum": 1,
+    "costs": [
+      1
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1005843,
+    "maximum": 14,
+    "costs": [
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1005844,
+    "maximum": 18,
+    "costs": [
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 2
+  },
+  {
+    "key": 1005842,
+    "maximum": 12,
+    "costs": [
+      1,
+      2,
+      2,
+      3,
+      3,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5
+    ],
+    "owner": 2
+  }
+]

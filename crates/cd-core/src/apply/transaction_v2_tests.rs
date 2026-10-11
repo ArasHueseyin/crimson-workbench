@@ -1,6 +1,43 @@
 use super::*;
 use crimson_format::{Archive, checksum, overlay};
 
+#[test]
+fn marketplace_appearance_and_table_groups_apply_and_restore_together() {
+    let mut f = Fixture::new(1);
+    f.baseline = overlay::register(&f.baseline, "0009", 0x7f00, 987).unwrap();
+    fs::write(f.temp.path().join(REGISTRY), &f.baseline).unwrap();
+    let lion = overlay::build_lion(
+        b"<Appearance CharacterScale=\"1.17\"/>\r\n".to_vec(),
+        [0; 4],
+    )
+    .unwrap();
+    let mut files = payload(&f.baseline, 1, 3);
+    let table_checksum = u32::from_le_bytes(files["0041/0.pamt"][..4].try_into().unwrap());
+    let registry = overlay::register(&f.baseline, "0042", 0x7f00, lion.checksum).unwrap();
+    let registry = overlay::register(&registry, "0041", 0x7fff, table_checksum).unwrap();
+    files.insert("0042/0.paz".into(), lion.paz);
+    files.insert("0042/0.pamt".into(), lion.pamt);
+    files.insert(REGISTRY.into(), registry);
+    let mut engine = f.open();
+    let plan = engine.plan(&files).unwrap();
+    engine.apply(&plan, || Ok(()), None).unwrap();
+    let archive = Archive::open(f.temp.path()).unwrap();
+    let entries: Vec<_> = plan
+        .group_names()
+        .flat_map(|g| archive.list_group(g).unwrap())
+        .collect();
+    let appearance = entries
+        .iter()
+        .find(|e| e.name == overlay::LION_FILE)
+        .unwrap();
+    assert_eq!(
+        archive.extract(appearance).unwrap(),
+        b"<Appearance CharacterScale=\"1.17\"/>\r\n"
+    );
+    engine.restore(|| Ok(()), None).unwrap();
+    f.baseline_restored();
+}
+
 struct Fixture {
     temp: tempfile::TempDir,
     baseline: Vec<u8>,

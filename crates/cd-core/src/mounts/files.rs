@@ -426,6 +426,155 @@ pub(super) fn register(
     Ok(receipt)
 }
 
+/// Reuses the tested two-file commit/recovery kernel. The lobby bytes are
+/// preserved verbatim; its lock prevents concurrent stable edits in this slot.
+pub(crate) fn unlock_skills(
+    game: &Path,
+    project: &Path,
+    root: &Path,
+    request: &crate::skill_unlock::Request,
+) -> Result<crate::skill_unlock::Receipt> {
+    use crate::skill_unlock::{Receipt as SkillReceipt, build};
+    if root.canonicalize()? != request.save_root {
+        return Err(bad(
+            "Save folder changed since the unlock preview. Select and confirm the save again.",
+        ));
+    }
+    #[derive(Serialize, Deserialize)]
+    struct SkillIntent {
+        receipt: SkillReceipt,
+        save_after: String,
+        lobby_after: String,
+    }
+    if request.id.len() != 32
+        || !request.id.bytes().all(|b| b.is_ascii_hexdigit())
+        || [
+            &request.save_sha256,
+            &request.lobby_sha256,
+            &request.plan_id,
+        ]
+        .iter()
+        .any(|s| s.len() != 64 || !s.bytes().all(|b| b.is_ascii_hexdigit()))
+    {
+        return Err(bad("Invalid skill unlock request"));
+    }
+    stopped()?;
+    let directory = slot(root, &request.save)?;
+    let mut guards = Vec::new();
+    for p in directory.ancestors().chain(game.join("bin64").ancestors()) {
+        guards.push(exclusive(p, true)?);
+    }
+    let mut exe = exclusive(&game.join("bin64/CrimsonDesert.exe"), false)?;
+    let mut bytes = Vec::new();
+    exe.read_to_end(&mut bytes)?;
+    if hash_bytes(&bytes) != "57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7" {
+        return Err(bad("All skills supports only verified game build 2976"));
+    }
+    guards.push(exe);
+    stopped()?;
+    ancestors(project)?;
+    let local = project.join(".local");
+    if !local.try_exists()? {
+        fs::create_dir(&local)?;
+    }
+    ancestors(&local)?;
+    let history = local.join("skill-unlocks");
+    if !history.try_exists()? {
+        fs::create_dir(&history)?;
+    }
+    ancestors(&history)?;
+    let lock = history.join("lock");
+    if !lock.try_exists()? {
+        put_new(&lock, b"skill-unlocks-v1")?;
+    }
+    let _lock = exclusive(&lock, false)?;
+    let backup = history.join(&request.id);
+    if backup.try_exists()? {
+        plain(&backup, true)?;
+        let intent: SkillIntent = serde_json::from_slice(&read(&backup.join("intent.json"))?)?;
+        if &intent.receipt.request != request {
+            return Err(bad("Unlock request ID already used for another selection"));
+        }
+        if backup.join("receipt.json").try_exists()? {
+            return Ok(serde_json::from_slice(&read(
+                &backup.join("receipt.json"),
+            )?)?);
+        }
+        let (save, lobby) = read_pair(root, &request.save)?;
+        if hash_bytes(&save) == intent.save_after && hash_bytes(&lobby) == intent.lobby_after {
+            put_new(
+                &backup.join("receipt.json"),
+                &serde_json::to_vec_pretty(&intent.receipt)?,
+            )?;
+            return Ok(intent.receipt);
+        }
+        recover_pair(
+            &directory,
+            &backup,
+            &read(&backup.join("candidate.save"))?,
+            &read(&backup.join("original.lobby"))?,
+            &read(&backup.join("original.save"))?,
+            &read(&backup.join("original.lobby"))?,
+        )?;
+        return Err(bad(
+            "Interrupted skill unlock rolled back. Reload the preview before trying again.",
+        ));
+    }
+    let mut sf = exclusive(&directory.join("save.save"), false)?;
+    let mut lf = exclusive(&directory.join("lobby.save"), false)?;
+    let mut save = Vec::new();
+    let mut lobby = Vec::new();
+    sf.read_to_end(&mut save)?;
+    lf.read_to_end(&mut lobby)?;
+    if hash_bytes(&save) != request.save_sha256
+        || hash_bytes(&lobby) != request.lobby_sha256
+        || hash_bytes(
+            format!(
+                "all-skills-2976-v1:{}:{}",
+                hash_bytes(&save),
+                hash_bytes(&lobby)
+            )
+            .as_bytes(),
+        ) != request.plan_id
+    {
+        return Err(bad("Save changed since preview. Reload first."));
+    }
+    let (candidate, summary) = build(&save)?;
+    if summary.already_maxed == summary.total {
+        return Err(bad("All skills are already unlocked. Nothing changed."));
+    }
+    stopped()?;
+    fs::create_dir(&backup)?;
+    plain(&backup, true)?;
+    for (name, bytes) in [
+        ("original.save", &save),
+        ("original.lobby", &lobby),
+        ("candidate.save", &candidate),
+    ] {
+        put_new(&backup.join(name), bytes)?;
+    }
+    let receipt=SkillReceipt { request: request.clone(), summary, backup:backup.clone(), message:"All 140 abilities for Kliff, Oongka and Damiane are at their verified maximum. Available points, inventory and unrelated save data are preserved. Load this slot in game.".into() };
+    let intent = SkillIntent {
+        receipt: receipt.clone(),
+        save_after: hash_bytes(&candidate),
+        lobby_after: hash_bytes(&lobby),
+    };
+    put_new(
+        &backup.join("intent.json"),
+        &serde_json::to_vec_pretty(&intent)?,
+    )?;
+    drop(sf);
+    drop(lf);
+    stopped()?;
+    commit_pair(&directory, &backup, &candidate, &lobby, &save, &lobby, None)?;
+    put_new(
+        &backup.join("receipt.json"),
+        &serde_json::to_vec_pretty(&receipt)?,
+    )?;
+    drop(guards);
+    Ok(receipt)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

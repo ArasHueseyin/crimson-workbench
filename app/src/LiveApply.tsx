@@ -61,7 +61,7 @@ export function LiveApply({session,settings}:{session:number;settings:ModRequest
  return <section className="recovery-center live-panel" aria-label="Live apply and restore">
   <div className="recovery-heading"><ShieldCheck size={21}/><div><small>B0 · INSTALLATION</small><h2>Live apply & restore</h2></div></div>
   <p>Applies the calculated mod in a dedicated archive group. Every application starts from the original tables. Before each write, original files are fully checked and protected against changes; the game must be closed.</p>
-  <p>Manual in-game validation remains pending.</p>
+  <p>Review the file changes before applying. Save actions such as All skills are managed separately in the marketplace.</p>
   <button className="secondary" disabled={busy||running} onClick={()=>void work(load)}>Load live status</button>
   {status&&<>
    <p role="status">{status.game_running===true?'Game running · Live writes blocked':status.game_running===false?'Game closed':'Game status unknown · Live writes blocked'} · {status.pending_basis?'Baseline change interrupted':status.initialized?status.active_overlay?'Workbench mod active':'Registry in original state':status.configured?'Setup incomplete':'Live setup missing'}</p>
