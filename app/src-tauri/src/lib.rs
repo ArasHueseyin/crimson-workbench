@@ -22,6 +22,24 @@ async fn bootstrap(state: State<'_, SharedService>) -> Result<Bootstrap> {
     blocking(move || state.bootstrap()).await
 }
 #[tauri::command]
+async fn skill_unlock_preview(
+    state: State<'_, SharedService>,
+    session: u64,
+    save: Option<String>,
+) -> Result<cd_core::skill_unlock::Preview> {
+    let state = Arc::clone(&state);
+    blocking(move || state.skill_unlock_preview(session, save.as_deref())).await
+}
+#[tauri::command]
+async fn skill_unlock_apply(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: cd_core::skill_unlock::Request,
+) -> Result<cd_core::skill_unlock::Receipt> {
+    let state = Arc::clone(&state);
+    blocking(move || state.skill_unlock_apply(session, &request)).await
+}
+#[tauri::command]
 async fn save_settings(
     state: State<'_, SharedService>,
     settings: cd_core::config::Preferences,
@@ -278,6 +296,8 @@ pub fn run() {
             mount_icon,
             knowledge_snapshot,
             mount_register,
+            skill_unlock_preview,
+            skill_unlock_apply,
             foreign_preview,
             foreign_confirm,
             foreign_revoke,

@@ -21,6 +21,7 @@ pub mod item_groups;
 pub mod knowledge;
 pub mod language;
 pub mod paths;
+pub mod skill_unlock;
 pub mod tables;
 mod workspace;
 

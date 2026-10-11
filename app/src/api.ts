@@ -17,6 +17,8 @@ function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   return invoke<T>(command, args);
 }
 export const api = {
+  skillUnlockPreview:(session:number,save:string|null=null)=>call<import('./marketplace-types').SkillPreview>('skill_unlock_preview',{session,save}),
+  skillUnlockApply:(session:number,request:import('./marketplace-types').SkillRequest)=>call<import('./marketplace-types').SkillReceipt>('skill_unlock_apply',{session,request}),
   extraSockets:(session:number)=>call<ExtraSnapshot>('extra_sockets_snapshot',{session}),
   setExtraSocket:(session:number,request:ExtraRequest)=>call<ExtraReceipt>('extra_socket_set',{session,request}),
   extraSocketCandidates:(session:number,save:string|null=null)=>call<ExtraCandidates>('extra_socket_candidates',{session,save}),

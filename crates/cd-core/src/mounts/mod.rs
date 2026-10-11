@@ -1,7 +1,7 @@
 //! Mount registration using same-family clones or a blank current-schema entry.
 //! This module never spawns actors or writes a running game's save.
 mod base;
-mod edit;
+pub(crate) mod edit;
 pub(crate) mod files;
 use crate::{Error, GameData, Result, fingerprint::hash_bytes};
 pub use files::{Receipt, SaveChoice};

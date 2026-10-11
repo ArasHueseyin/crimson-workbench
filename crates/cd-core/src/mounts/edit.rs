@@ -4,19 +4,19 @@ use crimson_format::save::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
-fn field<'a>(o: &'a ObjectBlock, name: &str) -> Result<&'a DecodedField> {
+pub(crate) fn field<'a>(o: &'a ObjectBlock, name: &str) -> Result<&'a DecodedField> {
     o.fields
         .iter()
         .find(|f| f.name == name)
         .ok_or_else(|| bad(format!("Save field missing: {name}")))
 }
-fn field_mut<'a>(o: &'a mut ObjectBlock, name: &str) -> Result<&'a mut DecodedField> {
+pub(crate) fn field_mut<'a>(o: &'a mut ObjectBlock, name: &str) -> Result<&'a mut DecodedField> {
     o.fields
         .iter_mut()
         .find(|f| f.name == name)
         .ok_or_else(|| bad(format!("Save field missing: {name}")))
 }
-fn number(o: &ObjectBlock, name: &str) -> Result<u64> {
+pub(crate) fn number(o: &ObjectBlock, name: &str) -> Result<u64> {
     match &field(o, name)?.value {
         FieldValue::Scalar(ScalarValue::U8(n)) => Ok(*n as u64),
         FieldValue::Scalar(ScalarValue::U16(n)) => Ok(*n as u64),
@@ -27,12 +27,16 @@ fn number(o: &ObjectBlock, name: &str) -> Result<u64> {
         _ => Err(bad(format!("Invalid counter: {name}"))),
     }
 }
-fn set_number(o: &mut ObjectBlock, name: &str, n: u64) -> Result<()> {
+pub(crate) fn set_number(o: &mut ObjectBlock, name: &str, n: u64) -> Result<()> {
     let f = field_mut(o, name)?;
     if !f.present {
         return Err(bad(format!("Counter not set: {name}")));
     }
     let value = match &f.value {
+        FieldValue::Scalar(ScalarValue::U8(_)) if n <= u8::MAX as u64 => ScalarValue::U8(n as u8),
+        FieldValue::Scalar(ScalarValue::U16(_)) if n <= u16::MAX as u64 => {
+            ScalarValue::U16(n as u16)
+        }
         FieldValue::Scalar(ScalarValue::U32(_)) if n <= u32::MAX as u64 => {
             ScalarValue::U32(n as u32)
         }
@@ -48,7 +52,7 @@ fn set_number(o: &mut ObjectBlock, name: &str, n: u64) -> Result<()> {
     f.value = FieldValue::Scalar(value);
     Ok(())
 }
-fn list<'a>(o: &'a ObjectBlock, name: &str) -> Result<&'a [ObjectBlock]> {
+pub(crate) fn list<'a>(o: &'a ObjectBlock, name: &str) -> Result<&'a [ObjectBlock]> {
     match &field(o, name)?.value {
         FieldValue::ObjectList {
             count, elements, ..
@@ -58,7 +62,7 @@ fn list<'a>(o: &'a ObjectBlock, name: &str) -> Result<&'a [ObjectBlock]> {
 }
 // Ported from crimson-rs's validated length-changing list editor. The codec
 // preserves list header bytes; its separate count field must be patched too.
-fn update_count(header: &mut [u8], variant: &str, count: u32) -> Result<()> {
+pub(crate) fn update_count(header: &mut [u8], variant: &str, count: u32) -> Result<()> {
     if variant == "marker_run_plus_zeros" {
         let off = header
             .len()
@@ -123,7 +127,7 @@ fn visit_mut(
     }
     Ok(())
 }
-fn decode(bytes: &[u8]) -> Result<(Save, Body, Vec<ObjectBlock>)> {
+pub(crate) fn decode(bytes: &[u8]) -> Result<(Save, Body, Vec<ObjectBlock>)> {
     let save = Save::parse(bytes).map_err(|e| bad(e.to_string()))?;
     let body = Body::parse(&save.body)?;
     let blocks = body.decode_blocks(&save.body);

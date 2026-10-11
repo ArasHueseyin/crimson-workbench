@@ -40,7 +40,7 @@ Since v0.6.2, the same setup EXE installs these optional modules. Reinstalling r
 
 Uninstalling the app does not remove game files. For targeted module removal, the app's `runtime-mods` folder contains the original `Uninstall-RuntimeMods.ps1`. Portable users can also download `Crimson-Workbench_0.6.3_optional-runtime-mods.zip`, which includes both modules, install/uninstall scripts, licenses and a neutral starting configuration. Follow its `README.md`. The scripts check the supported EXE, package files and existing mods before writing. Do not replace an existing loader with an unrelated file.
 
-These modules support only the tested **EXE 1.0.0.2976**, SHA-256 `57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7`. Full in-game validation remains pending, so releases are marked Preview. Save and close the game before installation, socket changes or module removal. Do not replace your saves or configuration with another user's files.
+These modules support only the tested **EXE 1.0.0.2976**, SHA-256 `57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7`. Version 0.7.0 is published as a regular release. Compatibility checks still apply to each game installation and feature. Save and close the game before installation, socket changes or module removal. Do not replace your saves or configuration with another user's files.
 
 ## License
 

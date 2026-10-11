@@ -47,6 +47,8 @@ struct Group {
     pamt: Digest,
     paz: Digest,
     checksum: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_language: Option<u16>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -171,6 +173,7 @@ pub(super) struct Engine {
     root: PathBuf,
     baseline: Snapshot,
     language: u16,
+    lion_language: Option<u16>,
     reserved: BTreeSet<String>,
     _lock: Option<File>,
 }
@@ -251,6 +254,7 @@ impl Engine {
             .find(|g| g.name == "0008")
             .map(|g| g.language)
             .ok_or_else(|| bad("source group 0008 absent from baseline"))?;
+        let lion_language = groups.iter().find(|g| g.name == "0009").map(|g| g.language);
         let reserved = groups.iter().map(|g| g.name.clone()).collect();
         let value = Self {
             root,
@@ -259,6 +263,7 @@ impl Engine {
                 groups: BTreeMap::new(),
             },
             language,
+            lion_language,
             reserved,
             _lock: lock,
         };
@@ -415,8 +420,16 @@ impl Engine {
             {
                 return Err(bad("invalid or reserved owned group"));
             }
-            registry =
-                crimson_format::overlay::register(&registry, name, self.language, g.checksum)?;
+            registry = crimson_format::overlay::register(
+                &registry,
+                name,
+                match g.source_language {
+                    Some(language) if Some(language) == self.lion_language => language,
+                    Some(_) => return Err(bad("unknown appearance source language")),
+                    None => self.language,
+                },
+                g.checksum,
+            )?;
         }
         Ok(registry)
     }
@@ -648,7 +661,19 @@ impl Engine {
             let paz = files
                 .get(&format!("{name}/0.paz"))
                 .ok_or_else(|| bad("PAZ missing"))?;
-            for path in crimson_format::overlay::validate_pair(pamt, paz)? {
+            let paths = crimson_format::overlay::validate_pair(pamt, paz)?;
+            let source_language = if paths
+                .iter()
+                .any(|p| p.starts_with(crimson_format::overlay::LION_DIRECTORY))
+            {
+                Some(
+                    self.lion_language
+                        .ok_or_else(|| bad("source group 0009 absent from baseline"))?,
+                )
+            } else {
+                None
+            };
+            for path in paths {
                 if !virtual_paths.insert(path) {
                     return Err(bad("conflicting virtual table path across groups"));
                 }
@@ -659,6 +684,7 @@ impl Engine {
                     pamt: Digest::of(pamt),
                     paz: Digest::of(paz),
                     checksum: u32::from_le_bytes(pamt[..4].try_into().unwrap()),
+                    source_language,
                 },
             );
         }

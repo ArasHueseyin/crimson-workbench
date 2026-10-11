@@ -9,6 +9,11 @@ use std::{
     path::{Path, PathBuf},
 };
 const MAX_META: usize = 16 * 1024 * 1024;
+// The verified build 2976 appearance group 0009 has a 19,583,922-byte
+// PAMT. Registry and generated overlay bounds remain the narrower limit.
+const MAX_SOURCE_PAMT: usize = 32 * 1024 * 1024;
+// Group 0009 resolves 654,070 entries to 69,066,081 path bytes.
+const MAX_SOURCE_PATH_BYTES: usize = 96 * 1024 * 1024;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ArchiveGroup {
     pub name: String,
@@ -84,7 +89,11 @@ impl Archive {
             .find(|g| g.name == group)
             .ok_or_else(|| invalid("group is not registered"))?;
         let path = contained(&self.root, &self.root.join(group).join("0.pamt"))?;
-        parse_pamt(group, &read_bounded(&path, MAX_META)?, g.pamt_checksum)
+        parse_pamt(
+            group,
+            &read_bounded(&path, MAX_SOURCE_PAMT)?,
+            g.pamt_checksum,
+        )
     }
     pub fn list_group(&self, group: &str) -> io::Result<Vec<ArchiveEntry>> {
         Ok(self.metadata(group)?.entries)
@@ -420,8 +429,8 @@ fn parse_pamt(group: &str, data: &[u8], expected: u32) -> io::Result<Metadata> {
             total_path_bytes = total_path_bytes
                 .checked_add(full.len())
                 .ok_or_else(|| invalid("path budget overflow"))?;
-            if total_path_bytes > 16 * 1024 * 1024 {
-                return Err(invalid("resolved archive paths exceed 16 MiB budget"));
+            if total_path_bytes > MAX_SOURCE_PATH_BYTES {
+                return Err(invalid("resolved archive paths exceed 96 MiB budget"));
             }
             if !paths.insert(full.clone()) {
                 return Err(invalid("duplicate virtual archive path"));
@@ -527,23 +536,32 @@ pub(crate) fn validate_overlay_pair(pamt: &[u8], paz: &[u8]) -> io::Result<Vec<S
     let mut spans = Vec::new();
     let mut total = 0usize;
     for e in &meta.entries {
-        let (stem, ext) = e
-            .name
-            .split_once('.')
-            .ok_or_else(|| invalid("overlay table name required"))?;
-        let partner = match ext {
-            "staticinfobody" => "staticinfoheader",
-            "staticinfoheader" => "staticinfobody",
-            _ => return Err(invalid("non-table overlay entry")),
-        };
-        if stem.is_empty()
-            || !stem
-                .bytes()
-                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
-            || !names.contains(format!("{stem}.{partner}").as_str())
-            || e.directory != "gamedata/binarystaticinfo__/bin"
-            || !matches!(e.flags, 0 | 0x32)
-            || e.chunk_id != 0
+        let lion = e.directory == crate::overlay::LION_DIRECTORY
+            && e.name == crate::overlay::LION_FILE
+            && meta.entries.len() == 1
+            && e.flags == 0;
+        if !lion {
+            let (stem, ext) = e
+                .name
+                .split_once('.')
+                .ok_or_else(|| invalid("overlay table name required"))?;
+            let partner = match ext {
+                "staticinfobody" => "staticinfoheader",
+                "staticinfoheader" => "staticinfobody",
+                _ => return Err(invalid("non-table overlay entry")),
+            };
+            if stem.is_empty()
+                || !stem
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+                || !names.contains(format!("{stem}.{partner}").as_str())
+                || e.directory != "gamedata/binarystaticinfo__/bin"
+                || !matches!(e.flags, 0 | 0x32)
+            {
+                return Err(invalid("overlay entry outside supported table schema"));
+            }
+        }
+        if e.chunk_id != 0
             || e.chunk_offset % 16 != 0
             || e.uncompressed_size as usize > MAX_FILE_BYTES
         {
@@ -574,6 +592,12 @@ pub(crate) fn validate_overlay_pair(pamt: &[u8], paz: &[u8]) -> io::Result<Vec<S
         };
         if decoded.len() != e.uncompressed_size as usize {
             return Err(invalid("overlay decoded length differs from metadata"));
+        }
+        if lion
+            && std::str::from_utf8(&decoded)
+                .map_or(true, |s| s.matches("CharacterScale=\"1.17\"").count() != 1)
+        {
+            return Err(invalid("lion overlay scale is not the verified target"));
         }
     }
     spans.sort_unstable();

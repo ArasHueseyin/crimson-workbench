@@ -15,6 +15,8 @@ fn main() {
         "mount_icon",
         "knowledge_snapshot",
         "mount_register",
+        "skill_unlock_preview",
+        "skill_unlock_apply",
         "foreign_preview",
         "foreign_confirm",
         "foreign_revoke",
