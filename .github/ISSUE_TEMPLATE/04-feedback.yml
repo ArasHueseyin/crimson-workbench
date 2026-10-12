@@ -1,0 +1,25 @@
+name: Feedback
+description: Share your experience using Workbench.
+title: "[Feedback]: "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: Tell us what worked well or what felt confusing. Use Bug report for errors, Feature request for app ideas, or Mod request for game changes.
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Your feedback
+      description: What was your experience, and what could be better?
+    validations:
+      required: true
+  - type: input
+    id: workbench-version
+    attributes:
+      label: Workbench version
+      placeholder: "e.g. 0.8.0"
+  - type: textarea
+    id: context
+    attributes:
+      label: Screenshots or additional context
+      description: Add anything that helps explain your feedback.
