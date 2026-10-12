@@ -1,6 +1,8 @@
 fn main() {
     let manifest = tauri_build::AppManifest::new().commands(&[
         "bootstrap",
+        "marketplace_mod_status",
+        "marketplace_mod_change",
         "save_settings",
         "extra_sockets_snapshot",
         "extra_socket_set",

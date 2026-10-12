@@ -1,5 +1,7 @@
 # Optional: Live items and extra sockets
 
+Workbench 0.8.0 also bundles three optional marketplace ASIs under `addons/`: No sleep cooldown, 30-hour sleep and Blackstar anywhere. Use their **Install mod / Remove mod** buttons in the desktop app with the game closed. These three modules are not automatically installed by the base scripts below. See the [marketplace guide](https://github.com/ArasHueseyin/crimson-workbench/blob/v0.8.0/docs/MARKETPLACE.md). The 30-hour mod uses the existing 12-hour option; Blackstar's placement, indoor and quest/state restrictions can remain.
+
 This separate package is experimental and only for **Windows x64 / Crimson Desert 1.0.0.2976** with matching EXE point sum. The Workbench also works without this package. Real in-game tests on a second PC are still pending. The package does not contain any game data and no personal base configuration.
 
 1. Workbench and close the game. Secure your own game stadiums before use.

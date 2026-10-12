@@ -35,6 +35,7 @@ try {
     # This sets CRIMSON_EXTRA_SOCKETS_SHA256 for the Rust build in this process.
     & (Join-Path $PSScriptRoot 'build-native.ps1') -OutputDirectory (Join-Path $output 'runtime') -Version $version
     & (Join-Path $PSScriptRoot 'test-runtime-package.ps1') -PackageDirectory (Join-Path $output 'runtime')
+    & (Join-Path $PSScriptRoot 'test-marketplace-package.ps1') -PackageDirectory (Join-Path $output 'runtime')
     if (-not $env:CRIMSON_EXTRA_SOCKETS_SHA256 -or $env:CRIMSON_EXTRA_SOCKETS_SHA256 -notmatch '^[a-f0-9]{64}$') {
         throw 'The native build did not provide a verified ExtraSockets hash.'
     }
@@ -70,7 +71,8 @@ try {
     $portable = Join-Path $output 'portable'
     New-Item -ItemType Directory -Path $portable -Force | Out-Null
     Copy-Item -LiteralPath $desktopExe -Destination $portable
-    foreach ($file in @('LICENSE', 'THIRD_PARTY_NOTICES.md', 'docs/INSTALLATION.md')) {
+    Copy-Item -LiteralPath (Join-Path $output 'runtime') -Destination (Join-Path $portable 'runtime-mods') -Recurse
+    foreach ($file in @('LICENSE', 'THIRD_PARTY_NOTICES.md', 'docs/INSTALLATION.md', 'docs/MARKETPLACE.md')) {
         Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination $portable
     }
     Copy-Item -LiteralPath (Join-Path $projectRoot 'licenses') -Destination $portable -Recurse

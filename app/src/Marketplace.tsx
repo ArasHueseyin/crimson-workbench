@@ -3,6 +3,7 @@ import {Footprints,Gauge,ListChecks,LoaderCircle,Package,ShieldCheck,Sparkles,To
 import {api,asError} from './api';
 import {useCatalog,useMods} from './store';
 import {LiveApply} from './LiveApply';
+import {MarketplaceRuntime} from './MarketplaceRuntime';
 import {emptySelection,type MarketplaceSelection} from './marketplace-types';
 import type {Catalog} from './types';
 import type {ModPreview} from './mod-types';
@@ -30,8 +31,8 @@ export function Marketplace({catalog}:{catalog:Catalog}) {
  const supported=catalog.info.exe_version==='1.0.0.2976';
  const n=Object.values(selected).filter(Boolean).length;
  return <div className="marketplace">
-  <div className="page-heading"><div><div className="eyebrow">FREE · CURATED · LOCAL</div><h1>Mod marketplace<span>.</span></h1><p>Your mods, ready to use. No account, payment or extra downloads.</p></div><span className="market-count"><Package size={18}/>4 free mods</span></div>
-  <div className="market-intro"><ShieldCheck size={22}/><p>Built for game version <strong>1.0.0.2976</strong>. Recipes use your own game files. Select game mods below, review the combined plan, then use <strong>Live apply & restore</strong> with the game closed.</p></div>
+  <div className="page-heading"><div><div className="eyebrow">FREE · CURATED · LOCAL</div><h1>Mod marketplace<span>.</span></h1><p>Your mods, ready to use. No account, payment or extra downloads.</p></div><span className="market-count"><Package size={18}/>7 free mods</span></div>
+  <div className="market-intro"><ShieldCheck size={22}/><p>Built for game version <strong>1.0.0.2976</strong>. Archive recipes use your own game files and the reviewed <strong>Live apply & restore</strong> plan. Runtime cards install separately. Close the game before applying changes.</p></div>
   {!supported&&<p role="alert" className="craft-error">These recipes require game version 1.0.0.2976. Your connected version is {catalog.info.exe_version??'unknown'}.</p>}
   <div className="market-grid">{mods.map(mod=>{const Icon=mod.icon;return <article className={`market-card ${selected[mod.id]?'selected':''}`} key={mod.id}>
    <div className="market-card-top"><div className={`market-icon ${mod.id}`}><Icon size={28}/></div><span className="market-free">FREE</span></div>
@@ -40,6 +41,7 @@ export function Marketplace({catalog}:{catalog:Catalog}) {
    <span className="market-hint">{selected[mod.id]?'Selected in draft · not an installation status':'Combine with the other game mods'}</span>
   </article>})}
    <article className="market-card skills-card"><div className="market-card-top"><div className="market-icon all-skills"><Sparkles size={28}/></div><span className="market-free">FREE</span></div><small>PROGRESSION · SAVE ACTION</small><h2>All skills</h2><p>Max out all 140 abilities in the Kliff, Oongka and Damiane skill trees. Keep your available points, inventory and other save progress.</p><div className="market-detail">One selected save · backup before changes</div><button className="primary" disabled={!supported} onClick={()=>setSkills(true)}>Choose save & review <ListChecks size={16}/></button><span className="market-hint">A save edit; it cannot be toggled off like a game mod</span></article>
+   <MarketplaceRuntime session={catalog.session} supported={supported}/>
   </div>
   <section className="market-plan"><div><small>YOUR COMBINED PLAN</small><h2>{n} marketplace {n===1?'mod':'mods'} selected</h2><p>Workshop settings are kept in the same plan. Applying a new plan replaces the previous Workbench overlay. To remove one mod, remove it from the plan and apply again. Restore removes the complete Workbench overlay. Unmanaged mods remain untouched.</p></div><div className="mod-actions"><button className="primary" disabled={busy||!supported} onClick={()=>void work(calculate)}>{busy?<LoaderCircle size={16} className="spin"/>:<Package size={16}/>}Review combined plan</button><button className="secondary" onClick={()=>setView('mods')}>Open mod workshop</button></div>
    {error&&<p role="alert" className="craft-error">{error}</p>}

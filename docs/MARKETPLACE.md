@@ -1,6 +1,6 @@
 # Free mod marketplace
 
-Version 0.7.0 introduces a built-in catalog of four free recipes. It works locally without an account, server, payment or separate mod downloads. The interface is English. Recipes contain our editing instructions, identifiers and fingerprints; game assets and personal saves are not distributed.
+Version 0.8.0 provides seven free mod cards. It works locally without an account, server, payment or separate mod downloads. The interface is English. The setup and portable package include the three optional marketplace ASIs. Game assets and personal saves are not distributed.
 
 | Mod | Scope | Effect |
 | --- | --- | --- |
@@ -8,6 +8,9 @@ Version 0.7.0 introduces a built-in catalog of four free recipes. It works local
 | Faster mounts | Circus lion and all five Rokade stages | Movement speed stat ×1.30 |
 | No mount stamina cost | Circus lion and Rokade | Stamina cost reduction to 100%, boosted regeneration; player stamina unchanged |
 | All skills | One selected save slot | All 140 abilities in the Kliff, Oongka and Damiane trees reach their verified maximum |
+| No sleep cooldown | Beds and campfires | No additional sleep/wait delay; other native validity checks remain |
+| 30-hour sleep | The game's 12-hour sleep option | Advances the clock by 30 hours; the in-game label remains 12 hours |
+| Blackstar anywhere | Blackstar only | Lifts regional/city/altitude restrictions, boosts stamina regeneration, 1-second summon cooldown and 1,000-minute duration; placement/indoor/quest restrictions can remain |
 
 These recipes require game EXE **1.0.0.2976** and matching verified source data. A matching EXE version alone does not authorize writes. Existing unknown or conflicting game modifications remain blocked by the normal installation checks.
 
@@ -34,7 +37,21 @@ Backups and transaction receipts are stored in the workspace under `.local/skill
 
 This is a progression edit, not a toggle. There is no automatic “off” switch: restoring an older backup later would also discard progress made since that backup. Only the selected slot is edited. Existing game-version and save-path restrictions still apply.
 
-## Validation
+## Install the three runtime mods
+
+Close Crimson Desert and use **Install mod** on the desired runtime card. Workbench stays open. Windows may request administrator permission. Start the game afterward to load the ASI. Each card is independent. **Remove mod** removes only that card's managed ASI and leaves the loader, other mods, saves and socket configuration intact. Refresh runtime status after closing the game or making an external change. These cards are independent of the combined archive plan.
+
+The setup includes all payloads; no additional download or command is necessary. Their exact hashes are checked against `marketplace-manifest.json`. The bundled loader must already be installed through Workbench setup. Unsupported EXEs and conflicting hook bytes are rejected before hooks.
+
+**Import & update mod** explicitly takes ownership of a recognized earlier personal version and updates it. This upgrades the former one-second sleep cooldown to no cooldown. Unknown or changed ASIs and invalid receipts are refused. Original bytes and receipts are kept under `bin64/CrimsonWorkbench-mods/<mod-id>`. Backups use `.bak`, so they do not load as ASIs. Removing an imported mod disables it; it does not reactivate its older backup. **Recover operation** recovers a pending transaction without starting another install.
+
+**30-hour sleep:** choose the existing **12-hour** option. Its menu label is unchanged. The mod adds 18 hours to that option's native clock target, keeping minutes, seconds and other choices intact.
+
+**Blackstar anywhere:** original final placement, indoor and quest/state checks can still reject a summon. Existing saved summon timers are not rewritten; resummoning may be needed for the longer base duration. Other mounts retain their native restrictions. This release packages the existing personal Blackstar implementation; it adds no newly verified locations.
+
+## Runtime validation
+
+Native tests cover immediate cooldown clearing, retained validity failures, 288 calendar cases, scope isolation and Blackstar-only row edits. The real pinned loader loads all five ASIs in a synthetic host, which they reject before hooks. Package tests exercise the three module lifecycles, legacy import, personal-data preservation, foreign/modified file refusal, rollback and interrupted transaction recovery. Private game assembly fixtures and save bytes are excluded from the repository and downloads.
 
 The automated checks cover the three mount combinations, unchanged records and inverse edits, the exact lion appearance path and scale, combined preview/export, unsupported builds, running-game refusal, stale saves, explicit skill confirmation and retry identifiers. An opt-in private save test checks encrypted roundtrip, preserved points and repeated-unlock idempotence without writing the source fixture. The shared archive transaction and paired-save recovery kernels retain their existing interruption tests.
 
