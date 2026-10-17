@@ -601,8 +601,10 @@ fn decode(bytes: &[u8]) -> io::Result<Vec<u32>> {
         return Err(invalid());
     }
     let keys: Vec<u32> = bytes[8..]
-        .chunks_exact(4)
-        .map(|c| u32::from_le_bytes(c.try_into().unwrap()))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|&c| u32::from_le_bytes(c))
         .collect();
     if keys.iter().any(|k| !ITEMS.iter().any(|i| i.0 == *k))
         || keys.windows(2).any(|w| w[0] >= w[1])
