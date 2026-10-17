@@ -41,13 +41,13 @@ try {
   await expect(page.getByRole('heading', { name: /^Data sources/ })).toBeVisible();
   await expect(page.getByLabel('Installation folder', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Save folder', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Save & connect', exact: true })).toBeEnabled();
   await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'false');
   await expect(page.getByLabel('Item language', { exact: true })).toHaveValue('eng');
   // A genuine settings write is safe: only null paths in our private project.
   await page.getByLabel('Installation folder', { exact: true }).fill('');
   await page.getByLabel('Save folder', { exact: true }).fill('');
-  await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Save & connect', exact: true }).click();
   await expect(page.getByText(/^Settings saved\./)).toBeVisible({ timeout: 15000 });
   const settings = JSON.parse(await readFile(resolve(project, 'settings.json'), 'utf8'));
   if (settings.version !== 1 || settings.game_dir != null || settings.save_dir != null || settings.language !== 'eng')

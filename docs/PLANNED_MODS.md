@@ -10,7 +10,7 @@ existed in Workbench; the list records the agreed final scope. The finished loca
 test build was installed on 17 October, after verifying that the game and
 Workbench were closed. All application labels and descriptions stay in English.
 
-## Release preparation: 0.9.0
+## Release preparation: 0.9.1
 
 The current source has 35 Marketplace cards and 20 optional runtime modules.
 All eleven UI/UX improvements are implemented: category/status filters, clearer
