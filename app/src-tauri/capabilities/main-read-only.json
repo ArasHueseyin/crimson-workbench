@@ -1,6 +1,6 @@
 {
   "identifier": "main-read-only",
-  "description": "Local catalog and project artifacts; file Live-Apply requires a stopped game and reviewed sources. Explicit item grants use the verified local runtime and its bounded native request queue.",
+  "description": "Local catalog and project artifacts; file Live-Apply requires a stopped game and reviewed sources. Explicit item grants and live world controls use verified local runtimes and bounded native request queues.",
   "local": true,
   "windows": [
     "main"
@@ -8,7 +8,17 @@
   "permissions": [
     "allow-bootstrap",
     "allow-marketplace-mod-status",
+    "allow-marketplace-game-running",
     "allow-marketplace-mod-change",
+    "allow-marketplace-runtime-setting",
+    "allow-marketplace-player-jump",
+    "allow-marketplace-player-speed",
+    "allow-marketplace-consumables",
+    "allow-marketplace-weapon-effects",
+    "allow-contribution-preview",
+    "allow-contribution-apply",
+    "allow-map-fog-preview",
+    "allow-map-fog-apply",
     "allow-save-settings",
     "allow-extra-sockets-snapshot",
     "allow-extra-socket-set",
@@ -45,6 +55,12 @@
     "allow-spawn-status",
     "allow-spawn-grant",
     "allow-spawn-cancel",
+    "allow-world-status",
+    "allow-world-change",
+    "allow-photo-status",
+    "allow-photo-change",
+    "allow-teleport-status",
+    "allow-teleport-change",
     "allow-mount-catalog",
     "allow-mount-search",
     "allow-mount-icon",

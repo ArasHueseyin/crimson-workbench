@@ -176,6 +176,12 @@ impl ModCatalog {
     pub fn advanced_item(&self, key: u32) -> Result<advanced::ItemDetail> {
         self.advanced.item(key)
     }
+    pub fn marketplace_weapon_effects(&self) -> Result<Vec<marketplace::EffectSource>> {
+        if crate::fingerprint::known_for_game(&self.game)?.exe_version != "1.0.0.2976" {
+            return Err(bad("Native weapon effects support game build 1.0.0.2976"));
+        }
+        marketplace::weapon_effect_choices(&self.blobs, &self.advanced, &self.items)
+    }
     pub fn open(data: &GameData) -> Result<Self> {
         let (blobs, registry, encryption) = data.mod_inputs()?;
         let observed_registry_sha256 =
@@ -603,7 +609,11 @@ impl ModCatalog {
                 }
             }
         }
-        if let Some(q) = &request.advanced {
+        let advanced = match &request.marketplace {
+            Some(selection) => selection.merge_advanced(request.advanced.as_ref())?,
+            None => request.advanced.clone(),
+        };
+        if let Some(q) = &advanced {
             let first = changes.len();
             self.advanced
                 .apply(&self.blobs, q, &mut replacements, &mut changes)?;
@@ -629,24 +639,33 @@ impl ModCatalog {
                 return Err(bad("Marketplace recipes support game build 1.0.0.2976"));
             }
             marketplace::apply(&self.blobs, selection, &mut replacements, &mut changes)?;
-        }
-        let larger_lion = request.marketplace.as_ref().is_some_and(|m| m.larger_lion);
-        if !changes.is_empty() || larger_lion {
-            let mut payload = BTreeMap::new();
-            for (name, rows) in replacements {
-                let (body, header) = table(&self.blobs, name)?.rebuild(&rows)?;
-                if body != self.blobs[&format!("{name}.staticinfobody")] {
-                    payload.insert(format!("{name}.staticinfobody"), body);
-                    payload.insert(format!("{name}.staticinfoheader"), header);
+            if selection.free_crafting_currency {
+                feature_warnings.push("Removes the 300 Clockwork Insect requirement from the Kuku drone backpack recipe. Other materials, blueprints, conditions and results are preserved. This does not waive material costs, shop prices or unrelated service charges. In-game crafting acceptance remains pending.".into());
+            }
+            if selection.free_upgrade_materials {
+                feature_warnings.push("Removes material and refinement-token costs from all 17,069 supported equipment-upgrade recipes. The owned equipment, current refinement input, results, tools, knowledge and other native prerequisites remain required. Ordinary crafting materials and currency charges are separate. In-game upgrade acceptance remains pending.".into());
+            }
+            for change in changes.iter_mut().filter(|c| c.table == "iteminfo") {
+                if let Some(item) = self.items.iter().find(|item| item.key == change.key) {
+                    change.name = item.name.clone();
                 }
             }
-            let mut overlays = Vec::new();
-            if !payload.is_empty() {
-                overlays.push((
-                    "0008",
-                    crimson_format::overlay::build(&payload, self.encryption)?,
-                ));
+            if !selection.weapon_effects.is_empty() {
+                feature_warnings.push("Native weapon effects change all copies of each selected weapon definition after the game reloads it. Source weapons, upgrade statistics and socket data are preserved. Removing a transfer and applying the plan again restores that definition's original native abilities; Restore removes the complete Workbench overlay. Combat and visual acceptance testing remains pending.".into());
             }
+        }
+        let larger_lion = request.marketplace.as_ref().is_some_and(|m| m.larger_lion);
+        let larger_rokade = request
+            .marketplace
+            .as_ref()
+            .is_some_and(|m| m.larger_rokade);
+        let region_return = request
+            .marketplace
+            .as_ref()
+            .is_some_and(|m| m.region_return_30min);
+        if !changes.is_empty() || larger_lion || larger_rokade || region_return {
+            let mut payload = BTreeMap::new();
+            let mut overlays = Vec::new();
             let current = crimson_format::Archive::open(&self.game)?;
             if hash_bytes(&current.serialize_registry()?) != self.observed_registry_sha256 {
                 return Err(bad(
@@ -669,6 +688,25 @@ impl ModCatalog {
                     "Installation changed since reading; reload data source",
                 ));
             }
+            if larger_rokade {
+                let (strings, appearance) =
+                    marketplace::rokade(&archive, &self.blobs, &mut replacements, &mut changes)?;
+                payload.extend(strings);
+                overlays.push(("0009", appearance));
+            }
+            for (name, rows) in replacements {
+                let (body, header) = table(&self.blobs, name)?.rebuild(&rows)?;
+                if body != self.blobs[&format!("{name}.staticinfobody")] {
+                    payload.insert(format!("{name}.staticinfobody"), body);
+                    payload.insert(format!("{name}.staticinfoheader"), header);
+                }
+            }
+            if !payload.is_empty() {
+                overlays.push((
+                    "0008",
+                    crimson_format::overlay::build(&payload, self.encryption)?,
+                ));
+            }
             if larger_lion {
                 overlays.push(("0009", marketplace::lion(&archive)?));
                 changes.push(Change {
@@ -680,6 +718,10 @@ impl ModCatalog {
                     before: "0.9".into(),
                     after: "1.17".into(),
                 });
+            }
+            if region_return {
+                overlays.push(("0014", marketplace::region_timers(&archive, &mut changes)?));
+                feature_warnings.push("Restricted-region warnings use 30 minutes. Other quest timers, fall/death rules and unloaded world boundaries are unchanged. Changes take effect after the game loads the new scripts.".into());
             }
             let mut registry = self.registry.clone();
             let mut reserved = BTreeSet::new();

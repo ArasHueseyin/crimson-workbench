@@ -24,7 +24,7 @@ fn desktop_catalog_uses_real_fts_icons_fields_and_guarded_exports()
         if icon.data_url.is_some() {
             if let Some(caption) = icon.caption {
                 examples += 1;
-                assert!(caption.contains("Variante"));
+                assert!(caption.contains("Example image") && caption.contains("variant"));
                 assert!(icon.source.unwrap().starts_with("ui/texture/image/"));
             } else {
                 assert!(
@@ -66,7 +66,7 @@ fn desktop_catalog_uses_real_fts_icons_fields_and_guarded_exports()
                 .validate_item_grant(key)
                 .unwrap_err()
                 .to_string()
-                .contains("Monstermunition")
+                .contains("Monster ammunition")
         );
     }
     for key in [50001, 50003, 1001321] {

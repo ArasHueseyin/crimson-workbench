@@ -10,24 +10,51 @@ use crate::{
 use crimson_format::save::{FieldValue, ObjectBlock};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 fn bad(s: impl Into<String>) -> Error {
     Error::Invalid(s.into())
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 struct Ability {
     key: u32,
     maximum: u32,
     costs: Vec<u32>,
     owner: u32,
+    name: String,
 }
 fn abilities() -> Result<Vec<Ability>> {
     Ok(serde_json::from_str(include_str!(
         "../schemas/marketplace-skills-2976.json"
     ))?)
+}
+#[derive(Serialize)]
+pub struct AbilityChoice {
+    pub key: u32,
+    pub name: String,
+    pub owner: u32,
+    pub maximum: u32,
+}
+fn targets(selection: Option<&BTreeSet<u32>>) -> Result<Vec<Ability>> {
+    let all = abilities()?;
+    if all.len() != 140 || all.iter().map(|a| a.key).collect::<BTreeSet<_>>().len() != 140 {
+        return Err(bad("Invalid skill recipe"));
+    }
+    if let Some(keys) = selection
+        && (keys.is_empty()
+            || keys.len() > all.len()
+            || keys.iter().any(|key| !all.iter().any(|a| a.key == *key)))
+    {
+        return Err(bad(
+            "Select at least one verified ability; unknown abilities are not supported",
+        ));
+    }
+    Ok(all
+        .into_iter()
+        .filter(|a| selection.is_none_or(|keys| keys.contains(&a.key)))
+        .collect())
 }
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Summary {
@@ -40,6 +67,7 @@ pub struct Summary {
 }
 #[derive(Serialize)]
 pub struct Preview {
+    pub abilities: Vec<AbilityChoice>,
     pub save_root: PathBuf,
     pub saves: Vec<SaveChoice>,
     pub selected_save: Option<String>,
@@ -58,6 +86,8 @@ pub struct Request {
     pub save_sha256: String,
     pub lobby_sha256: String,
     pub plan_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub abilities: Option<BTreeSet<u32>>,
 }
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Receipt {
@@ -73,10 +103,25 @@ fn validate_game(game: &Path) -> Result<()> {
     }
     Ok(())
 }
-pub fn preview(game: &Path, root: &Path, selected: Option<&str>) -> Result<Preview> {
+pub fn preview(
+    game: &Path,
+    root: &Path,
+    selected: Option<&str>,
+    selection: Option<&BTreeSet<u32>>,
+) -> Result<Preview> {
     validate_game(game)?;
+    targets(selection)?;
     let saves = choices(root)?;
     let mut result = Preview {
+        abilities: abilities()?
+            .into_iter()
+            .map(|a| AbilityChoice {
+                key: a.key,
+                name: a.name,
+                owner: a.owner,
+                maximum: a.maximum,
+            })
+            .collect(),
         save_root: root.canonicalize()?,
         saves,
         selected_save: selected.map(str::to_owned),
@@ -88,15 +133,26 @@ pub fn preview(game: &Path, root: &Path, selected: Option<&str>) -> Result<Previ
     };
     if let Some(id) = selected {
         let (save, lobby) = read_pair(root, id)?;
-        let (_, summary) = build(&save)?;
-        result.plan_id = Some(plan_id(&save, &lobby));
+        let (_, summary) = build_selected(&save, selection)?;
+        result.plan_id = Some(plan_id(&save, &lobby, selection));
         result.save_sha256 = Some(hash_bytes(&save));
         result.lobby_sha256 = Some(hash_bytes(&lobby));
         result.summary = Some(summary);
     }
     Ok(result)
 }
-fn plan_id(save: &[u8], lobby: &[u8]) -> String {
+pub(crate) fn plan_id(save: &[u8], lobby: &[u8], selection: Option<&BTreeSet<u32>>) -> String {
+    if let Some(keys) = selection {
+        return hash_bytes(
+            format!(
+                "selected-skills-2976-v2:{}:{}:{}",
+                hash_bytes(save),
+                hash_bytes(lobby),
+                serde_json::to_string(keys).expect("integer set serializes")
+            )
+            .as_bytes(),
+        );
+    }
     hash_bytes(
         format!(
             "all-skills-2976-v1:{}:{}",
@@ -153,7 +209,15 @@ fn donor(entries: &[ObjectBlock], names: &[&str]) -> Result<ObjectBlock> {
     entries.iter().find(|e| e.fields.iter().filter(|f| f.present).all(|f| names.contains(&f.name.as_str())) && names.iter().all(|n| number(e,n).is_ok())).cloned().ok_or_else(|| bad("No verified skill entry template exists in this save. Learn one skill in game first."))
 }
 
-pub(crate) fn build(bytes: &[u8]) -> Result<(Vec<u8>, Summary)> {
+#[cfg(test)]
+fn build(bytes: &[u8]) -> Result<(Vec<u8>, Summary)> {
+    build_selected(bytes, None)
+}
+pub(crate) fn build_selected(
+    bytes: &[u8],
+    selection: Option<&BTreeSet<u32>>,
+) -> Result<(Vec<u8>, Summary)> {
+    let targets = targets(selection)?;
     let (mut save, body, mut blocks) = decode(bytes)?;
     let original_body = save.body.clone();
     let indices: Vec<_> = blocks
@@ -187,7 +251,7 @@ pub(crate) fn build(bytes: &[u8]) -> Result<(Vec<u8>, Summary)> {
             .ok_or_else(|| bad("Skill ledger overflow"))?;
     }
     let mut summary = Summary {
-        total: 140,
+        total: targets.len(),
         new_abilities: 0,
         upgraded_abilities: 0,
         already_maxed: 0,
@@ -204,10 +268,6 @@ pub(crate) fn build(bytes: &[u8]) -> Result<(Vec<u8>, Summary)> {
             ));
         }
         summary.available_points[*owner as usize] = current;
-    }
-    let targets = abilities()?;
-    if targets.len() != 140 {
-        return Err(bad("Invalid skill recipe"));
     }
     let timestamp = list(&original, "_list")?
         .iter()
@@ -249,7 +309,7 @@ pub(crate) fn build(bytes: &[u8]) -> Result<(Vec<u8>, Summary)> {
             }
             None => (ability.owner as u64, 0),
         };
-        if owner > 2
+        if owner != ability.owner as u64
             || used
                 != ability.costs[..before as usize]
                     .iter()
@@ -355,6 +415,123 @@ mod tests {
             assert!(a.costs.iter().all(|c| *c <= 5));
         }
         assert!(build(b"not a save").is_err());
+    }
+    #[test]
+    fn selection_rejects_empty_and_unknown_keys_and_binds_the_review() {
+        assert!(targets(Some(&BTreeSet::new())).is_err());
+        assert!(targets(Some(&BTreeSet::from([u32::MAX]))).is_err());
+        let first = targets(None).unwrap()[0].key;
+        let second = targets(None).unwrap()[1].key;
+        assert_eq!(targets(Some(&BTreeSet::from([first]))).unwrap().len(), 1);
+        let one = plan_id(b"save", b"lobby", Some(&BTreeSet::from([first])));
+        assert_ne!(
+            one,
+            plan_id(b"save", b"lobby", Some(&BTreeSet::from([second])))
+        );
+        assert_ne!(
+            one,
+            plan_id(b"changed", b"lobby", Some(&BTreeSet::from([first])))
+        );
+        assert_ne!(
+            one,
+            plan_id(b"save", b"changed", Some(&BTreeSet::from([first])))
+        );
+        assert_ne!(one, plan_id(b"save", b"lobby", None));
+        assert_eq!(
+            plan_id(b"save", b"lobby", None),
+            hash_bytes(
+                format!(
+                    "all-skills-2976-v1:{}:{}",
+                    hash_bytes(b"save"),
+                    hash_bytes(b"lobby")
+                )
+                .as_bytes()
+            )
+        );
+        assert_eq!(
+            plan_id(b"s", b"l", Some(&BTreeSet::from([first, second]))),
+            plan_id(b"s", b"l", Some(&BTreeSet::from([second, first])))
+        );
+    }
+    #[test]
+    #[ignore = "requires a private pre-unlock copy; no game or save writes"]
+    fn private_selection_changes_only_chosen_abilities_and_their_point_ledger() {
+        let path = std::path::PathBuf::from(
+            std::env::var_os("CD_SKILL_FIXTURE").expect("private fixture required"),
+        );
+        let source = std::fs::read(&path).unwrap();
+        let (_, _, original) = decode(&source).unwrap();
+        let before = original
+            .iter()
+            .find(|b| b.class_name == "KnowledgeSaveData")
+            .unwrap();
+        let known = index(list(before, "_list").unwrap(), "_key").unwrap();
+        let chosen = targets(None)
+            .unwrap()
+            .into_iter()
+            .find(|a| {
+                known
+                    .get(&(a.key as u64))
+                    .map(|i| number(&list(before, "_list").unwrap()[*i], "_level").unwrap())
+                    .unwrap_or(0)
+                    < a.maximum as u64
+            })
+            .unwrap();
+        let selection = BTreeSet::from([chosen.key]);
+        let (after_bytes, summary) = build_selected(&source, Some(&selection)).unwrap();
+        assert_eq!(summary.total, 1);
+        assert_eq!(summary.new_abilities + summary.upgraded_abilities, 1);
+        let (_, _, updated) = decode(&after_bytes).unwrap();
+        let after = updated
+            .iter()
+            .find(|b| b.class_name == "KnowledgeSaveData")
+            .unwrap();
+        for (name, key) in [
+            ("_list", "_key"),
+            ("_skillLearnSaveDataList", "_knowledgeKey"),
+        ] {
+            let rows = |block: &ObjectBlock| -> BTreeMap<u64, Vec<(String, bool, String)>> {
+                list(block, name)
+                    .unwrap()
+                    .iter()
+                    .filter(|e| number(e, key).unwrap() != chosen.key as u64)
+                    .map(|e| {
+                        (
+                            number(e, key).unwrap(),
+                            e.fields
+                                .iter()
+                                .map(|f| (f.name.clone(), f.present, format!("{:?}", f.value)))
+                                .collect(),
+                        )
+                    })
+                    .collect()
+            };
+            assert_eq!(rows(before), rows(after));
+        }
+        for entry in list(after, "_skillPointSaveDataList").unwrap() {
+            let owner = number(entry, "_skillPointOwnerType").unwrap() as usize;
+            let previous = list(before, "_skillPointSaveDataList")
+                .unwrap()
+                .iter()
+                .find(|e| number(e, "_skillPointOwnerType").unwrap() == owner as u64)
+                .unwrap();
+            assert_eq!(
+                number(entry, "_currentSkillPoint").unwrap(),
+                number(previous, "_currentSkillPoint").unwrap()
+            );
+            if owner != chosen.owner as usize {
+                assert_eq!(
+                    number(entry, "_elapsedSkillPoint").unwrap(),
+                    number(previous, "_elapsedSkillPoint").unwrap()
+                );
+                assert_eq!(summary.gifted_points[owner], 0);
+            }
+        }
+        let (again, second) = build_selected(&after_bytes, Some(&selection)).unwrap();
+        assert_eq!(second.already_maxed, 1);
+        assert_eq!(second.gifted_points, [0; 3]);
+        assert_eq!(again, after_bytes);
+        assert_eq!(source, std::fs::read(path).unwrap());
     }
     #[test]
     #[ignore = "requires private pre-unlock save fixture; never writes it"]

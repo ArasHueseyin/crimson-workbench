@@ -540,7 +540,18 @@ pub(crate) fn validate_overlay_pair(pamt: &[u8], paz: &[u8]) -> io::Result<Vec<S
             && e.name == crate::overlay::LION_FILE
             && meta.entries.len() == 1
             && e.flags == 0;
-        if !lion {
+        let rokade = e.directory == crate::overlay::ROKADE_DIRECTORY
+            && e.name == crate::overlay::ROKADE_FILE
+            && meta.entries.len() == 1
+            && e.flags == 0;
+        let region_timer = e.directory == crate::overlay::REGION_TIMER_DIRECTORY
+            && crate::overlay::REGION_TIMER_FILES.contains(&e.name.as_str())
+            && meta.entries.len() == 4
+            && crate::overlay::REGION_TIMER_FILES
+                .iter()
+                .all(|name| names.contains(name))
+            && e.flags == 0;
+        if !lion && !rokade && !region_timer {
             let (stem, ext) = e
                 .name
                 .split_once('.')

@@ -10,7 +10,8 @@
       3,
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Sword Mastery I"
   },
   {
     "key": 40069,
@@ -19,7 +20,8 @@
       0,
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Turn Bash I"
   },
   {
     "key": 40013,
@@ -29,7 +31,8 @@
       1,
       2
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Lunge I"
   },
   {
     "key": 40039,
@@ -37,7 +40,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Light Reflection"
   },
   {
     "key": 40024,
@@ -45,7 +49,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Rush"
   },
   {
     "key": 40036,
@@ -55,7 +60,8 @@
       1,
       2
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Move Cutting I"
   },
   {
     "key": 40004,
@@ -63,7 +69,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Shield Mastery I"
   },
   {
     "key": 40072,
@@ -73,7 +80,8 @@
       1,
       2
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Rotation Bash I"
   },
   {
     "key": 1001789,
@@ -85,7 +93,8 @@
       2,
       3
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Un Armed Mastery I"
   },
   {
     "key": 40018,
@@ -93,7 +102,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Jump Step"
   },
   {
     "key": 40014,
@@ -101,7 +111,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Double Kick"
   },
   {
     "key": 40034,
@@ -109,7 +120,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Drop Kick"
   },
   {
     "key": 40114,
@@ -121,7 +133,8 @@
       2,
       3
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Basic Bow"
   },
   {
     "key": 40063,
@@ -129,7 +142,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Multi Shot"
   },
   {
     "key": 40064,
@@ -139,7 +153,8 @@
       2,
       3
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Evade Shot"
   },
   {
     "key": 40065,
@@ -147,7 +162,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Charge Shot"
   },
   {
     "key": 1003279,
@@ -155,7 +171,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Ha Dong Ta"
   },
   {
     "key": 40090,
@@ -165,7 +182,8 @@
       1,
       2
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Dead Eyes"
   },
   {
     "key": 1000000,
@@ -177,7 +195,8 @@
       2,
       3
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Wrestle"
   },
   {
     "key": 40028,
@@ -185,7 +204,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Wrestle Lariat"
   },
   {
     "key": 1000001,
@@ -193,7 +213,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Wrestle Air Body Slam"
   },
   {
     "key": 40001,
@@ -204,7 +225,8 @@
       2,
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Detect"
   },
   {
     "key": 1003108,
@@ -212,7 +234,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Lift"
   },
   {
     "key": 40068,
@@ -222,7 +245,8 @@
       1,
       2
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Black Wolf"
   },
   {
     "key": 1002348,
@@ -230,7 +254,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Black Wolf Pull"
   },
   {
     "key": 1003359,
@@ -238,7 +263,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Black Wolf Teleport"
   },
   {
     "key": 40002,
@@ -248,7 +274,8 @@
       1,
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Crow Wing"
   },
   {
     "key": 40082,
@@ -256,7 +283,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Crow Dash"
   },
   {
     "key": 1004772,
@@ -264,7 +292,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Crow Super Dash"
   },
   {
     "key": 1001710,
@@ -272,7 +301,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Taeguk Seal"
   },
   {
     "key": 40906,
@@ -280,7 +310,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Meditation"
   },
   {
     "key": 1000100,
@@ -291,7 +322,8 @@
       2,
       2
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Nature"
   },
   {
     "key": 1002710,
@@ -299,7 +331,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Roll Cancel"
   },
   {
     "key": 1001116,
@@ -308,7 +341,8 @@
       0,
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Double Jump"
   },
   {
     "key": 40086,
@@ -320,7 +354,8 @@
       1,
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Ji Jeong Ta I"
   },
   {
     "key": 1003526,
@@ -329,7 +364,8 @@
       0,
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Tathagata mini"
   },
   {
     "key": 1001756,
@@ -337,7 +373,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Ji Jeong Ta Deep"
   },
   {
     "key": 1003090,
@@ -345,7 +382,8 @@
     "costs": [
       1
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Ji Jeong Ta Far"
   },
   {
     "key": 1002351,
@@ -355,7 +393,8 @@
       2,
       3
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Clone Attack"
   },
   {
     "key": 1001051,
@@ -363,7 +402,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Item Fishing"
   },
   {
     "key": 1001744,
@@ -373,7 +413,8 @@
       1,
       2
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Mabongpa"
   },
   {
     "key": 1001565,
@@ -381,7 +422,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Kliff Mp Fire"
   },
   {
     "key": 1001567,
@@ -389,7 +431,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Kliff Mp Ice"
   },
   {
     "key": 1001568,
@@ -397,7 +440,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Kliff Mp Lightning"
   },
   {
     "key": 1001570,
@@ -405,7 +449,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Kliff Mp Wind"
   },
   {
     "key": 1003281,
@@ -416,7 +461,8 @@
       2,
       3
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Elemental Reinforce"
   },
   {
     "key": 1001760,
@@ -424,7 +470,8 @@
     "costs": [
       0
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Tathagata"
   },
   {
     "key": 1005840,
@@ -445,7 +492,8 @@
       5,
       5
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Kliff Abyss Sp"
   },
   {
     "key": 1005841,
@@ -470,7 +518,8 @@
       5,
       5
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Kliff Abyss HP"
   },
   {
     "key": 1005839,
@@ -489,7 +538,8 @@
       5,
       5
     ],
-    "owner": 0
+    "owner": 0,
+    "name": "Kliff Abyss Mp"
   },
   {
     "key": 1001522,
@@ -497,7 +547,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Close Shot"
   },
   {
     "key": 1001556,
@@ -505,7 +556,8 @@
     "costs": [
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Ha Dong Ta"
   },
   {
     "key": 1001529,
@@ -515,7 +567,8 @@
       1,
       2
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Nature"
   },
   {
     "key": 1004767,
@@ -525,7 +578,8 @@
       1,
       2
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Mabongpa"
   },
   {
     "key": 1001520,
@@ -535,7 +589,8 @@
       1,
       2
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Detect"
   },
   {
     "key": 1001467,
@@ -545,7 +600,8 @@
       1,
       2
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Dead Eyes"
   },
   {
     "key": 1001533,
@@ -553,7 +609,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Roll Cancel"
   },
   {
     "key": 1001534,
@@ -561,7 +618,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Double Jump"
   },
   {
     "key": 1001575,
@@ -569,7 +627,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Shield Just Guard Wrestle"
   },
   {
     "key": 1000415,
@@ -577,7 +636,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Lift"
   },
   {
     "key": 1004784,
@@ -585,7 +645,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Close Shot Deep"
   },
   {
     "key": 1003332,
@@ -593,7 +654,8 @@
     "costs": [
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Evade Explosion Shot"
   },
   {
     "key": 1002459,
@@ -601,7 +663,8 @@
     "costs": [
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Aim Explosion Shot"
   },
   {
     "key": 1001561,
@@ -609,7 +672,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Roar"
   },
   {
     "key": 1001294,
@@ -621,7 +685,8 @@
       2,
       3
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Sword Mastery I"
   },
   {
     "key": 1001300,
@@ -633,7 +698,8 @@
       2,
       3
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Un Armed Mastery I"
   },
   {
     "key": 1001466,
@@ -645,7 +711,8 @@
       2,
       3
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Basic Bow"
   },
   {
     "key": 1001462,
@@ -653,7 +720,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Jump Step"
   },
   {
     "key": 1000353,
@@ -661,7 +729,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Big Boot"
   },
   {
     "key": 40203,
@@ -669,7 +738,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Drop Kick"
   },
   {
     "key": 1003329,
@@ -679,7 +749,8 @@
       2,
       3
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Evade Shot"
   },
   {
     "key": 1003326,
@@ -687,7 +758,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Charge Shot"
   },
   {
     "key": 1003201,
@@ -697,7 +769,8 @@
       1,
       2
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Lunge"
   },
   {
     "key": 1000374,
@@ -705,7 +778,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Light Reflection"
   },
   {
     "key": 1005333,
@@ -713,7 +787,8 @@
     "costs": [
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Rush"
   },
   {
     "key": 1000866,
@@ -722,7 +797,8 @@
       0,
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Turn Bash I"
   },
   {
     "key": 1003207,
@@ -732,7 +808,8 @@
       1,
       2
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Ground Smash I"
   },
   {
     "key": 1003210,
@@ -742,7 +819,8 @@
       1,
       2
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Rotation Bash I"
   },
   {
     "key": 1001437,
@@ -754,7 +832,8 @@
       2,
       3
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Wrestle"
   },
   {
     "key": 1003322,
@@ -762,7 +841,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Wrestle Lariat"
   },
   {
     "key": 1001263,
@@ -770,7 +850,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Wrestle Air Body Slam"
   },
   {
     "key": 1001526,
@@ -781,7 +862,8 @@
       2,
       3
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Elemental Reinforce"
   },
   {
     "key": 1001535,
@@ -789,7 +871,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Mp Fire"
   },
   {
     "key": 1001536,
@@ -797,7 +880,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Mp Ice"
   },
   {
     "key": 1001537,
@@ -805,7 +889,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Mp Lightning"
   },
   {
     "key": 1001538,
@@ -813,7 +898,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Mp Wind"
   },
   {
     "key": 1004762,
@@ -823,7 +909,8 @@
       1,
       2
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Black Wolf"
   },
   {
     "key": 1004779,
@@ -831,7 +918,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Taeguk Seal"
   },
   {
     "key": 1004765,
@@ -839,7 +927,8 @@
     "costs": [
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Black Wolf Pull"
   },
   {
     "key": 1004782,
@@ -847,7 +936,8 @@
     "costs": [
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Black Wolf Teleport"
   },
   {
     "key": 1001015,
@@ -856,7 +946,8 @@
       0,
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Rocket Pack"
   },
   {
     "key": 1001524,
@@ -864,7 +955,8 @@
     "costs": [
       0
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Rocket Pack Vertical Boost"
   },
   {
     "key": 1005149,
@@ -872,7 +964,8 @@
     "costs": [
       1
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Rocket Pack Super Dash"
   },
   {
     "key": 1005845,
@@ -891,7 +984,8 @@
       5,
       5
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Abyss Mp"
   },
   {
     "key": 1005846,
@@ -912,7 +1006,8 @@
       5,
       5
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Abyss Sp"
   },
   {
     "key": 1005847,
@@ -937,7 +1032,8 @@
       5,
       5
     ],
-    "owner": 1
+    "owner": 1,
+    "name": "Oongka Abyss HP"
   },
   {
     "key": 1001543,
@@ -948,7 +1044,8 @@
       2,
       3
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Elemental Reinforce"
   },
   {
     "key": 1001560,
@@ -956,7 +1053,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Mp Wind"
   },
   {
     "key": 1001559,
@@ -964,7 +1062,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Mp Lightning"
   },
   {
     "key": 1001558,
@@ -972,7 +1071,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Mp Ice"
   },
   {
     "key": 1001557,
@@ -980,7 +1080,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Mp Fire"
   },
   {
     "key": 1001463,
@@ -992,7 +1093,8 @@
       2,
       3
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Basic Bow"
   },
   {
     "key": 1003497,
@@ -1000,7 +1102,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Charge Shot"
   },
   {
     "key": 1003500,
@@ -1010,7 +1113,8 @@
       2,
       3
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Evade Shot"
   },
   {
     "key": 1001562,
@@ -1018,7 +1122,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Quick Reload"
   },
   {
     "key": 1003341,
@@ -1028,7 +1133,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Shield Throw"
   },
   {
     "key": 1001297,
@@ -1040,7 +1146,8 @@
       2,
       3
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Un Armed Mastery I"
   },
   {
     "key": 1001458,
@@ -1048,7 +1155,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Jump Step"
   },
   {
     "key": 1003493,
@@ -1056,7 +1164,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Scissors Kick"
   },
   {
     "key": 1003494,
@@ -1064,7 +1173,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Spinning Kick"
   },
   {
     "key": 1001290,
@@ -1076,7 +1186,8 @@
       2,
       3
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Sword Mastery I"
   },
   {
     "key": 1003473,
@@ -1085,7 +1196,8 @@
       0,
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Turn Bash I"
   },
   {
     "key": 1003475,
@@ -1095,7 +1207,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Lunge"
   },
   {
     "key": 1003470,
@@ -1105,7 +1218,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Rotation Bash I"
   },
   {
     "key": 1003467,
@@ -1115,7 +1229,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Heaven Spear I"
   },
   {
     "key": 1000373,
@@ -1123,7 +1238,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Light Reflection"
   },
   {
     "key": 1005252,
@@ -1131,7 +1247,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Rush"
   },
   {
     "key": 1000375,
@@ -1143,7 +1260,8 @@
       2,
       3
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Wrestle"
   },
   {
     "key": 1003492,
@@ -1151,7 +1269,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Wrestle Grab Spin Throw"
   },
   {
     "key": 1001590,
@@ -1159,7 +1278,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Summon Drone"
   },
   {
     "key": 1000738,
@@ -1169,7 +1289,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Detect"
   },
   {
     "key": 1001464,
@@ -1179,7 +1300,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Dead Eyes"
   },
   {
     "key": 1001704,
@@ -1187,7 +1309,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Summon Drone Assault"
   },
   {
     "key": 1004783,
@@ -1195,7 +1318,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Shield Throw Deep"
   },
   {
     "key": 1003334,
@@ -1203,7 +1327,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Ha Dong Ta"
   },
   {
     "key": 1001554,
@@ -1211,7 +1336,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Roll Cancel"
   },
   {
     "key": 1001550,
@@ -1221,7 +1347,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Nature"
   },
   {
     "key": 1001555,
@@ -1229,7 +1356,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Double Jump"
   },
   {
     "key": 1001539,
@@ -1237,7 +1365,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Lift"
   },
   {
     "key": 1004766,
@@ -1247,7 +1376,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Mabongpa"
   },
   {
     "key": 1004764,
@@ -1255,7 +1385,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Black Wolf Pull"
   },
   {
     "key": 1004778,
@@ -1263,7 +1394,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Taeguk Seal"
   },
   {
     "key": 1004760,
@@ -1273,7 +1405,8 @@
       1,
       2
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Black Wolf"
   },
   {
     "key": 1004781,
@@ -1281,7 +1414,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Black Wolf Teleport"
   },
   {
     "key": 1001541,
@@ -1290,7 +1424,8 @@
       0,
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Shield Glider"
   },
   {
     "key": 1001540,
@@ -1298,7 +1433,8 @@
     "costs": [
       0
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Air Jump"
   },
   {
     "key": 1005148,
@@ -1306,7 +1442,8 @@
     "costs": [
       1
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Shield Glider Super Dash"
   },
   {
     "key": 1005843,
@@ -1327,7 +1464,8 @@
       5,
       5
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Abyss Sp"
   },
   {
     "key": 1005844,
@@ -1352,7 +1490,8 @@
       5,
       5
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Abyss HP"
   },
   {
     "key": 1005842,
@@ -1371,6 +1510,7 @@
       5,
       5
     ],
-    "owner": 2
+    "owner": 2,
+    "name": "Damian Abyss Mp"
   }
 ]

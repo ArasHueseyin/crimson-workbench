@@ -3,7 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, X, LoaderCircle, PackagePlus } from 'lucide-react';
 import { api, asError } from './api';
 import { count, integer, plainText } from './format';
-import { emptyQuery } from './store';
+import { emptyQuery, useCatalog } from './store';
 import { ItemImage } from './ItemImage';
 import type { Catalog, Item } from './types';
 import type { AdvancedItem } from './advanced-types';
@@ -11,12 +11,14 @@ import { useItemSpawner } from './useItemSpawner';
 import { useKnowledge } from './useKnowledge';
 import { knowledgeLabel } from './knowledge-types';
 import { grantQuantity, maximumNewStacks } from './quantity';
+import {SaveSelector,SaveTarget} from './SaveSelector';
 
 /** The picker is independent of file Live-Apply. Grants require a verified runtime. */
 export function ItemPicker({ catalog }: { catalog: Catalog }) {
+  const requestedItem=useCatalog(s=>s.selected);
   const spawner = useItemSpawner(catalog.session, catalog.game_path);
   const knowledge = useKnowledge(catalog.session);
-  const [text, setText] = useState(''), [group, setGroup] = useState<number | null>(null);
+  const [text, setText] = useState(requestedItem===null?'':String(requestedItem)), [group, setGroup] = useState<number | null>(null);
   const [regex,setRegex]=useState(false);
   const [items, setItems] = useState<Item[]>([]), [total, setTotal] = useState(0), [offset, setOffset] = useState(0);
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -28,6 +30,10 @@ export function ItemPicker({ catalog }: { catalog: Catalog }) {
   const documents = useMemo(() => new Set(groups.filter(g => g.internal_key === 'ItemGroup_Category_Document').flatMap(g => g.items)), [groups]);
   const topGroups = groups.filter(g => g.order <= 5), subGroups = groups.filter(g => g.order > 5);
   const selectedGroup = groups.find(g => g.key === group);
+  useEffect(() => {
+    if(requestedItem===null)return;
+    setText(String(requestedItem));setGroup(null);setRegex(false);setOffset(0);setSelected(null);
+  }, [requestedItem]);
   useEffect(() => {
     const listener = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); search.current?.focus(); } };
     window.addEventListener('keydown', listener); return () => window.removeEventListener('keydown', listener);
@@ -42,7 +48,13 @@ export function ItemPicker({ catalog }: { catalog: Catalog }) {
     scroll.current?.scrollTo({ top: 0 });
     const timer = setTimeout(() => {
       api.search(catalog.session, { ...emptyQuery, text, regex, group, offset }).then(page => {
-        if (generation.current === id) { setItems(page.items); setTotal(page.total); }
+        if (generation.current === id) {
+          setItems(page.items);setTotal(page.total);
+          if(requestedItem!==null&&text===String(requestedItem)) {
+            const linked=page.items.find(item=>item.key===requestedItem);
+            if(linked){setSelected(linked);setQuantity('1');useCatalog.getState().select(null)}
+          }
+        }
       }).catch(e => { if (generation.current === id) setError(asError(e).message); })
         .finally(() => { if (generation.current === id) setBusy(false); });
     }, text ? 240 : 0);
@@ -55,14 +67,14 @@ export function ItemPicker({ catalog }: { catalog: Catalog }) {
     }).catch(e => { if (active) setStatsError(asError(e).message); });
     return () => { active = false; };
   }, [catalog.session, selected?.key]);
-  const virtual = useVirtualizer({ count: items.length, getScrollElement: () => scroll.current, estimateSize: () => 96, overscan: 5 });
+  const virtual = useVirtualizer({ count: items.length, getScrollElement: () => scroll.current, estimateSize: () => 80, overscan: 5 });
   const memberships = useMemo(() => selected ? subGroups.filter(g => g.items.includes(selected.key)) : [], [selected, groups]);
   const values = stats?.item.stats.filter(s => s.enchant_level === level) ?? [];
   const amount=grantQuantity(quantity),newStacks=maximumNewStacks(amount,selected?.max_stack??'0');
   function chooseGroup(key: number | null) { setGroup(key); setOffset(0); }
-  return <section className="item-picker">
+  return <section className="item-picker compact-item-picker">
     <div className="page-heading"><div><div className="eyebrow">CHOOSE ITEMS</div><h1>Item picker<span>.</span></h1><p>Icons, descriptions and values from your installation.</p></div><PackagePlus size={28} strokeWidth={1.2} /></div>
-    <div className="knowledge-bar"><label>Knowledge status<select aria-label="Save for knowledge display" disabled={knowledge.busy} value={knowledge.data?.selected_save??''} onChange={e=>void knowledge.refresh(e.target.value)}>{knowledge.data?.saves.map(s=><option key={s.id} value={s.id}>{s.label} · {new Date(s.modified*1000).toLocaleString('en-US')}</option>)}</select></label><button className="secondary" disabled={knowledge.busy} onClick={()=>void knowledge.refresh(knowledge.data?.selected_save??null)}>{knowledge.busy?'Reading …':'Reload knowledge'}</button><small>{knowledge.error?`Knowledge status unavailable: ${knowledge.error}`:knowledge.data?.message}</small></div>
+    <details className="knowledge-bar knowledge-drawer"><summary>Knowledge from saved game <span>{knowledge.data?.selected_save?'Save selected':'Optional'}</span></summary><div className="knowledge-controls"><SaveSelector label="Knowledge status" saves={knowledge.data?.saves??[]} value={knowledge.data?.selected_save??null} ariaLabel="Save for knowledge display" disabled={knowledge.busy} onChange={value=>void knowledge.refresh(value)}/><button className="secondary" disabled={knowledge.busy} onClick={()=>void knowledge.refresh(knowledge.data?.selected_save??null)}>{knowledge.busy?'Reading …':'Reload knowledge'}</button><small>{knowledge.error?`Knowledge status unavailable: ${knowledge.error}`:knowledge.data?.message}</small></div></details>
     <div className="picker-layout"><div className="picker-main">
       <div className="input-wrap main-search"><Search size={18} /><input ref={search} aria-label="Search item picker" maxLength={512} placeholder={regex?'Pattern, e.g. (lightning|fire).*arrow':'Search name, partial word or item ID …'} value={text} onChange={e => { setText(e.target.value); setOffset(0); }} />{text && <button className="icon-button" aria-label="Clear item search" onClick={() => { setText(''); setOffset(0); }}><X size={16} /></button>}<kbd>Ctrl K</kbd></div>
       <label className="checkbox-label search-mode"><input aria-label="Regex search" type="checkbox" checked={regex} onChange={e=>{setRegex(e.target.checked);setOffset(0);}}/>Regex search<span>{regex?'Use a search pattern':'Partial words also match compounds and plurals.'}</span></label>
@@ -82,15 +94,16 @@ export function ItemPicker({ catalog }: { catalog: Catalog }) {
       <div className="picker-pages"><button className="secondary" disabled={busy || offset === 0} onClick={() => setOffset(Math.max(0, offset - 200))}>Back</button><span>{items.length ? `${count(offset + 1)}–${count(offset + items.length)} of ${count(total)}` : '0 results'}</span><button className="secondary" disabled={busy || offset + items.length >= total} onClick={() => setOffset(offset + 200)}>Next</button></div>
     </div><aside className="picker-detail" aria-label="Selected item">
       {selected ? <><div className="picker-hero"><ItemImage session={catalog.session} itemKey={selected.key} label={plainText(selected.name)} large /><h2>{plainText(selected.name)}</h2><span className="muted">ID {selected.key}</span>{memberships.length > 0 && <p className="muted">{memberships.map(g => plainText(g.name)).join(' · ')}</p>}</div>
-        <h3>Description</h3><p className="picker-description">{plainText(selected.description) || 'No description available.'}</p>
-        {selected.use_restriction&&<p className="item-use-restriction" role="note">{selected.use_restriction}</p>}
-        {((selected.knowledge_keys?.length??0)>0||documents.has(selected.key))&&<p className={`knowledge-badge ${knowledge.byItem.get(selected.key)?.state??'unknown'}`}>{knowledgeLabel(knowledge.byItem.get(selected.key))}<small>{selected.knowledge_keys?.length?'In the selected saved game.':'No unique knowledge reward assigned in the item data.'}</small></p>}
+        <details className="picker-more"><summary>Item details &amp; values</summary><h3>Description</h3><p className="picker-description">{plainText(selected.description) || 'No description available.'}</p>
         <h3>Values</h3><dl className="picker-values"><dt>Stack size</dt><dd>{integer(selected.max_stack)}</dd><dt>Tier</dt><dd>{selected.tier}</dd>{stats && <><dt>Durability</dt><dd>{stats.item.max_endurance}</dd></>}</dl>
         {stats && stats.item.enchant_levels.length > 1 && <label className="picker-level">Refinement level<select aria-label="Values for refinement level" value={level} onChange={e => setLevel(Number(e.target.value))}>{stats.item.enchant_levels.map(l => <option key={l} value={l}>{l}</option>)}</select></label>}
         <dl className="picker-values">{values.map((s, i) => <span className="picker-stat" key={`${s.stat}:${s.list}:${i}`}><dt>{statNames[s.stat] ?? `Stat ID ${s.stat}`}<small>{s.list === 'maximum' ? 'Maximum' : s.list === 'regeneration' ? 'Regeneration' : s.list === 'per_level' ? 'Per level' : 'Base'}</small></dt><dd>{integer(s.value)}</dd></span>)}</dl>
         {stats && !values.length && <p className="muted small">No numeric values for this level.</p>}
         {statsError && <p className="muted small">Additional values are unavailable.</p>}
         {!!values.length && <p className="muted small">Table values; equipment, sockets and character bonuses are not included.</p>}
+        </details>
+        {selected.use_restriction&&<p className="item-use-restriction" role="note">{selected.use_restriction}</p>}
+        {((selected.knowledge_keys?.length??0)>0||documents.has(selected.key))&&<div className="selected-knowledge"><SaveTarget saves={knowledge.data?.saves??[]} value={knowledge.data?.selected_save??null} label="Knowledge shown for"/><p className={`knowledge-badge ${knowledge.byItem.get(selected.key)?.state??'unknown'}`}>{knowledgeLabel(knowledge.byItem.get(selected.key))}<small>{selected.knowledge_keys?.length?'In the selected saved game.':'No unique knowledge reward assigned in the item data.'}</small></p></div>}
         <label className="picker-quantity">Quantity<input aria-label="Desired item quantity" type="text" inputMode="numeric" autoComplete="off" spellCheck={false} value={quantity} onFocus={e=>e.currentTarget.select()} onChange={e => setQuantity(e.target.value)} /></label>
         {amount===null?<p className="muted small">Enter a whole number from 1 to 10,000.</p>:newStacks!==null&&<p className="muted small">According to the catalog, at most {integer(newStacks)} new stacks with a stack size of {integer(selected.max_stack)}. Existing stacks are filled where possible; mods may change the stack limit.</p>}
         <button className="primary picker-grant" disabled={!spawner.ready || amount===null || !!selected.use_restriction} onClick={() => {if(amount!==null&&!selected.use_restriction)void spawner.give(selected.key, amount);}}><PackagePlus size={16} />{spawner.sending ? 'Sending request …' : 'Add to inventory'}</button>

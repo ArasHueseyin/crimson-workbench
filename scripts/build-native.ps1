@@ -1,15 +1,17 @@
 [CmdletBinding()]
 param(
     [string]$OutputDirectory,
-    [string]$Version = '0.8.0'
+    [string]$Version
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repo = Split-Path -Parent $PSScriptRoot
+if (-not $Version) { $Version = (Get-Content -LiteralPath (Join-Path $repo 'app/package.json') -Raw | ConvertFrom-Json).version }
+if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'A complete numeric release version is required.' }
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $repo 'target/distribution/runtime' }
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 $build = Join-Path $repo 'target/native-release'
-$cache = Join-Path $repo '.local/native-deps'
+$cache = Join-Path $build 'dependency-cache'
 $pins = Get-Content -LiteralPath (Join-Path $repo 'runtime/dependencies.lock.json') -Raw | ConvertFrom-Json
 New-Item -ItemType Directory -Path $build, $cache, $OutputDirectory -Force | Out-Null
 if (@(Get-ChildItem -LiteralPath $OutputDirectory -Force).Count) { throw 'Native output directory must be empty; use a new output directory.' }
@@ -44,20 +46,39 @@ function CMakeRun([string[]]$Arguments) {
 $live = Join-Path $build 'live-items'
 $sockets = Join-Path $build 'extra-sockets'
 CMakeRun @('-S', (Join-Path $repo 'runtime/live-items'), '-B', $live, '-G', 'Visual Studio 17 2022', '-A', 'x64', "-DMINHOOK_ROOT=$minhook")
-CMakeRun @('--build', $live, '--config', 'Release', '--target', 'CrimsonLiveItems', 'live-items-probe-tests', 'live-items-grant-tests', 'runtime-package-loader-tests')
+# Build the public target graph, including owned pipe hosts and every registered
+# test. A new CTest must not silently depend on an unbuilt, omitted target.
+CMakeRun @('--build', $live, '--config', 'Release', '--parallel', '2')
 & $ctest --test-dir $live -C Release --output-on-failure
 if ($LASTEXITCODE -ne 0) { throw 'Native policy tests failed.' }
 $liveAsi = Join-Path $live 'Release/CrimsonLiveItems.asi'
 $liveHash = Hash $liveAsi
 $market = Join-Path $build 'marketplace'
-CMakeRun @('-S', (Join-Path $repo 'runtime/marketplace'), '-B', $market, '-G', 'Visual Studio 17 2022', '-A', 'x64', "-DMINHOOK_ROOT=$minhook")
-CMakeRun @('--build', $market, '--config', 'Release', '--target', 'CrimsonBlackstar', 'CrimsonSleepCooldown', 'CrimsonSleepDuration', 'marketplace-policy-tests', '--parallel')
+CMakeRun @('-S', (Join-Path $repo 'runtime/marketplace'), '-B', $market, '-G', 'Visual Studio 17 2022', '-A', 'x64', "-DMINHOOK_ROOT=$minhook", '-DCRIMSON_PRIVATE_CONSUMABLE_EVIDENCE_HEADER=', '-DCRIMSON_PRIVATE_GLIDE_FIXTURE_HEADER=', '-DCRIMSON_PRIVATE_FORCE_PALM_HEIGHT_FIXTURE_HEADER=')
+CMakeRun @('--build', $market, '--config', 'Release', '--parallel', '2')
 & $ctest --test-dir $market -C Release --output-on-failure
 if ($LASTEXITCODE -ne 0) { throw 'Marketplace native policy tests failed.' }
 $marketModules = @(
-    @{ id = 'sleep_cooldown'; file = 'CrimsonSleepCooldown.asi'; priorHashes = @('a66c149adb7f304e7c6ae3fc80e45169bd6bd98a0cbedd4531f75613cc7d8201') },
-    @{ id = 'sleep_duration'; file = 'CrimsonSleepDuration.asi'; priorHashes = @('d250918a898702c2cd79a03c574c8be7a9184285cd2dabd4bde4d3d643f2e56e') },
-    @{ id = 'blackstar'; file = 'CrimsonBlackstar.asi'; priorHashes = @('8e1b254874c27022f6746b01f0520b31ed3ee44447d2919dce15f090ed8a886f') }
+    @{ id = 'sleep_cooldown'; file = 'CrimsonSleepCooldown.asi'; priorHashes = @('a66c149adb7f304e7c6ae3fc80e45169bd6bd98a0cbedd4531f75613cc7d8201', 'a4d33c648cf39e0670018e72517c13a8c3220f0ae6635bf1fe8a60fe4b0b8155') },
+    @{ id = 'sleep_duration'; file = 'CrimsonSleepDuration.asi'; priorHashes = @('d250918a898702c2cd79a03c574c8be7a9184285cd2dabd4bde4d3d643f2e56e', 'b7ffbb1fc70ab9755f7c6b6e6491f192d0a811b3002368f395fe15b4f49ebb88') },
+    @{ id = 'blackstar'; file = 'CrimsonBlackstar.asi'; priorHashes = @('8e1b254874c27022f6746b01f0520b31ed3ee44447d2919dce15f090ed8a886f', 'cd6556137b25c600f172e473b3f179eab571785b2565d968ffb83ff47eeb30ba') },
+    @{ id = 'no_fall'; file = 'CrimsonNoFall.asi'; priorHashes = @('4a7078a959e344a73ae95d01349774c9fb1078ce8fa43f193ca04be0338398f6', '3f0224d502bd1dcab9dd26757078d6820d2104d31886ca6792c56bc116047835') },
+    @{ id = 'player_stamina'; file = 'CrimsonPlayerStamina.asi'; priorHashes = @('fd71d19ed2af26d1ba4c53e4f00aa372a1128a3ae63282d85b0035b5f5f0ad5c', 'bbab63542f81c570116163d6381cb88af07ee353448c977554faa0f8f18b8d82') },
+    @{ id = 'mount_jump'; file = 'CrimsonMountJump.asi'; priorHashes = @('04689b0f2dbb0c0645e039d1a655cb92193915a53153e8ee71c818641cb45d41') },
+    @{ id = 'player_jump'; file = 'CrimsonPlayerJump.asi'; priorHashes = @('2fa1a87df2fa4bd6f2a9967c7a4f0585923217c9244fee5c57a2c2e9e94cc21c', '6a021b1d1e9faa8441605df304bddb953985b2c556211191f0e4e65f4dbe21ec') },
+    @{ id = 'player_speed'; file = 'CrimsonPlayerSpeed.asi'; priorHashes = @('9803e3b257a5fe529ddca1ea9534419d9e342c99c9fa94e39d7f93c6fd748de8') },
+    @{ id = 'preserve_consumables'; file = 'CrimsonPreserveConsumables.asi'; priorHashes = @('174e43f11508775fc318f7f9f1a567ee9569dcbe461aeb8994b3561ab279ca6f') },
+    @{ id = 'mount_protection'; file = 'CrimsonMountProtection.asi'; priorHashes = @('f45fd110ad53de2fe2c83bf4643a0f08dafad1ab8e2396c20ffdfd346a4471fb') },
+    @{ id = 'free_crafting_materials'; file = 'CrimsonFreeCrafting.asi'; priorHashes = @('5f3e272e201d84e213d72c2659f3c1905786b4a1d5e8916252e94b285f6b90b8') },
+    @{ id = 'force_palm'; file = 'CrimsonForcePalm.asi'; priorHashes = @('7ab93ae127f11959904b13eef537f158141c125836ff3378c82900eb3d38ff70') },
+    @{ id = 'force_palm_height'; file = 'CrimsonForcePalmHeight.asi'; priorHashes = @('13b287af5246d83a6f73872d3a1da357d692caad1d318e02d60b1788ad083da3') },
+    @{ id = 'axiom_reach'; file = 'CrimsonAxiomReach.asi'; priorHashes = @('0610e54c48812f8042349a7974f95f76062886831fe5d7d70fa1fb76e7068450') },
+    @{ id = 'glide_speed'; file = 'CrimsonGlideSpeed.asi'; priorHashes = @('fbc4f4c084400859cf3ea0f07b55fd57594ac431173eb8c8e9eeaa8d58cbb059') },
+    @{ id = 'mount_dismount'; file = 'CrimsonMountDismount.asi'; priorHashes = @('4f1999f03bf2166b768e875b8173fc2c150b41f9893b25904156801105e49e13') },
+    @{ id = 'auto_loot'; file = 'CrimsonAutoLoot.asi'; priorHashes = @('744b9f0d8eeac78c10f86b653094422bfe43820f3e76bafbbb384768f43ae907') },
+    @{ id = 'world_controls'; file = 'CrimsonWorldControls.asi'; priorHashes = @('81862f017cc8d1c4c21579ba0547681feff9ead087e302c71e075b97e479a4cf','909daf3f9ae7d3cc35e48700c2b27b931b927b2077c57aea0268b384fafd8d10') },
+    @{ id = 'photo_mode'; file = 'CrimsonPhotoMode.asi'; priorHashes = @('2fcda5425df0e0e8071396c842621bfe3affb1f49b2d745930d03f20a48f84a9') },
+    @{ id = 'teleport'; file = 'CrimsonTeleport.asi'; priorHashes = @('00d2e87a2f134d9962ee69f91192d95bb90a526a8247d31f55950d624fc9424f') }
 )
 CMakeRun @('-S', (Join-Path $repo 'runtime/extra-sockets'), '-B', $sockets, '-G', 'Visual Studio 17 2022', '-A', 'x64', "-DMINHOOK_ROOT=$minhook", "-DCRIMSON_LIVE_ITEMS_SHA256=$liveHash")
 CMakeRun @('--build', $sockets, '--config', 'Release', '--target', 'CrimsonExtraSockets')

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Archive, ArrowRight, Check, FlaskConical, LoaderCircle, LockKeyhole, Package, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, asError } from './api';
 import { count } from './format';
@@ -12,6 +12,7 @@ import { LiveApply } from './LiveApply';
 import { ForeignFiles } from './ForeignFiles';
 import {AdvancedMods} from './AdvancedMods';
 import {canonical} from './advanced-types';
+import type {LiveStatus} from './live-types';
 
 export function Mods({session}:{session:number}) {
   const [info,setInfo]=useState<ModInfo|null>(null),[preview,setPreview]=useState<ModPreview|null>(null);
@@ -22,6 +23,13 @@ export function Mods({session}:{session:number}) {
   const [invalidInput,setInvalidInput]=useState(false);
   const [resetId,setResetId]=useState(0);
   const [consentEpoch,setConsentEpoch]=useState(0);
+  const [setupOpen,setSetupOpen]=useState(true),[liveConfigured,setLiveConfigured]=useState<boolean|null>(null);
+  const setupChoice=useRef(false);
+  const liveStatus=useCallback((status:LiveStatus|null)=>{
+    const configured=status?status.initialized&&!status.pending_basis&&!status.recovery_required:null;
+    setLiveConfigured(configured);
+    if(configured!==null&&!setupChoice.current)setSetupOpen(!configured);
+  },[]);
   current.current=request;
   // Numeric controls retain the last valid request while displaying a draft.
   // Include DOM validity so an invalid draft also revokes the live review.
@@ -45,16 +53,14 @@ export function Mods({session}:{session:number}) {
   }
   const changes=preview?.changes.filter(c=>`${c.name} ${c.key} ${c.field} ${c.module}`.toLowerCase().includes(filter.toLowerCase()))??[];
   const enabled=!!preview&&!dirty&&!busy&&preview.changes.length>0;
+  const step=!preview||dirty?1:liveConfigured?4:3;
   return <div className="mods-page">
     <div className="page-heading"><div><div className="eyebrow">PLAN · CHECK · PREPARE</div><h1>Mod workshop<span>.</span></h1><p>Shops, drop chances, quantities and trust. Preview every change.</p></div><span className="mod-preview-badge"><FlaskConical size={15}/>Preview version</span></div>
     <div className="mod-assurance"><ShieldCheck size={20}/><p><strong>Previews and rehearsals stay in the workspace.</strong> Installation changes require the separate live apply workflow, validation and a closed game.</p></div>
     {error&&<div role="alert" className="craft-error">{error}</div>}
-    <ForeignFiles session={session} changed={()=>setConsentEpoch(v=>v+1)}/>
-    <InstallationCheck key={`inventory-${consentEpoch}`} session={session}/>
-    <Baseline session={session}/>
-    <LiveApply key={`live-${consentEpoch}`} session={session} settings={preview&&!dirty?preview.request:null}/>
-    <RecoveryCenter session={session} latestDirectory={rehearsal?.directory}/>
+    <nav className="workshop-steps" aria-label="Workshop workflow"><a href="#workshop-settings" aria-current={step===1?'step':undefined}>1. Settings <small>{dirty?'Changed':preview?'Prepared':'Choose changes'}</small></a><a href="#workshop-preview">2. Preview <small>{preview&&!dirty?'Ready to review':'Not prepared'}</small></a><a href="#workshop-checks" aria-current={step===3?'step':undefined} onClick={()=>{setupChoice.current=true;setSetupOpen(true)}}>3. Checks <small>{liveConfigured?'Configured':liveConfigured===false?'Setup needed':'Not checked'}</small></a><a href="#workshop-apply" aria-current={step===4?'step':undefined}>4. Apply <small>{enabled&&liveConfigured?'Review final files':'Waiting for review'}</small></a></nav>
     {!info?(!error&&<p role="status">Checking mod schemas …</p>):<>
+    <h2 id="workshop-settings" className="workshop-stage-title">1. Choose mod settings</h2>
     <form ref={form} onChange={updateValidity} onSubmit={e=>{e.preventDefault();void calculate()}}><fieldset key={resetId} className="mod-settings" disabled={busy}>
       <section className="mod-card"><div className="mod-card-title"><Package size={22}/><div><small>B1 · SHOPS</small><h2>Shop stock</h2></div><span>{count(info.stock_rows)} Entries</span></div>
         <p>Existing stock entries from {count(info.vendors.length)} vendors. {info.opaque_stores} other vendors remain unchanged.</p>
@@ -86,8 +92,10 @@ export function Mods({session}:{session:number}) {
       {info.advanced&&<AdvancedMods session={session} info={info.advanced} items={info.items} value={request.advanced} change={advanced=>set({advanced})}/>}
     </fieldset>
     <div className="mod-actions"><button type="submit" className="primary" disabled={busy}>{busy?<LoaderCircle size={16} className="spin"/>:<ArrowRight size={16}/>}Calculate preview</button><button type="button" className="secondary" disabled={busy} onClick={()=>{reset();setResetId(n=>n+1);setPreview(null);setRehearsal(null);setExported('');setError('')}}>Reset</button><span role="status">{invalidInput?'Invalid input — correct the highlighted number fields.':dirty?'Settings changed — recalculate the preview.':preview?`${count(preview.changes.length)} field changes prepared.`:'No changes calculated yet.'}</span></div></form>
+    <h2 id="workshop-preview" className="workshop-stage-title">2. Review the change plan</h2>
+    {!preview&&<p className="workshop-step-note">Calculate a preview above to see exactly what will change.</p>}
     {preview&&<div className={dirty?'mod-preview mod-stale':'mod-preview'}>
-      <section className="mod-gates"><LockKeyhole size={21}/><div><h2>Table plan prepared</h2><ul>{preview.gates.reasons.map(reason=><li key={reason}>{reason}</li>)}</ul><p>Process status when preview was created: {preview.gates.game_running===null?'unknown':preview.gates.game_running?'Game running':'Game closed'}.</p></div><span>Use the live file preview above to write changes.</span></section>
+      <section className="mod-gates"><LockKeyhole size={21}/><div><h2>Table plan prepared</h2><ul>{preview.gates.reasons.map(reason=><li key={reason}>{reason}</li>)}</ul><p>Process status when preview was created: {preview.gates.game_running===null?'unknown':preview.gates.game_running?'Game running':'Game closed'}.</p></div><span>Continue to checks and live apply below to write reviewed changes.</span></section>
       <div className="mod-result-heading"><h2>Your change plan <span>{count(preview.changes.length)}</span></h2><div><button className="secondary" disabled={!enabled} onClick={()=>void output('rehearse')}><FlaskConical size={15}/>Rehearse on workspace copy</button><button className="secondary" disabled={!enabled} onClick={()=>void output('export')}>Export preview</button></div></div>
       {rehearsal&&<><div className="mod-success" role="status"><Check size={18}/><div><strong>{rehearsal.cycles} apply/restore cycles checked.</strong>{rehearsal.reapply_passed&&rehearsal.recovery_passed&&<p>Reapplication and recovery after interruption checked.</p>}{rehearsal.launch_guard_held&&rehearsal.update_refusal_passed&&<p>Launch protection, backup protection and update blocking checked with test files.</p>}<p>{rehearsal.scope}</p><code>{rehearsal.directory}</code></div></div>
       <details className="mod-rehearsal"><summary>Workspace rehearsal file changes · {rehearsal.transitions.length} steps</summary><p>These operations ran only in the workspace copy shown here.</p>{rehearsal.transitions.map(step=><section className="mod-files" key={step.name}><h3>{step.name}</h3>{step.files.map(file=><div key={file.path}><strong>{file.path}</strong><span>{file.action==='create'?'New':file.action==='remove'?'Remove':'Replace'}</span><code>Before: {file.before_sha256??'absent'}<br/>After: {file.after_sha256??'absent'}</code></div>)}</section>)}</details></>}
@@ -98,6 +106,13 @@ export function Mods({session}:{session:number}) {
       <details className="mod-coverage"><summary>Coverage & source</summary><ul>{preview.warnings.map(w=><li key={w}>{w}</li>)}</ul><p>{preview.credits}</p><code>Plan: {preview.plan_id}<br/>Snapshot: {preview.fingerprint}</code></details>
     </div>}
     </>}
+    <section id="workshop-checks" className="workshop-stage"><h2>3. Check the installation</h2><p>Installation setup is needed once and again after a game update. Load live status below to check whether your setup is already complete.</p><details className="workshop-setup" open={setupOpen}><summary onClick={event=>{event.preventDefault();setupChoice.current=true;setSetupOpen(value=>!value)}}>Installation checks &amp; baseline setup</summary>
+      <ForeignFiles session={session} changed={()=>setConsentEpoch(v=>v+1)}/>
+      <InstallationCheck key={`inventory-${consentEpoch}`} session={session}/>
+      <Baseline session={session}/>
+    </details></section>
+    <section id="workshop-apply" className="workshop-stage"><h2>4. Apply the reviewed mod</h2><p>Load live status, review the final file changes, then apply with the game closed.</p><LiveApply key={`live-${consentEpoch}`} session={session} settings={preview&&!dirty?preview.request:null} onStatus={liveStatus}/></section>
+    <details className="workshop-recovery"><summary>Recovery &amp; restore tools</summary><RecoveryCenter session={session} latestDirectory={rehearsal?.directory}/></details>
   </div>
 }
 function NumberInput({label,value,max,disabled,change}:{label:string;value:number;max:number;disabled?:boolean;change:(n:number)=>void}) {

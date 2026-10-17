@@ -31,7 +31,7 @@ test('content audit requires inventory and a stopped game; running and unknown s
 test('progress survives navigation and cancellation creates no report',async({page})=>{
  await fixture(page);await page.getByRole('button',{name:'Check file list',exact:true}).click();await page.getByRole('button',{name:'Check file contents',exact:true}).click();
  await expect(page.getByRole('progressbar',{name:'Content audit progress'})).toHaveAttribute('value','50');await expect(page.getByRole('button',{name:'Check file contents',exact:true})).toBeDisabled();
- await page.getByRole('button',{name:'Item database',exact:false}).click();await page.getByRole('button',{name:'Mod workshop',exact:true}).click();await expect(page.getByRole('progressbar')).toBeVisible();
+ await page.getByRole('button',{name:'Item picker',exact:true}).click();await page.getByRole('button',{name:'Mod workshop',exact:true}).click();await expect(page.getByRole('progressbar')).toBeVisible();
  await page.getByRole('button',{name:'Cancel content audit',exact:true}).click();await expect(page.locator('.content-audit [role=alert]')).toContainText('cancelled');await expect(page.getByRole('button',{name:'Export audit report'})).toHaveCount(0);
 });
 test('completed mismatches are visible and exportable without enabling live apply',async({page})=>{

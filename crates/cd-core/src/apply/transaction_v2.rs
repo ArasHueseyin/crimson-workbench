@@ -174,6 +174,7 @@ pub(super) struct Engine {
     baseline: Snapshot,
     language: u16,
     lion_language: Option<u16>,
+    script_language: Option<u16>,
     reserved: BTreeSet<String>,
     _lock: Option<File>,
 }
@@ -255,6 +256,7 @@ impl Engine {
             .map(|g| g.language)
             .ok_or_else(|| bad("source group 0008 absent from baseline"))?;
         let lion_language = groups.iter().find(|g| g.name == "0009").map(|g| g.language);
+        let script_language = groups.iter().find(|g| g.name == "0014").map(|g| g.language);
         let reserved = groups.iter().map(|g| g.name.clone()).collect();
         let value = Self {
             root,
@@ -264,6 +266,7 @@ impl Engine {
             },
             language,
             lion_language,
+            script_language,
             reserved,
             _lock: lock,
         };
@@ -424,8 +427,13 @@ impl Engine {
                 &registry,
                 name,
                 match g.source_language {
-                    Some(language) if Some(language) == self.lion_language => language,
-                    Some(_) => return Err(bad("unknown appearance source language")),
+                    Some(language)
+                        if Some(language) == self.lion_language
+                            || Some(language) == self.script_language =>
+                    {
+                        language
+                    }
+                    Some(_) => return Err(bad("unknown curated overlay source language")),
                     None => self.language,
                 },
                 g.checksum,
@@ -662,13 +670,21 @@ impl Engine {
                 .get(&format!("{name}/0.paz"))
                 .ok_or_else(|| bad("PAZ missing"))?;
             let paths = crimson_format::overlay::validate_pair(pamt, paz)?;
-            let source_language = if paths
-                .iter()
-                .any(|p| p.starts_with(crimson_format::overlay::LION_DIRECTORY))
-            {
+            let source_language = if paths.iter().any(|p| {
+                p.starts_with(crimson_format::overlay::LION_DIRECTORY)
+                    || p.starts_with(crimson_format::overlay::ROKADE_DIRECTORY)
+            }) {
                 Some(
                     self.lion_language
                         .ok_or_else(|| bad("source group 0009 absent from baseline"))?,
+                )
+            } else if paths
+                .iter()
+                .any(|p| p.starts_with(crimson_format::overlay::REGION_TIMER_DIRECTORY))
+            {
+                Some(
+                    self.script_language
+                        .ok_or_else(|| bad("source group 0014 absent from baseline"))?,
                 )
             } else {
                 None

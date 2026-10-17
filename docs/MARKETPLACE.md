@@ -1,58 +1,78 @@
 # Free mod marketplace
 
-Version 0.8.0 provides seven free mod cards. It works locally without an account, server, payment or separate mod downloads. The interface is English. The setup and portable package include the three optional marketplace ASIs. Game assets and personal saves are not distributed.
+Version 0.9.0 contains **35 cards** covering the original 25 requested features, the later Force Palm height, spirit, Axiom reach and gliding-speed additions, and the existing sleep and mount-stamina mods. All mods are free. It works locally without an account, payment, server or separate mod downloads. The interface is English; game definitions use internal IDs and are independent of the game's display language. Game assets and personal saves are not distributed.
 
-| Mod | Scope | Effect |
+The expansion is prepared for **EXE 1.0.0.2976** and matching verified data. Automated and original-image checks do not establish in-game acceptance. The newly added workflows still need the user's game tests.
+
+## When changes apply
+
+Each card carries an availability label:
+
+| Card type | Setup and changes | Use in the game |
 | --- | --- | --- |
-| Larger lion | Shared lion appearance model; lionesses excluded | CharacterScale 0.90 → 1.17 (+30%) |
-| Faster mounts | Circus lion and all five Rokade stages | Movement speed stat ×1.30 |
-| No mount stamina cost | Circus lion and Rokade | Stamina cost reduction to 100%, boosted regeneration; player stamina unchanged |
-| All skills | One selected save slot | All 140 abilities in the Kliff, Oongka and Damiane trees reach their verified maximum |
-| No sleep cooldown | Beds and campfires | No additional sleep/wait delay; other native validity checks remain |
-| 30-hour sleep | The game's 12-hour sleep option | Advances the clock by 30 hours; the in-game label remains 12 hours |
-| Blackstar anywhere | Blackstar only | Lifts regional/city/altitude restrictions, boosts stamina regeneration, 1-second summon cooldown and 1,000-minute duration; placement/indoor/quest restrictions can remain |
+| Archive recipes and save actions | Close the game before applying the reviewed change | Applied definitions or save changes take effect when loaded |
+| Runtime mods | Close the game to install/remove the ASI or save startup settings | The module works during play after the next game start |
+| Live time/weather, photo and teleport | Install the matching runtime with the game closed | Adjust through the card's live panel while playing |
 
-These recipes require game EXE **1.0.0.2976** and matching verified source data. A matching EXE version alone does not authorize writes. Existing unknown or conflicting game modifications remain blocked by the normal installation checks.
+Browsing, searching and preparing a draft does not apply changes. Selecting a card is not an installation status. Runtime cards install independently of the combined archive plan.
 
-If the current registry contains unmanaged modifications, an in-memory preview or workspace export can still use the verified original snapshot. It shows a warning and grants no write permission. Live apply remains blocked until the registry is reconciled through the existing recovery procedures.
+**Search mods** filters names, effects and categories, including common German aliases. Category and status filters can be combined with the search. **Installed** and **Updates** use verified runtime-file status; combined-plan selections are labelled **Draft selected** and do not imply installation. **Live controls** shows cards that can be adjusted while playing after setup. The search remains visible while scrolling on desktop-sized windows; **Ctrl+K** focuses it.
 
-## Apply game mods
+Unsaved startup settings stay on this device across navigation and status refreshes. **Save** writes the selected setting; **Discard changes** restores its last saved value. Sliders also provide exact number inputs and presets. Axiom explicitly separates normal **1×** reach from the extended **2×–5×** range. A runtime file being installed does not prove that its module has loaded in the current game session.
 
-1. Open **Mod marketplace** and use the **Select mod** switches for the desired game mods. **Deselect mod** removes a recipe from the draft; neither action installs or removes game files on its own.
-2. Choose **Review combined plan**. This prepares files in memory and changes no game files.
-3. Review the changes and use **Live apply & restore**. Its existing setup requires a saved content baseline and Steam verification confirmation. Setup and source checks are performed in the application; no PowerShell commands are needed.
-4. Close the game, calculate the live file preview and apply the reviewed plan.
+Progress and results appear on the affected runtime card. Dialogs support keyboard focus containment, **Escape**, and return focus to the button that opened them. Save editors identify the selected slot/account and show local modification dates beside their write actions.
 
-The three recipes combine into one plan with any current Workshop settings. Applying replaces the previous Workbench overlay. Remove a recipe from the plan and apply again to disable that recipe; **Check live restore** restores the original registry and removes the complete managed overlay. Existing unmanaged mods are preserved, not adopted or deleted. Model and table overlays are separate archive groups, with the original source language bits retained for each.
+## Available features
 
-“Selected in draft” describes the plan, not the installed state. Selecting a card never installs a mod automatically. **Export local package** writes an unapplied package into the workspace.
+- **Mounts:** 30% larger lion and Rokade, x1.30 movement speed, no mount stamina cost, 40% higher jumps, five-times automatic fall-dismount threshold, and combat protection for the ridden or selected summoned owned mount. The shared lion model also affects other characters using it; Rokade has its own appearance. Scripted deaths/despawns retain native behavior.
+- **Player movement:** independently selectable unlimited stamina and spirit, adjustable 100–300% ordinary jump height and ground movement speed, no fall damage, unlimited Force Palm aerial chains, and separate **1×–100× aerial Force Palm height**. Force Palm must be learned. Spirit protection prevents spending existing spirit; normal eligibility, minimum resource requirements and cooldowns remain. Ordinary jump height does not multiply Force Palm height. Gliding speed has its own **100%–500%** slider (normal to 5×).
+- **Axiom reach:** choose **2×–5×** reach in 0.01× steps, or reset to normal 1×. The module scales the shared native acquisition/holding range and distance-release tolerances in memory. It preserves default tuning, object eligibility, weight, ability requirements and other non-distance rules. It refuses conflicting tuning overrides.
+- **Inventory and equipment:** 999 inventory slots, per-item stack limits, no ordinary durability loss, and supported native weapon-effect transfers. Lightning and fire sources have explicit compatible targets. Definition changes affect all copies of a selected item; they are not edits to one inventory instance.
+- **Progression and exploration:** individually selected skills or all 140 main-character skills, six existing faction contribution balances, world-map fog reveal, and a 30-minute restricted-region return countdown. Contribution targets are increases, not fabricated new balances; map fog does not complete quests.
+- **Crafting:** separate cards for ordinary materials, equipment upgrade materials/tokens, and the verified 300-Clockwork-Insect backpack recipe fee. Normal unlocks, tools and owned upgrade equipment are still required. Free crafting allows up to 40 outputs per batch.
+- **Convenience:** automatic reeling on all four rods after manual casting, auto-loot for eligible free ground items and normal corpse loot in the normal interaction radius, and preservation of individually selected supported consumables. Auto-loot retains native ownership, crime, animation and inventory-capacity checks; purchases, theft, custom-pivot and scripted interactions are excluded. Consumable preservation supports nine arrow types, 15 stat potions, 535 food definitions and two Holy Water healing items. Normal shooting, eating and drinking preserve selected items. Feeding, releasing or summoning creatures, item conversions, effects and cooldowns keep their native rules.
+- **Existing runtime mods:** no sleep cooldown, 30-hour sleep through the game's labelled 12-hour option, and Blackstar's personal configuration with lifted regional/city/altitude restrictions, boosted regeneration, one-second summon cooldown and longer duration. Final placement, indoor and quest/state rules can still reject Blackstar.
 
-## Unlock skills
+## Apply archive recipes
 
-Choose **Choose save & review** on All skills, select the exact save slot, and inspect the counts of new, upgraded and already-maxed abilities. Save and fully close the game. Confirm the progression change and click **Back up & unlock all skills**.
+1. Select the desired cards or configure the item stack/effect editors.
+2. Use **Review combined plan** and inspect the changes.
+3. Open **Live apply & restore**, complete the existing baseline/source checks, close the game and apply the reviewed plan.
 
-Workbench preserves existing available skill points, historical expenses, inventory, observed learning and unrelated save data. Missing upgrade costs are added to both the spent ledger and the earned-point total as a gift, keeping refund accounting consistent. Unknown save fields, duplicate entries, inconsistent ledgers, changed saves and overflowing counters cause refusal before writing. A save with no usable skill-entry template must learn a skill normally first.
+The recipes combine with the current Workshop draft. Applying replaces the previous Workbench overlay. Deselect a recipe and apply again to remove it; restore the complete managed overlay through the existing restore workflow. Unknown or conflicting modifications remain blocked. A read-only preview/export of verified original data does not grant permission to overwrite unmanaged files.
 
-Backups and transaction receipts are stored in the workspace under `.local/skill-unlocks/<request-id>`. `original.save` and `original.lobby` retain the original files; lobby bytes are unchanged. Retrying a pending request keeps its identifier and checks completion or rolls back an interrupted commit. Fully unlocked saves receive no second gift.
+## Save actions
 
-This is a progression edit, not a toggle. There is no automatic “off” switch: restoring an older backup later would also discard progress made since that backup. Only the selected slot is edited. Existing game-version and save-path restrictions still apply.
+**Skill unlocks**, **Contribution points** and **Reveal world map** each require an exact selected save, a reviewed preview and confirmation. Save and close the game before writing. Workbench creates a backup and uses bound save-pair transactions with interrupted-operation recovery. Changed saves, inconsistent or unknown structures and invalid/overflowing targets are refused.
 
-## Install the three runtime mods
+Skill unlocks preserve available points and refund accounting. Contribution edits preserve unrelated currencies, faction experience and levels. Fog reveal preserves quest, knowledge, discovery and travel records. These are progression edits, not reversible switches; restoring an older save backup also discards later progress.
 
-Close Crimson Desert and use **Install mod** on the desired runtime card. Workbench stays open. Windows may request administrator permission. Start the game afterward to load the ASI. Each card is independent. **Remove mod** removes only that card's managed ASI and leaves the loader, other mods, saves and socket configuration intact. Refresh runtime status after closing the game or making an external change. These cards are independent of the combined archive plan.
+## Runtime setup
 
-The setup includes all payloads; no additional download or command is necessary. Their exact hashes are checked against `marketplace-manifest.json`. The bundled loader must already be installed through Workbench setup. Unsupported EXEs and conflicting hook bytes are rejected before hooks.
+With the bundled loader installed, close the game and click **Install mod** on the desired runtime card. Workbench stays open; Windows may request administrator permission. Start the game to load it. **Remove mod** disables only that card's managed ASI and preserves other mods, saves, loader and personal data. Refresh runtime status after external changes.
 
-**Import & update mod** explicitly takes ownership of a recognized earlier personal version and updates it. This upgrades the former one-second sleep cooldown to no cooldown. Unknown or changed ASIs and invalid receipts are refused. Original bytes and receipts are kept under `bin64/CrimsonWorkbench-mods/<mod-id>`. Backups use `.bak`, so they do not load as ASIs. Removing an imported mod disables it; it does not reactivate its older backup. **Recover operation** recovers a pending transaction without starting another install.
+The complete setup bundles all 20 optional Marketplace ASIs plus Live Items and Extra Sockets. No extra download or command is needed. Time/weather and teleport require the **matching bundled Live Items** task broker. Photo mode uses its own guarded native UI callback.
 
-**30-hour sleep:** choose the existing **12-hour** option. Its menu label is unchanged. The mod adds 18 hours to that option's native clock target, keeping minutes, seconds and other choices intact.
+Save Force Palm height, Axiom reach, gliding speed and the independent stamina/spirit choices with the game closed, then install or update the corresponding module. Settings load at the next game start and persist between starts. The existing stamina module supplies both resource switches through one shared hook. Setting normal height/reach or turning off a resource stops that effect on the next start. See [Force Palm height](research/FORCE_PALM_HEIGHT.md), [spirit](research/PLAYER_SPIRIT.md) and [Axiom reach](research/AXIOM_REACH.md) and [gliding speed](research/GLIDE_SPEED.md).
 
-**Blackstar anywhere:** original final placement, indoor and quest/state checks can still reject a summon. Existing saved summon timers are not rewritten; resummoning may be needed for the longer base duration. Other mounts retain their native restrictions. This release packages the existing personal Blackstar implementation; it adds no newly verified locations.
+Payload hashes and transaction receipts are checked. **Import & update mod** explicitly adopts a recognized older personal version after backing it up. Unknown/changed ASIs are refused. **Recover operation** resumes recovery of a pending transaction; it does not start another installation. Backups have a `.bak` extension and cannot load as ASIs.
 
-## Runtime validation
+## Live time and weather
 
-Native tests cover immediate cooldown clearing, retained validity failures, 288 calendar cases, scope isolation and Blackstar-only row edits. The real pinned loader loads all five ASIs in a synthetic host, which they reject before hooks. Package tests exercise the three module lifecycles, legacy import, personal-data preservation, foreign/modified file refusal, rollback and interrupted transaction recovery. Private game assembly fixtures and save bytes are excluded from the repository and downloads.
+Set the time of day, or **Advance time** by 1–10,000 game hours into later days. Freeze/resume the clock independently of weather. Adjust precipitation, clouds, humidity, wind and fog, freeze the weather, or **Reset weather** to release Workbench's override and restore the previous native policy. Resetting weather retains the clock settings. Hour advance retains an owned clock freeze and weather settings.
 
-The automated checks cover the three mount combinations, unchanged records and inverse edits, the exact lion appearance path and scale, combined preview/export, unsupported builds, running-game refusal, stale saves, explicit skill confirmation and retry identifiers. An opt-in private save test checks encrypted roundtrip, preserved points and repeated-unlock idempotence without writing the source fixture. The shared archive transaction and paired-save recovery kernels retain their existing interruption tests.
+These controls update the native field clock/weather paths, not the computer clock. They do not simulate a sleep action or prove every calendar-dependent quest behaves like normal elapsed play. See [live controls](research/LIVE_WORLD_CLIENT.md).
 
-Manual game tests should use the locally installed build: compare lion size, mount speed and sustained sprinting, then load a deliberately selected save and check all three skill trees and point balances. The user previously tested the underlying custom mods; testing the new marketplace workflow is separate.
+## Photo mode
+
+Enter the normal movable photo camera, hide/show its HUD and leave through the native photo lifecycle. Scene pause is reported only after the actual normal photo camera and zero effective simulation delta are observed. Camera controls and bounds remain the game's normal photo controls. Closing the Workbench panel does not close photo mode. An already active photo session opened in the game is not adopted. See [photo mode](research/PHOTO_MODE.md).
+
+## Teleport
+
+Capture the current global position and facing into one of **16 named slots**, return to a saved position, remove a slot, or choose a current map pin/waypoint. Saved returns require the current field to match. Mainland map markers in MainField require both a native ground hit and valid placement; alternate/unknown layers and unavailable/unsuitable geometry are refused. A pin's stored map height is never used as ground height.
+
+Travel goes through the normal native field-transition queue and may load the destination. A queued command is not arrival. A later observed player position is a separate receipt. Lost responses, context changes, native faults and timeouts never trigger automatic repeats. Bookmarks live in local Workbench data for this Windows user, not the game save. Storage failures remain visible; polling does not rewrite them automatically. See [teleport controls](research/TELEPORT_CONTROLS.md).
+
+## Verification
+
+Owned native, UI, protocol, package-lifecycle and recovery fixtures cover implementation behavior without modifying or controlling the running game. Public checks use synthetic records, semantic metadata and short compatibility/ABI signatures. Full original-record and copied engine-function fixtures, decoded assets and private saves stay in ignored local storage and are not distributed. Optional private verification is separate from the game-free CI checks. The current implementation checkpoint and remaining game acceptance work are recorded in [the planned feature list](PLANNED_MODS.md) and each linked research note.

@@ -49,7 +49,7 @@ test('explicit audit import saves reviewed baseline and can be reopened after na
  await expect(panel).toContainText('Registry backup verified');
  const writes=await page.evaluate(()=>(window as unknown as {baseline:Harness}).baseline.calls.filter(c=>c.command==='baseline_capture'));
  expect(writes).toHaveLength(1);expect(writes[0].args).toEqual({session:1,reportName:'installation-audit-fixture.json',reviewId:'baseline-token'});
- await page.getByRole('button',{name:/Item database/}).click();await page.getByRole('button',{name:'Mod workshop',exact:true}).click();
+ await page.getByRole('button',{name:'Item picker',exact:true}).click();await page.getByRole('button',{name:'Mod workshop',exact:true}).click();
  await panel.getByRole('button',{name:'Load audit reports'}).click();await page.getByLabel('Select baseline').selectOption('saved-fixture');
  await panel.getByRole('button',{name:'Check saved baseline'}).click();await expect(panel).toContainText('Metadata matches');
  await page.setViewportSize({width:1024,height:768});expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
@@ -78,7 +78,7 @@ test('discarded selection and late preview cannot leave an enabled capture butto
  await page.getByLabel('Select audit report').selectOption('');await expect(panel.getByRole('button',{name:'Save baseline'})).toHaveCount(0);
  await page.evaluate(()=>{(window as unknown as {baseline:Harness}).baseline.defer=true});
  await page.getByLabel('Select audit report').selectOption('installation-audit-fixture.json');await panel.getByRole('button',{name:'Check report for baseline'}).click();
- await expect(panel).toContainText('Checking baseline');await page.getByRole('button',{name:/Item database/}).click();
+ await expect(panel).toContainText('Checking baseline');await page.getByRole('button',{name:'Item picker',exact:true}).click();
  await page.evaluate(()=>{const h=(window as unknown as {baseline:Harness}).baseline;h.defer=false;h.release?.()});
  await page.getByRole('button',{name:'Mod workshop',exact:true}).click();await expect(panel.getByRole('button',{name:'Save baseline'})).toHaveCount(0);
 });

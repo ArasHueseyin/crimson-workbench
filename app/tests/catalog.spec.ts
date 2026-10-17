@@ -19,6 +19,10 @@ async function fixture(page: Page, mode: 'normal' | 'unknown' | 'empty' = 'norma
         if (q.descending) all.reverse();
         return { items: all.slice(q.offset, q.offset + 200), total: all.length, offset: q.offset };
       }
+      if(command==='spawn_status')throw {message:'Live module not connected.'};
+      if(command==='knowledge_snapshot')return {saves:[],selected_save:null,items:[],message:'No saved knowledge.'};
+      if(command==='mod_info')return {advanced:{statuses:[]}};
+      if(command==='advanced_item')return {item:{key:args.key,max_endurance:100,enchant_levels:[0],stats:[]}};
       if (command === 'craft_item') return { recipes: [], used_in: [] };
       if (command === 'item_icon') return { data_url: null, source: null, reason: 'Synthetic fixture without game assets' };
       if (command === 'item_detail') {
@@ -31,42 +35,33 @@ async function fixture(page: Page, mode: 'normal' | 'unknown' | 'empty' = 'norma
   }, { mode });
   await page.goto('/');
 }
-test('search, exact numbers, fields, references and export form one flow', async ({ page }) => {
+test('item picker is the default item view and the separate database is removed',async({page})=>{
   await fixture(page);
-  await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'true');
-  await page.getByRole('textbox', { name: 'Search items' }).fill('Stumpfpfeil');
-  await expect(page.getByRole('option', { name: /Test-Stumpfpfeil/ })).toBeVisible();
-  await page.getByRole('option', { name: /Test-Stumpfpfeil/ }).click();
-  await expect(page.getByRole('heading', { name: 'Test-Stumpfpfeil' })).toBeVisible();
-  await expect(page.locator('.values-grid')).toContainText('18,446,744,073,709,551,615');
-  await page.getByRole('tab', { name: /All fields/ }).click();
-  await page.getByLabel('Unknown fields only').check();
-  await page.getByRole('textbox', { name: 'Search raw fields' }).fill('unk_field_3');
-  await expect(page.locator('.raw-field').first()).toContainText('unk_field_3');
-  await page.getByRole('tab', { name: 'References' }).click();
-  await page.getByRole('button', { name: /packed_item_info/ }).click();
-  await expect(page.getByRole('heading', { name: 'Testgegenstand 0001' })).toBeVisible();
-  await page.getByRole('button', { name: 'Save item as JSON' }).click();
-  await expect(page.getByRole('status')).toContainText('exports/item-2201.json');
+  await expect(page.locator('.workbench')).toHaveAttribute('data-ready','true');
+  await expect(page.getByRole('navigation').getByRole('button',{name:/Item database/})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Item picker.'})).toBeVisible();
+  await page.getByRole('textbox',{name:'Search item picker'}).fill('Stumpfpfeil');
+  await page.getByRole('option',{name:/Test-Stumpfpfeil/}).click();
+  await expect(page.locator('.picker-values').first()).toContainText('18,446,744,073,709,551,615');
+  await expect(page.getByRole('button',{name:'Add to inventory',exact:true})).toBeDisabled();
+  await page.getByRole('button',{name:'Data sources',exact:true}).click();
+  await page.getByRole('button',{name:'Item picker',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Item picker.'})).toBeVisible();
 });
-test('virtualized list, pagination and intersecting filters', async ({ page }) => {
+
+test('item picker keeps the large item catalogue virtualized and paged',async({page})=>{
   await fixture(page);
   await expect(page.locator('.result-caption')).toContainText('1,000');
-  expect(await page.locator('.item-row').count()).toBeLessThan(40);
-  await page.locator('.table-scroll').evaluate(el => { el.scrollTop = el.scrollHeight; });
-  await expect(page.locator('.table-footer')).toContainText('400 of 1,000');
-  await page.getByLabel('Type', { exact: true }).selectOption('0');
-  await page.getByLabel('Category', { exact: true }).selectOption('1');
-  await expect(page.locator('.result-caption')).toContainText('166');
-  await page.getByRole('button', { name: /More filters/ }).click();
-  await page.getByLabel(/Stackable/).check();
-  await expect(page.locator('.result-caption')).toContainText('166');
-  await page.getByRole('button', { name: 'Reset all filters' }).click();
-  await expect(page.locator('.result-caption')).toContainText('1,000');
+  expect(await page.locator('.picker-row').count()).toBeLessThan(40);
+  await page.getByRole('button',{name:'Next',exact:true}).click();
+  await expect(page.locator('.picker-pages')).toContainText('201–400 of 1,000');
+  await page.getByRole('button',{name:'Back',exact:true}).click();
+  await expect(page.locator('.picker-pages')).toContainText('1–200 of 1,000');
 });
+
 test('late searches cannot replace more recent results', async ({ page }) => {
   await fixture(page);
-  const input = page.getByRole('textbox', { name: 'Search items' });
+  const input = page.getByRole('textbox', { name: 'Search item picker' });
   await input.fill('langsam');
   await page.waitForTimeout(320);
   await input.fill('Stumpfpfeil');
@@ -77,7 +72,7 @@ test('late searches cannot replace more recent results', async ({ page }) => {
 test('unknown build blocks browsing and shows recovery controls', async ({ page }) => {
   await fixture(page, 'unknown');
   await expect(page.getByRole('alert')).toContainText('This build is not supported yet');
-  await expect(page.getByRole('listbox', { name: 'Items' })).toHaveCount(0);
+  await expect(page.getByRole('listbox', { name: 'Item picker' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Check data source' }).click();
   await expect(page.getByRole('textbox', { name: 'Installation folder' })).toHaveValue('C:/Synthetic Game');
 });
@@ -87,7 +82,7 @@ test('empty results and 1024px desktop layout remain usable', async ({ page }) =
   await expect(page.getByRole('heading', { name: 'No matching items' })).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);
-  await expect(page.getByRole('button', { name: 'Reset search' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Search item picker' })).toBeEnabled();
 });
 test('browser without desktop bridge never fabricates game data', async ({ page }) => {
   await page.goto('/');

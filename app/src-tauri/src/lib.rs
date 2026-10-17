@@ -1,9 +1,13 @@
 mod audit_service;
 mod live_service;
 mod marketplace_service;
+mod native_pipe;
+mod photo_service;
 mod service;
 mod settings;
 mod spawn_service;
+mod teleport_service;
+mod world_service;
 use cd_core::browser::{BrowserPage, BrowserQuery};
 use service::{AppError, AppService, Bootstrap, Catalog, Result, SharedService};
 use std::sync::Arc;
@@ -21,6 +25,16 @@ async fn blocking<T: Send + 'static>(f: impl FnOnce() -> Result<T> + Send + 'sta
 async fn bootstrap(state: State<'_, SharedService>) -> Result<Bootstrap> {
     let state = Arc::clone(&state);
     blocking(move || state.bootstrap()).await
+}
+#[tauri::command]
+async fn marketplace_game_running(state: State<'_, SharedService>, session: u64) -> Result<bool> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        state.with_session(session, |_| {
+            cd_core::apply::game_running().map_err(cd_core::Error::from)
+        })
+    })
+    .await
 }
 #[tauri::command]
 async fn marketplace_mod_status(
@@ -59,13 +73,165 @@ async fn marketplace_mod_change(
     .await
 }
 #[tauri::command]
+async fn marketplace_runtime_setting(
+    app: tauri::AppHandle,
+    state: State<'_, SharedService>,
+    session: u64,
+    id: cd_core::config::runtime_options::RuntimeOption,
+    value: Option<u32>,
+) -> Result<cd_core::config::runtime_options::Snapshot> {
+    let directory = app.path().app_local_data_dir().map_err(|e| AppError {
+        code: "marketplace_mod",
+        message: e.to_string(),
+    })?;
+    let state = Arc::clone(&state);
+    blocking(move || {
+        state.with_session(session, |s| {
+            let version = s.info().exe_version;
+            Ok(match value {
+                Some(value) => cd_core::config::runtime_options::save(
+                    &directory,
+                    version.as_deref(),
+                    id,
+                    value,
+                )?,
+                None => {
+                    cd_core::config::runtime_options::snapshot(&directory, version.as_deref(), id)?
+                }
+            })
+        })
+    })
+    .await
+}
+#[tauri::command]
+async fn marketplace_player_jump(
+    app: tauri::AppHandle,
+    state: State<'_, SharedService>,
+    session: u64,
+    height_percent: Option<u32>,
+) -> Result<cd_core::config::player_jump::Snapshot> {
+    let directory = app.path().app_local_data_dir().map_err(|e| AppError {
+        code: "marketplace_mod",
+        message: e.to_string(),
+    })?;
+    let state = Arc::clone(&state);
+    blocking(move || {
+        state.with_session(session, |s| {
+            let version = s.info().exe_version;
+            Ok(match height_percent {
+                Some(percent) => {
+                    cd_core::config::player_jump::save(&directory, version.as_deref(), percent)?
+                }
+                None => cd_core::config::player_jump::snapshot(&directory, version.as_deref())?,
+            })
+        })
+    })
+    .await
+}
+#[tauri::command]
+async fn marketplace_player_speed(
+    app: tauri::AppHandle,
+    state: State<'_, SharedService>,
+    session: u64,
+    speed_percent: Option<u32>,
+) -> Result<cd_core::config::player_speed::Snapshot> {
+    let directory = app.path().app_local_data_dir().map_err(|e| AppError {
+        code: "marketplace_mod",
+        message: e.to_string(),
+    })?;
+    let state = Arc::clone(&state);
+    blocking(move || {
+        state.with_session(session, |s| {
+            let version = s.info().exe_version;
+            Ok(match speed_percent {
+                Some(percent) => {
+                    cd_core::config::player_speed::save(&directory, version.as_deref(), percent)?
+                }
+                None => cd_core::config::player_speed::snapshot(&directory, version.as_deref())?,
+            })
+        })
+    })
+    .await
+}
+#[tauri::command]
+async fn marketplace_consumables(
+    app: tauri::AppHandle,
+    state: State<'_, SharedService>,
+    session: u64,
+    item_keys: Option<Vec<u32>>,
+) -> Result<cd_core::config::preserve_consumables::Snapshot> {
+    let directory = app.path().app_local_data_dir().map_err(|e| AppError {
+        code: "marketplace_mod",
+        message: e.to_string(),
+    })?;
+    let state = Arc::clone(&state);
+    blocking(move || {
+        state.with_session(session, |s| {
+            let version = s.info().exe_version;
+            let choices = s.consumable_choices()?;
+            Ok(match item_keys {
+                Some(keys) => cd_core::config::preserve_consumables::save(
+                    &directory,
+                    version.as_deref(),
+                    &keys,
+                    choices,
+                )?,
+                None => cd_core::config::preserve_consumables::snapshot(
+                    &directory,
+                    version.as_deref(),
+                    choices,
+                )?,
+            })
+        })
+    })
+    .await
+}
+#[tauri::command]
+async fn contribution_preview(
+    state: State<'_, SharedService>,
+    session: u64,
+    save: Option<String>,
+    edits: Vec<cd_core::contribution_values::Edit>,
+) -> Result<cd_core::contribution_action::Preview> {
+    let state = Arc::clone(&state);
+    blocking(move || state.contribution_preview(session, save.as_deref(), &edits)).await
+}
+#[tauri::command]
+async fn map_fog_preview(
+    state: State<'_, Arc<AppService>>,
+    session: u64,
+    save: Option<String>,
+) -> Result<cd_core::map_fog_action::Preview> {
+    let state = state.inner().clone();
+    blocking(move || state.map_fog_preview(session, save.as_deref())).await
+}
+#[tauri::command]
+async fn map_fog_apply(
+    state: State<'_, Arc<AppService>>,
+    session: u64,
+    request: cd_core::map_fog_action::Request,
+) -> Result<cd_core::map_fog_action::Receipt> {
+    let state = state.inner().clone();
+    blocking(move || state.map_fog_apply(session, &request)).await
+}
+#[tauri::command]
+async fn contribution_apply(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: cd_core::contribution_action::Request,
+) -> Result<cd_core::contribution_action::Receipt> {
+    let state = Arc::clone(&state);
+    blocking(move || state.contribution_apply(session, &request)).await
+}
+#[tauri::command]
 async fn skill_unlock_preview(
     state: State<'_, SharedService>,
     session: u64,
     save: Option<String>,
+    abilities: Option<std::collections::BTreeSet<u32>>,
 ) -> Result<cd_core::skill_unlock::Preview> {
     let state = Arc::clone(&state);
-    blocking(move || state.skill_unlock_preview(session, save.as_deref())).await
+    blocking(move || state.skill_unlock_preview(session, save.as_deref(), abilities.as_ref())).await
 }
 #[tauri::command]
 async fn skill_unlock_apply(
@@ -251,6 +417,17 @@ async fn mod_info(state: State<'_, SharedService>, session: u64) -> Result<cd_co
     blocking(move || state.with_session(session, |s| s.with_mods(|c| Ok(c.info())))).await
 }
 #[tauri::command]
+async fn marketplace_weapon_effects(
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<Vec<cd_core::mods::marketplace::EffectSource>> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        state.with_session(session, |s| s.with_mods(|c| c.marketplace_weapon_effects()))
+    })
+    .await
+}
+#[tauri::command]
 async fn advanced_skill(
     state: State<'_, SharedService>,
     session: u64,
@@ -320,7 +497,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             bootstrap,
             marketplace_mod_status,
+            marketplace_game_running,
             marketplace_mod_change,
+            marketplace_runtime_setting,
+            marketplace_player_jump,
+            marketplace_player_speed,
+            marketplace_consumables,
             save_settings,
             extra_sockets_snapshot,
             extra_socket_set,
@@ -330,11 +512,21 @@ pub fn run() {
             spawn_status,
             spawn_grant,
             spawn_cancel,
+            world_status,
+            world_change,
+            photo_status,
+            photo_change,
+            teleport_status,
+            teleport_change,
             mount_catalog,
             mount_search,
             mount_icon,
             knowledge_snapshot,
             mount_register,
+            contribution_preview,
+            contribution_apply,
+            map_fog_preview,
+            map_fog_apply,
             skill_unlock_preview,
             skill_unlock_apply,
             foreign_preview,
@@ -355,6 +547,7 @@ pub fn run() {
             craft_plan,
             craft_item,
             mod_info,
+            marketplace_weapon_effects,
             advanced_item,
             abyss_stone_details,
             advanced_skill,
@@ -499,6 +692,105 @@ async fn live_status(
     blocking(move || state.live_status(session)).await
 }
 
+#[tauri::command]
+async fn world_status(
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<world_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| Ok(s.game_root().to_owned()))?;
+        world_service::exchange(&game, None)
+    })
+    .await
+}
+#[tauri::command]
+async fn world_change(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: world_service::ControlRequest,
+) -> Result<world_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let (game, version) = state.with_session(session, |s| {
+            Ok((s.game_root().to_owned(), s.info().exe_version))
+        })?;
+        if version.as_deref() != Some("1.0.0.2976") {
+            return Err(AppError {
+                code: "world_controls",
+                message: "Live world controls require game version 1.0.0.2976.".into(),
+            });
+        }
+        world_service::exchange(&game, Some(&request))
+    })
+    .await
+}
+#[tauri::command]
+async fn photo_status(
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<photo_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| Ok(s.game_root().to_owned()))?;
+        photo_service::exchange(&game, None)
+    })
+    .await
+}
+#[tauri::command]
+async fn photo_change(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: photo_service::ControlRequest,
+) -> Result<photo_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let (game, version) = state.with_session(session, |s| {
+            Ok((s.game_root().to_owned(), s.info().exe_version))
+        })?;
+        if version.as_deref() != Some("1.0.0.2976") {
+            return Err(AppError {
+                code: "photo_controls",
+                message: "Photo controls require game version 1.0.0.2976.".into(),
+            });
+        }
+        photo_service::exchange(&game, Some(&request))
+    })
+    .await
+}
+#[tauri::command]
+async fn teleport_status(
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<teleport_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| Ok(s.game_root().to_owned()))?;
+        teleport_service::exchange(&game, None)
+    })
+    .await
+}
+#[tauri::command]
+async fn teleport_change(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: teleport_service::ControlRequest,
+) -> Result<teleport_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let (game, version) = state.with_session(session, |s| {
+            Ok((s.game_root().to_owned(), s.info().exe_version))
+        })?;
+        if version.as_deref() != Some("1.0.0.2976") {
+            return Err(AppError {
+                code: "teleport_controls",
+                message: "Teleport controls require game version 1.0.0.2976.".into(),
+            });
+        }
+        teleport_service::exchange(&game, Some(&request))
+    })
+    .await
+}
 #[tauri::command]
 async fn spawn_status(
     state: State<'_, SharedService>,

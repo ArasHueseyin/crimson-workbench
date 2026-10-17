@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import type { Query } from './types';
 import { emptyMod, type ModRequest } from './mod-types';
 export const emptyQuery: Query = { text: '', regex: false, item_type: null, category: null, tier: null, stackable: false, stat_key: null, sort: 'name', descending: false, offset: 0 };
-interface Store { query: Query; selected: number | null; view: 'marketplace' | 'items' | 'sources' | 'crafting' | 'mods' | 'spawn' | 'mounts' | 'sockets'; setQuery: (patch: Partial<Query>) => void; select: (key: number | null) => void; setView: (view: Store['view']) => void; reset: () => void }
-export const useCatalog = create<Store>((set) => ({ query: emptyQuery, selected: null, view: 'items',
+interface Store { query: Query; selected: number | null; view: 'marketplace' | 'sources' | 'crafting' | 'mods' | 'spawn' | 'mounts' | 'sockets'; setQuery: (patch: Partial<Query>) => void; select: (key: number | null) => void; setView: (view: Store['view']) => void; reset: () => void }
+export const useCatalog = create<Store>((set) => ({ query: emptyQuery, selected: null, view: 'spawn',
   setQuery: (patch) => set((s) => ({ query: { ...s.query, ...patch, offset: 0 } })),
   select: (selected) => set({ selected }), setView: (view) => set({ view }), reset: () => set({ query: { ...emptyQuery }, selected: null }),
 }));

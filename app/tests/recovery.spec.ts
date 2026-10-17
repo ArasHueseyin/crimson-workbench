@@ -25,7 +25,7 @@ async function fixture(page:Page) {
   }};
  });
  await page.goto('/');await expect(page.locator('.workbench')).toHaveAttribute('data-ready','true');
- await page.getByRole('button',{name:'Mod workshop',exact:true}).click();
+ await page.getByRole('button',{name:'Mod workshop',exact:true}).click();await page.locator('.workshop-recovery > summary').click();
  return page.getByRole('region',{name:'Backup and recovery'});
 }
 async function load(page:Page) {
@@ -65,9 +65,9 @@ test('empty and legacy entries are explained; changing selection discards approv
 test('late review after navigation cannot restore a discarded selection',async({page})=>{
  await fixture(page);await page.evaluate(()=>{(window as unknown as {recovery:Harness}).recovery.defer=true});
  await load(page);await expect(page.getByRole('region',{name:'Backup and recovery'})).toContainText('Checking workspace rehearsal');
- await page.getByRole('button',{name:/Item database/}).click();
+ await page.getByRole('button',{name:'Item picker',exact:true}).click();
  await page.evaluate(()=>{const h=(window as unknown as {recovery:Harness}).recovery;h.defer=false;h.release?.()});
- await page.getByRole('button',{name:'Mod workshop',exact:true}).click();
+ await page.getByRole('button',{name:'Mod workshop',exact:true}).click();await page.locator('.workshop-recovery > summary').click();
  await expect(page.getByRole('button',{name:'Restore workspace copy'})).toHaveCount(0);
  expect(await page.evaluate(()=>(window as unknown as {recovery:Harness}).recovery.calls.some(c=>c.command==='rehearsal_restore'))).toBe(false);
 });

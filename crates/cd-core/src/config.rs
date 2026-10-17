@@ -1,4 +1,8 @@
 //! Local configuration without changing process environment or writing source data.
+pub mod player_jump;
+pub mod player_speed;
+pub mod preserve_consumables;
+pub mod runtime_options;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,

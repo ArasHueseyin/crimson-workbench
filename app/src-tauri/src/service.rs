@@ -63,12 +63,42 @@ pub struct AppService {
     settings_lock: Mutex<()>,
 }
 impl AppService {
+    pub fn map_fog_preview(
+        &self,
+        id: u64,
+        save: Option<&str>,
+    ) -> Result<cd_core::map_fog_action::Preview> {
+        self.with_session(id, |s| s.map_fog_preview(save))
+    }
+    pub fn map_fog_apply(
+        &self,
+        id: u64,
+        request: &cd_core::map_fog_action::Request,
+    ) -> Result<cd_core::map_fog_action::Receipt> {
+        self.with_session(id, |s| s.map_fog_apply(&self.project, request))
+    }
+    pub fn contribution_preview(
+        &self,
+        id: u64,
+        save: Option<&str>,
+        edits: &[cd_core::contribution_values::Edit],
+    ) -> Result<cd_core::contribution_action::Preview> {
+        self.with_session(id, |s| s.contribution_preview(save, edits))
+    }
+    pub fn contribution_apply(
+        &self,
+        id: u64,
+        request: &cd_core::contribution_action::Request,
+    ) -> Result<cd_core::contribution_action::Receipt> {
+        self.with_session(id, |s| s.contribution_apply(&self.project, request))
+    }
     pub fn skill_unlock_preview(
         &self,
         id: u64,
         save: Option<&str>,
+        abilities: Option<&std::collections::BTreeSet<u32>>,
     ) -> Result<cd_core::skill_unlock::Preview> {
-        self.with_session(id, |s| s.skill_unlock_preview(save))
+        self.with_session(id, |s| s.skill_unlock_preview(save, abilities))
     }
     pub fn skill_unlock_apply(
         &self,

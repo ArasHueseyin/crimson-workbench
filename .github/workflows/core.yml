@@ -34,3 +34,10 @@ jobs:
         if: runner.os == 'Windows'
         working-directory: app
         run: npm run test:e2e
+      - name: Native runtime and package contracts (no game files)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./scripts/build-native.ps1 -OutputDirectory "$env:RUNNER_TEMP/workbench-runtime"
+          ./scripts/test-runtime-package.ps1 -PackageDirectory "$env:RUNNER_TEMP/workbench-runtime"
+          ./scripts/test-marketplace-package.ps1 -PackageDirectory "$env:RUNNER_TEMP/workbench-runtime"

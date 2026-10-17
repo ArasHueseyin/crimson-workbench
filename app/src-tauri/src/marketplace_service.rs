@@ -60,9 +60,43 @@ fn powershell_path(path: &Path) -> std::path::PathBuf {
 
 pub fn invoke(resources: &Path, game: &Path, action: Option<(&str, bool)>) -> Result<Snapshot> {
     if let Some((id, _)) = action
-        && !["blackstar", "sleep_cooldown", "sleep_duration"].contains(&id)
+        && ![
+            "blackstar",
+            "sleep_cooldown",
+            "sleep_duration",
+            "no_fall",
+            "player_stamina",
+            "mount_jump",
+            "player_jump",
+            "player_speed",
+            "preserve_consumables",
+            "mount_protection",
+            "free_crafting_materials",
+            "force_palm",
+            "force_palm_height",
+            "axiom_reach",
+            "glide_speed",
+            "mount_dismount",
+            "auto_loot",
+            "world_controls",
+            "photo_mode",
+            "teleport",
+        ]
+        .contains(&id)
     {
         return Err(error("Unknown marketplace mod."));
+    }
+    #[cfg(windows)]
+    if action.is_some()
+        && cd_core::apply::game_running().map_err(|e| {
+            error(format!(
+                "Could not check whether Crimson Desert is running: {e}"
+            ))
+        })?
+    {
+        return Err(error(
+            "Close Crimson Desert before installing or removing a mod. Nothing was changed.",
+        ));
     }
     run(resources, game, action)
 }
@@ -80,6 +114,9 @@ fn run(resources: &Path, game: &Path, action: Option<(&str, bool)>) -> Result<Sn
         .ok_or_else(|| error("Windows PowerShell is unavailable."))?
         .join("System32/WindowsPowerShell/v1.0/powershell.exe");
     let mut command = Command::new(powershell);
+    // A desktop started from PowerShell 7 inherits its module search path.
+    // Let Windows PowerShell construct its own compatible built-in paths.
+    command.env_remove("PSModulePath");
     command
         .creation_flags(0x08000000)
         .args([
@@ -155,6 +192,8 @@ mod tests {
         std::fs::write(runtime.join("Marketplace-Mods.ps1"), r#"
 param([string]$GameDirectory)
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$ErrorActionPreference = 'Stop'
+$null = Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256
 @{ok=$true;snapshot=@{game_running=$false;mods=@(@{id='blackstar';state='not_installed';message=$GameDirectory;can_install=$false;can_remove=$false})}} | ConvertTo-Json -Depth 6 -Compress
 "#).unwrap();
         let game = Path::new("\\\\?\\C:\\friend's gämé & data\\Crimson Desert");

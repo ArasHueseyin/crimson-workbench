@@ -55,7 +55,7 @@ test('installation failure is visible and can be retried',async({page})=>{
 });
 test('vendor selection and explicit overrides survive navigation and flow to backend',async({page})=>{
  await fixture(page);const shop=page.locator('.mod-card').first();await shop.locator('summary').first().click();await shop.getByLabel('Synthetic_vendor').check();await shop.getByText('Individual overrides (0)',{exact:true}).click();
- await page.getByLabel('Vendors Override ID').fill('8');await page.getByLabel('Vendors Override value').fill('44');await shop.getByRole('button',{name:'Set'}).click();await page.getByRole('button',{name:/Item database/}).click();await page.getByRole('button',{name:'Mod workshop',exact:true}).click();
+ await page.getByLabel('Vendors Override ID').fill('8');await page.getByLabel('Vendors Override value').fill('44');await shop.getByRole('button',{name:'Set'}).click();await page.getByRole('button',{name:'Item picker',exact:true}).click();await page.getByRole('button',{name:'Mod workshop',exact:true}).click();
  await page.getByRole('button',{name:'Calculate preview'}).click();await expect(page.locator('.mod-diff')).toBeVisible();
  const call=await page.evaluate(()=>(window as unknown as {modCalls:{command:string;args:{request:{vendors:number[];vendor_overrides:Record<string,number>}}}[]}).modCalls.find(c=>c.command==='mod_preview'));
  expect(call?.args.request.vendors).toEqual([7]);expect(call?.args.request.vendor_overrides).toEqual({'8':44});

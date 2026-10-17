@@ -787,6 +787,7 @@ mod tests {
                 can_copy_enchants: false,
                 stats: vec![],
                 buffs: vec![],
+                passive_skills: vec![],
             },
         );
         for key in [None, Some(9), Some(999)] {
