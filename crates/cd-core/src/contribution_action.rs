@@ -92,7 +92,6 @@ pub(crate) fn validate_request(request: &Request) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fingerprint::hash_bytes;
     #[test]
     fn malformed_save_review_envelopes_are_refused() {
         let original = Request {
@@ -124,6 +123,7 @@ mod tests {
     #[cfg(windows)]
     #[ignore = "requires private save fixture and original EXE; all writes confined to owned temporary copies"]
     fn private_pair_transaction_backs_up_retries_recovers_and_refuses_stale_requests() {
+        use crate::fingerprint::hash_bytes;
         use std::fs;
         let fixture = PathBuf::from(
             std::env::var_os("CD_CONTRIBUTION_FIXTURE").expect("private historical save"),

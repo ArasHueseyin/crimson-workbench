@@ -90,12 +90,11 @@ pub fn apply(game: &Path, project: &Path, root: &Path, request: &Request) -> Res
     )
 }
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 mod tests {
     use super::*;
     use std::fs;
     #[test]
-    #[cfg(windows)]
     #[ignore = "private historical save and EXE required; writes only to temporary copies"]
     fn private_map_transaction_backs_up_and_recovers_without_touching_other_data() {
         let fixture = PathBuf::from(std::env::var_os("CD_MAP_FOG_FIXTURE").expect("private save"));
