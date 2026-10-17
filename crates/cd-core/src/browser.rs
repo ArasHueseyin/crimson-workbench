@@ -83,8 +83,52 @@ pub struct BrowserSession {
     mounts: std::sync::Mutex<Option<Vec<crate::mounts::Mount>>>,
 }
 impl BrowserSession {
-    pub fn skill_unlock_preview(&self, save: Option<&str>) -> Result<crate::skill_unlock::Preview> {
-        crate::skill_unlock::preview(self.game_root(), self.save_root()?, save)
+    pub fn consumable_choices(&self) -> Result<Vec<crate::config::preserve_consumables::Choice>> {
+        crate::config::preserve_consumables::ITEMS
+            .iter()
+            .map(|(key, kind)| {
+                let item = self.workspace.data().item_detail(*key, false)?;
+                let name = item["name"].as_str().ok_or_else(|| {
+                    crate::Error::Invalid("Consumable item name unavailable".into())
+                })?;
+                Ok(crate::config::preserve_consumables::Choice {
+                    key: *key,
+                    name: name.into(),
+                    kind: (*kind).into(),
+                })
+            })
+            .collect()
+    }
+    pub fn map_fog_preview(&self, save: Option<&str>) -> Result<crate::map_fog_action::Preview> {
+        crate::map_fog_action::preview(self.game_root(), self.save_root()?, save)
+    }
+    pub fn map_fog_apply(
+        &self,
+        project: &Path,
+        request: &crate::map_fog_action::Request,
+    ) -> Result<crate::map_fog_action::Receipt> {
+        crate::map_fog_action::apply(self.game_root(), project, self.save_root()?, request)
+    }
+    pub fn contribution_preview(
+        &self,
+        save: Option<&str>,
+        edits: &[crate::contribution_values::Edit],
+    ) -> Result<crate::contribution_action::Preview> {
+        crate::contribution_action::preview(self.game_root(), self.save_root()?, save, edits)
+    }
+    pub fn contribution_apply(
+        &self,
+        project: &Path,
+        request: &crate::contribution_action::Request,
+    ) -> Result<crate::contribution_action::Receipt> {
+        crate::contribution_action::apply(self.game_root(), project, self.save_root()?, request)
+    }
+    pub fn skill_unlock_preview(
+        &self,
+        save: Option<&str>,
+        abilities: Option<&std::collections::BTreeSet<u32>>,
+    ) -> Result<crate::skill_unlock::Preview> {
+        crate::skill_unlock::preview(self.game_root(), self.save_root()?, save, abilities)
     }
     pub fn skill_unlock_apply(
         &self,

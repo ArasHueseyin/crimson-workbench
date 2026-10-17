@@ -10,7 +10,12 @@ async function fixture(page: Page) {
     root.__TAURI_INTERNALS__ = { invoke: async (command:string,args:Record<string,unknown> = {}) => {
       if(command==='bootstrap') return { project:'C:/Synthetic',discovery:{installations:[{path:'C:/Synthetic Game',platform:'steam'}],configured_game:'C:/Synthetic Game'},languages:[{language:'ger'},{language:'eng'}] };
       if(command==='open_catalog')return {session:++session,game_path:args.game,info:{item_count:0,types:[],categories:[],tiers:[],stats:[],index:{language:args.language,path:'synthetic',fingerprint:'synthetic'},exe_version:'synthetic'}};
-      if(command==='search_items')return {items:[],total:0,offset:0};
+      if(command==='search_items'){
+        const query=args.query as {text:string};
+        const items=[target,wood,other].filter(item=>String(item.key)===query.text).map(item=>({...item,description:'Synthetic material.',max_stack:'99',item_type:1,category:1,tier:1,stat_keys:[],icon_key:null}));
+        return {items,total:items.length,offset:0};
+      }
+      if(command==='advanced_item')return {item:{key:args.key,max_endurance:100,enchant_levels:[0],stats:[]}};
       if(command==='item_icon')return {data_url:null,reason:'Synthetic test'};
       if(command==='craft_info')return {targets:[target],coverage:{recipe_rows:2,group_rows:1,dropset_rows:1,interpreted_dropsets:1,usable_recipes:1,excluded:{special:1},source_note:'Weltquellen nicht verifiziert.'}};
       if(command==='craft_plan'){
@@ -37,9 +42,14 @@ test('target, alternatives, owned stock and source gaps remain connected',async(
   await expect(page.locator('[data-material-key="3"]')).toContainText('Testast');
   await page.locator('[data-material-key="3"] summary').click();
   await expect(page.locator('.material-sources')).toContainText('not yet verified');
+  await page.getByRole('button',{name:'Open in item picker',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Item picker.'})).toBeVisible();
+  await expect(page.getByRole('textbox',{name:'Search item picker'})).toHaveValue('3');
+  await expect(page.locator('.picker-hero')).toContainText('Testast');
+  await page.getByRole('button',{name:'Crafting planner',exact:true}).click();
   await page.getByLabel('Stock Testast 3').fill('99');
   await expect(page.locator('.craft-satisfied')).toContainText('Everything available');
-  await page.getByRole('button',{name:/Item database/}).click();
+  await page.getByRole('button',{name:'Item picker',exact:true}).click();
   await page.getByRole('button',{name:'Crafting planner',exact:true}).click();
   await expect(page.getByLabel('Stock Testast 3')).toHaveValue('99');
   await page.getByRole('button',{name:'Clear',exact:true}).click();

@@ -11,6 +11,33 @@ $scriptFile = Join-Path $fixture 'Marketplace-Mods.ps1'
 $powershell = Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe'
 function Assert([bool]$Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
 function Hash([string]$Path) { (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
+$expectedIds = @('blackstar', 'sleep_cooldown', 'sleep_duration', 'no_fall', 'player_stamina', 'mount_jump', 'player_jump', 'player_speed', 'preserve_consumables', 'mount_protection', 'free_crafting_materials', 'force_palm', 'force_palm_height', 'axiom_reach', 'glide_speed', 'mount_dismount', 'auto_loot', 'world_controls', 'photo_mode', 'teleport')
+$published = Get-Content -LiteralPath (Join-Path $package 'marketplace-manifest.json') -Raw | ConvertFrom-Json
+$baseManifest = Get-Content -LiteralPath (Join-Path $package 'runtime-manifest.json') -Raw | ConvertFrom-Json
+Assert ($published.schema -eq 1 -and $published.version -eq $baseManifest.version) 'Base and optional package versions must agree.'
+Assert (@($published.mods).Count -eq 20 -and @($published.mods.id | Select-Object -Unique).Count -eq 20) 'Exactly twenty distinct optional modules must be packaged.'
+Assert (@(Compare-Object $expectedIds @($published.mods.id)).Count -eq 0) 'Optional module IDs do not match the shipped cards.'
+Assert (@($published.mods.file | Select-Object -Unique).Count -eq 20) 'Optional payload filenames must be unique.'
+foreach ($entry in $published.mods) {
+    Assert ($entry.file -cmatch '^Crimson[A-Za-z]+\.asi$') 'Optional payload must be a fixed ASI basename.'
+    $payload = Join-Path $package ('addons/' + $entry.file)
+    Assert ($entry.sha256 -cmatch '^[a-f0-9]{64}$' -and (Hash $payload) -eq $entry.sha256 -and (Get-Item -LiteralPath $payload).Length -eq $entry.bytes) "Invalid optional payload metadata: $($entry.id)"
+    foreach ($prior in @($entry.priorHashes)) { Assert ($prior -cmatch '^[a-f0-9]{64}$') "Invalid previous-module hash: $($entry.id)" }
+}
+# These verified local-test modules were actually distributed to the current
+# installation. A rebuild on a fresh runner must recognize them as known older
+# modules, even though MSVC produces a different binary digest there.
+$knownPrevious = @{
+    player_stamina = 'bbab63542f81c570116163d6381cb88af07ee353448c977554faa0f8f18b8d82'
+    player_jump = '6a021b1d1e9faa8441605df304bddb953985b2c556211191f0e4e65f4dbe21ec'
+    force_palm_height = '13b287af5246d83a6f73872d3a1da357d692caad1d318e02d60b1788ad083da3'
+    axiom_reach = '0610e54c48812f8042349a7974f95f76062886831fe5d7d70fa1fb76e7068450'
+    glide_speed = 'fbc4f4c084400859cf3ea0f07b55fd57594ac431173eb8c8e9eeaa8d58cbb059'
+}
+foreach ($id in $knownPrevious.Keys) {
+    $entry = @($published.mods | Where-Object id -eq $id)[0]
+    Assert ($entry.sha256 -eq $knownPrevious[$id] -or @($entry.priorHashes) -contains $knownPrevious[$id]) "Known previous module is missing from the upgrade ledger: $id"
+}
 function Game([string]$Name) {
     $path = Join-Path $testRoot $Name
     New-Item -ItemType Directory -Path (Join-Path $path 'bin64') -Force | Out-Null
@@ -18,8 +45,10 @@ function Game([string]$Name) {
     Copy-Item -LiteralPath (Join-Path $fixture 'loader/winmm.dll') -Destination (Join-Path $path 'bin64/winmm.dll')
     return $path
 }
-function Run([string]$Game, [string]$Mode = 'Status', [string]$Id = 'blackstar', [bool]$Success = $true) {
-    $output = & $powershell -NoProfile -ExecutionPolicy Bypass -File $scriptFile -GameDirectory $Game -Mode $Mode -ModId $Id
+function Run([string]$Game, [string]$Mode = 'Status', [string]$Id = 'blackstar', [bool]$Success = $true, [switch]$Elevate) {
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $scriptFile, '-GameDirectory', $Game, '-Mode', $Mode, '-ModId', $Id)
+    if ($Elevate) { $arguments += '-Elevate' }
+    $output = & $powershell @arguments
     $code = $LASTEXITCODE
     $r = ($output -join "`n") | ConvertFrom-Json
     Assert (($code -eq 0) -eq $Success -and $r.ok -eq $Success) "Unexpected $Mode result: $output"
@@ -50,12 +79,99 @@ try { $legacyHash = ([BitConverter]::ToString($sha.ComputeHash($legacy))).Replac
 $mod = @($manifest.mods | Where-Object id -eq blackstar)[0]
 $mod.priorHashes = @($legacyHash)
 [IO.File]::WriteAllText($manifestFile, ($manifest | ConvertTo-Json -Depth 6))
+$runtimeManifestFile = Join-Path $fixture 'runtime-manifest.json'
+[IO.File]::WriteAllText($runtimeManifestFile, [IO.File]::ReadAllText($runtimeManifestFile).Replace($originalHash, $fakeHash))
 
 $game = Game "friend's game & mods"
-foreach ($id in @('blackstar', 'sleep_cooldown', 'sleep_duration')) { Run ('\\?\' + $game) Install $id | Out-Null }
+Run $game Install photo_mode | Out-Null
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPhotoMode.asi')) 'Photo mode unexpectedly depends on the task broker.'
+Run $game Remove photo_mode | Out-Null
+$worldBefore = @((Run $game).snapshot.mods | Where-Object id -eq world_controls)[0]
+Assert (-not $worldBefore.can_install) 'Live controls admitted a missing task broker.'
+Run $game Install world_controls $false | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonWorldControls.asi'))) 'Missing broker installed world controls.'
+Run $game Install teleport $false | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonTeleport.asi'))) 'Missing broker installed teleport.'
+[IO.File]::WriteAllText((Join-Path $game 'bin64/CrimsonLiveItems.asi'), 'synthetic old broker without observer ABI')
+Run $game Install world_controls $false | Out-Null
+Remove-Item -LiteralPath (Join-Path $game 'bin64/CrimsonLiveItems.asi')
+Copy-Item -LiteralPath (Join-Path $fixture 'CrimsonLiveItems.asi') -Destination (Join-Path $game 'bin64/CrimsonLiveItems.asi')
+foreach ($id in $expectedIds) { Run ('\\?\' + $game) Install $id | Out-Null }
 $snapshot = (Run $game).snapshot
-Assert (@($snapshot.mods | Where-Object state -eq installed).Count -eq 3) 'All three cards must report installed.'
-Assert (@((Run ('\\?\' + $game)).snapshot.mods | Where-Object state -eq installed).Count -eq 3) 'Canonical Windows path failed.'
+Assert (@($snapshot.mods | Where-Object state -eq installed).Count -eq 20) 'All twenty runtime cards must report installed.'
+Assert (@((Run ('\\?\' + $game)).snapshot.mods | Where-Object state -eq installed).Count -eq 20) 'Canonical Windows path failed.'
+Run $game Remove photo_mode | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPhotoMode.asi'))) 'Photo-mode removal left its module.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Photo-mode removal touched another runtime mod.'
+Run $game Install photo_mode | Out-Null
+Run $game Remove teleport | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonTeleport.asi'))) 'Teleport removal left its module.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Teleport removal touched another runtime mod.'
+Assert ((Hash (Join-Path $game 'bin64/CrimsonLiveItems.asi')) -eq (Hash (Join-Path $fixture 'CrimsonLiveItems.asi'))) 'Teleport removal touched the task broker.'
+Run $game Install teleport | Out-Null
+Run $game Remove world_controls | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonWorldControls.asi'))) 'World-control removal left its module.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'World-control removal touched another runtime mod.'
+Assert ((Hash (Join-Path $game 'bin64/CrimsonLiveItems.asi')) -eq (Hash (Join-Path $fixture 'CrimsonLiveItems.asi'))) 'World-control removal touched the task broker.'
+Run $game Install world_controls | Out-Null
+Run $game Remove auto_loot | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonAutoLoot.asi'))) 'Auto-loot removal left its module.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Auto-loot removal touched another runtime mod.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonNoFall.asi')) 'Auto-loot removal touched fall protection.'
+Run $game Install auto_loot | Out-Null
+Run $game Remove mount_dismount | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonMountDismount.asi'))) 'Mount dismount removal left its module.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Mount dismount removal touched another runtime mod.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonMountJump.asi')) 'Mount dismount removal touched jump height.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonMountProtection.asi')) 'Mount dismount removal touched mount protection.'
+Run $game Install mount_dismount | Out-Null
+Run $game Remove force_palm | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonForcePalm.asi'))) 'Force Palm removal left its module.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Force Palm removal touched another runtime mod.'
+Run $game Install force_palm | Out-Null
+Run $game Remove force_palm_height | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonForcePalmHeight.asi'))) 'Force Palm height removal left its module.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonForcePalm.asi')) 'Height removal touched Force Palm chain limits.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Height removal touched another runtime mod.'
+Run $game Install force_palm_height | Out-Null
+Run $game Remove axiom_reach | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonAxiomReach.asi'))) 'Axiom removal left its module.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Axiom removal touched another runtime mod.'
+Run $game Install axiom_reach | Out-Null
+Run $game Remove glide_speed | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonGlideSpeed.asi'))) 'Glide removal left its module.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPlayerSpeed.asi')) 'Glide removal touched ground movement.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Glide removal touched another runtime mod.'
+Run $game Install glide_speed | Out-Null
+Run $game Remove free_crafting_materials | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonFreeCrafting.asi'))) 'Crafting removal left its module.'
+Assert (@((Run $game).snapshot.mods | Where-Object state -eq installed).Count -eq 19) 'Crafting removal touched another runtime mod.'
+Run $game Install free_crafting_materials | Out-Null
+Run $game Remove mount_protection | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonMountProtection.asi'))) 'Mount protection removal left its module.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonNoFall.asi')) 'Mount protection removal touched fall protection.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPlayerStamina.asi')) 'Mount protection removal touched player stamina.'
+Run $game Install mount_protection | Out-Null
+Run $game Remove preserve_consumables | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPreserveConsumables.asi'))) 'Consumable removal left its module.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPlayerStamina.asi')) 'Consumable removal touched player stamina.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPlayerSpeed.asi')) 'Consumable removal touched movement speed.'
+Run $game Install preserve_consumables | Out-Null
+Run $game Remove player_speed | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPlayerSpeed.asi'))) 'Player speed removal left its module.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPlayerJump.asi')) 'Player speed removal touched player jump.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonMountJump.asi')) 'Player speed removal touched mount jumps.'
+Run $game Install player_speed | Out-Null
+Run $game Remove player_jump | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPlayerJump.asi'))) 'Player jump removal left its module.'
+Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonMountJump.asi')) 'Player jump removal touched mount jumps.'
+Run $game Install player_jump | Out-Null
+Run $game Remove mount_jump | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonMountJump.asi'))) 'Mount jump removal left its module.'
+Run $game Install mount_jump | Out-Null
+Run $game Remove player_stamina | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonPlayerStamina.asi'))) 'Player stamina removal left its module.'
+Run $game Install player_stamina | Out-Null
 $receipt = Join-Path $game 'bin64/CrimsonWorkbench-mods/blackstar/receipt.json'
 $receiptHash = Hash $receipt
 Run $game Install blackstar | Out-Null
@@ -153,10 +269,50 @@ try { Run $game Remove sleep_duration $false | Out-Null } finally { $gameLock.Di
 Assert (Test-Path -LiteralPath (Join-Path $game 'bin64/CrimsonSleepDuration.asi')) 'Exclusive game guard failed.'
 
 # Running game disables actions and production mutation entry points refuse it.
-$running = $entry.Replace('[bool]@(@()).Count', '$true').Replace('if (@(@()).Count)', 'if ($true)')
+$running = $entry.Replace('@(@()).Count', '1')
 [IO.File]::WriteAllText($scriptFile, $running)
 Run $game Remove sleep_duration $false | Out-Null
 Assert ((Run $game).snapshot.game_running) 'Running-game status not reported.'
+[IO.File]::WriteAllText($scriptFile, $entry)
+
+# Exercise the real parent/worker argument and result handoff in an owned game.
+# The private function replaces only UAC with a hidden ordinary child process;
+# it never elevates, loads an ASI, or targets the real game installation.
+$workerMock = @'
+function Start-Process {
+    param([string]$FilePath, [string]$ArgumentList, [string]$Verb, [string]$WindowStyle, [switch]$Wait, [switch]$PassThru)
+    if ($Verb -ne 'RunAs' -or $WindowStyle -ne 'Hidden' -or -not $ArgumentList.Contains('-WindowStyle Hidden') -or -not $ArgumentList.Contains('-NonInteractive')) { throw 'Worker must explicitly start hidden and noninteractive.' }
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = $FilePath
+    $start.Arguments = $ArgumentList
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.EnvironmentVariables.Remove('PSModulePath')
+    $worker = [Diagnostics.Process]::Start($start)
+    $null = $worker.Handle
+    return $worker
+}
+'@
+$commonImport = ". (Join-Path `$PSScriptRoot 'RuntimeMods.Common.ps1')"
+Assert ($entry.Contains($commonImport)) 'Worker fixture import changed.'
+$workerEntry = $entry.Replace($commonImport, ($commonImport + "`n" + $workerMock))
+[IO.File]::WriteAllText($scriptFile, $workerEntry)
+$workerGame = Game "hidden worker's game & mods"
+Run $workerGame Install mount_dismount $true -Elevate | Out-Null
+Assert (@((Run $workerGame).snapshot.mods | Where-Object { $_.id -eq 'mount_dismount' -and $_.state -eq 'installed' }).Count -eq 1) 'Worker installation did not reach installed status.'
+Run $workerGame Remove mount_dismount $true -Elevate | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $workerGame 'bin64/CrimsonMountDismount.asi'))) 'Worker removal left its module.'
+
+$unicodeFailure = $workerEntry.Replace('function Read-MarketplaceManifest {', "function Read-MarketplaceManifest { throw ('Unicode worker error: ' + [char]0xdc + 'berpr' + [char]0xfc + 'fung failed.');")
+[IO.File]::WriteAllText($scriptFile, $unicodeFailure)
+$failedWorker = Run $workerGame Install mount_dismount $false -Elevate
+Assert ($failedWorker.message -eq "Unicode worker error: $([char]0xdc)berpr$([char]0xfc)fung failed.") 'Worker error text was not decoded as UTF-8.'
+
+# A stale enabled button must not even request UAC when the game is running.
+$noWorker = $running.Replace($commonImport, ($commonImport + "`nfunction Start-Process { throw 'Unexpected elevation request.' }"))
+[IO.File]::WriteAllText($scriptFile, $noWorker)
+$blockedWorker = Run $workerGame Install mount_dismount $false -Elevate
+Assert ($blockedWorker.message.StartsWith('Close Crimson Desert')) 'Running-game refusal happened after requesting elevation.'
 [IO.File]::WriteAllText($scriptFile, $entry)
 
 # Both source integrity and fixed receipt paths are checked before mutation.
@@ -164,6 +320,6 @@ Assert ((Run $game).snapshot.game_running) 'Running-game status not reported.'
 Run $game Install sleep_cooldown $false | Out-Null
 Copy-Item -LiteralPath (Join-Path $package 'addons/CrimsonSleepCooldown.asi') -Destination (Join-Path $fixture 'addons/CrimsonSleepCooldown.asi') -Force
 Assert ((Run $game).ok) 'Status did not recover after the synthetic package was restored.'
-Write-Host "PASS: three module lifecycles, Windows PowerShell paths, legacy backups, foreign/modified refusal, copy and receipt rollback, interruption recovery, running-game and tampered-package refusal. Evidence: $testRoot"
+Write-Host "PASS: all packaged module lifecycles, Windows PowerShell paths, legacy backups, foreign/modified refusal, copy and receipt rollback, interruption recovery, running-game and tampered-package refusal. Evidence: $testRoot"
 # Expected child refusals are asserted above, not this test script's outcome.
 $global:LASTEXITCODE = 0

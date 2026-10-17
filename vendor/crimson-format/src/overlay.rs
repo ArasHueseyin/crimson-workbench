@@ -60,6 +60,31 @@ pub fn build_uncompressed(
 
 pub const LION_DIRECTORY: &str = "character/appearance/2_mon/cd_m0002_00_fourfeet/cd_m0002_00_lion";
 pub const LION_FILE: &str = "cd_m0002_00_lion_0001_00000.app_xml";
+pub const ROKADE_DIRECTORY: &str = "character/appearance/4_riding/cd_r0002_00_horse";
+pub const ROKADE_FILE: &str = "cd_r0002_00_horse_workbench_rokade_130.app_xml";
+
+pub const REGION_TIMER_DIRECTORY: &str = "sequencer/binary__/stageseq/system";
+pub const REGION_TIMER_FILES: [&str; 4] = [
+    "cd_seq_quest_getout_region_0100.pastage",
+    "cd_seq_quest_getout_region_0200.pastage",
+    "cd_seq_quest_getout_region_0300.pastage",
+    "cd_seq_quest_getout_region_0400.pastage",
+];
+
+/// Only the four reviewed restricted-region state machines, in native raw mode.
+pub fn build_region_timers(
+    files: &BTreeMap<String, Vec<u8>>,
+    encryption_header: [u8; 4],
+) -> io::Result<Overlay> {
+    if files.len() != REGION_TIMER_FILES.len()
+        || REGION_TIMER_FILES
+            .iter()
+            .any(|name| !files.contains_key(*name))
+    {
+        return Err(invalid("all four verified region timer files are required"));
+    }
+    build_in_directory(files, encryption_header, true, REGION_TIMER_DIRECTORY)
+}
 
 /// The one verified appearance recipe. No arbitrary archive paths are accepted.
 pub fn build_lion(bytes: Vec<u8>, encryption_header: [u8; 4]) -> io::Result<Overlay> {
@@ -68,6 +93,16 @@ pub fn build_lion(bytes: Vec<u8>, encryption_header: [u8; 4]) -> io::Result<Over
         encryption_header,
         true,
         LION_DIRECTORY,
+    )
+}
+
+/// Dedicated Rokade appearance; the source shared horse file is never replaced.
+pub fn build_rokade(bytes: Vec<u8>, encryption_header: [u8; 4]) -> io::Result<Overlay> {
+    build_in_directory(
+        &BTreeMap::from([(ROKADE_FILE.into(), bytes)]),
+        encryption_header,
+        true,
+        ROKADE_DIRECTORY,
     )
 }
 
@@ -104,6 +139,16 @@ fn build_in_directory(
         if directory == LION_DIRECTORY {
             if name != LION_FILE || files.len() != 1 || !raw {
                 return Err(invalid("only the verified lion appearance is allowed"));
+            }
+        } else if directory == ROKADE_DIRECTORY {
+            if name != ROKADE_FILE || files.len() != 1 || !raw {
+                return Err(invalid("only the dedicated Rokade appearance is allowed"));
+            }
+        } else if directory == REGION_TIMER_DIRECTORY {
+            if !raw || files.len() != 4 || !REGION_TIMER_FILES.contains(&name.as_str()) {
+                return Err(invalid(
+                    "only verified restricted-region scripts are allowed",
+                ));
             }
         } else {
             if stem.is_empty()
@@ -232,6 +277,35 @@ pub fn register(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn rokade_overlay_accepts_only_the_dedicated_path() {
+        let bytes = b"<Appearance/>".to_vec();
+        let pack = build_rokade(bytes.clone(), [0; 4]).unwrap();
+        assert_eq!(
+            validate_pair(&pack.pamt, &pack.paz).unwrap(),
+            [format!("{ROKADE_DIRECTORY}/{ROKADE_FILE}")]
+        );
+        let shared = BTreeMap::from([("cd_r0002_00_horse_01007.app_xml".into(), bytes)]);
+        assert!(build_in_directory(&shared, [0; 4], true, ROKADE_DIRECTORY).is_err());
+    }
+    #[test]
+    fn region_overlay_accepts_only_the_complete_curated_set() {
+        let files: BTreeMap<String, Vec<u8>> = REGION_TIMER_FILES
+            .iter()
+            .map(|name| ((*name).into(), vec![7; 80]))
+            .collect();
+        let pack = build_region_timers(&files, [0; 4]).unwrap();
+        let paths = validate_pair(&pack.pamt, &pack.paz).unwrap();
+        assert_eq!(paths.len(), 4);
+        assert!(paths.iter().all(|p| p.starts_with(REGION_TIMER_DIRECTORY)));
+        let mut incomplete = files.clone();
+        incomplete.remove(REGION_TIMER_FILES[0]);
+        assert!(build_region_timers(&incomplete, [0; 4]).is_err());
+        let mut unknown = files;
+        let value = unknown.remove(REGION_TIMER_FILES[0]).unwrap();
+        unknown.insert("unreviewed.pastage".into(), value);
+        assert!(build_region_timers(&unknown, [0; 4]).is_err());
+    }
     #[test]
     fn raw_table_pair_reopens_and_rejects_mismatched_lengths() {
         let files = BTreeMap::from([

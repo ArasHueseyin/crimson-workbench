@@ -50,5 +50,5 @@ test('empty inventory creates no consent and file hashes fit at 1024px',async({p
 });
 test('late preview after leaving the view cannot carry consent into a fresh view',async({page})=>{
  const panel=await fixture(page);await page.evaluate(()=>{(window as unknown as {foreign:Harness}).foreign.defer=true});await panel.getByRole('button',{name:'Check additional files',exact:true}).click();
- await page.getByRole('button',{name:/Item database/}).click();await page.evaluate(()=>{(window as unknown as {foreign:Harness}).foreign.release?.()});await page.getByRole('button',{name:'Mod workshop',exact:true}).click();await expect(panel.getByLabel('Explicitly keep additional files')).toHaveCount(0);
+ await page.getByRole('button',{name:'Item picker',exact:true}).click();await page.evaluate(()=>{(window as unknown as {foreign:Harness}).foreign.release?.()});await page.getByRole('button',{name:'Mod workshop',exact:true}).click();await expect(panel.getByLabel('Explicitly keep additional files')).toHaveCount(0);
 });

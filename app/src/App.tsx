@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Box, Database, FolderOpen, Globe2, Layers3, LoaderCircle, RefreshCw, Search, ShieldCheck, SlidersHorizontal, X, AlertTriangle, ChevronRight, BookOpen } from 'lucide-react';
+import { Box, Database, FolderOpen, Globe2, Layers3, LoaderCircle, RefreshCw, ShieldCheck, SlidersHorizontal, AlertTriangle, ChevronRight } from 'lucide-react';
 import { api, asError } from './api';
-import { count, hex, languageNames } from './format';
+import { count, languageNames } from './format';
 import { useCatalog, useCraft, useMods } from './store';
 import { Crafting } from './Crafting';
 import { Mods } from './Mods';
@@ -9,23 +9,28 @@ import {Marketplace} from './Marketplace';
 import { ItemPicker } from './ItemPicker';
 import { MountPicker } from './MountPicker';
 import { ExtraSockets } from './ExtraSockets';
-import { ItemTable } from './ItemTable';
-import { DetailPanel } from './DetailPanel';
-import type { AppError, Bootstrap, Catalog, Facet, Item, Query } from './types';
+import type { AppError, Bootstrap, Catalog } from './types';
+import { version as appVersion } from '../package.json';
+import './app-ux.css';
+const sourceKey=(value:string)=>value.trim().replace(/^\\\\\?\\/,'').replaceAll('\\','/').replace(/\/+$/,'').toLocaleLowerCase();
 
 export default function App() {
   const [boot, setBoot] = useState<Bootstrap | null>(null), [catalog, setCatalog] = useState<Catalog | null>(null);
   const [error, setError] = useState<AppError | null>(null), [loading, setLoading] = useState(true);
   const [game, setGame] = useState(''), [language, setLanguage] = useState('auto');
   const [savePath, setSavePath] = useState(''), [settingsStatus, setSettingsStatus] = useState('');
+  const [savedSources,setSavedSources]=useState({game:'',save:''});
+  const [gameRunning,setGameRunning]=useState<boolean|null>(null);
   const view = useCatalog(s => s.view), setView = useCatalog(s => s.setView);
+  const sourceDraftDirty=sourceKey(game)!==sourceKey(savedSources.game)||sourceKey(savePath)!==sourceKey(savedSources.save);
   const request = useRef(0);
   const connect = useCallback(async (path: string, lang: string) => {
     const id = ++request.current; setLoading(true); setError(null); setCatalog(null); useCatalog.getState().reset(); useCraft.getState().reset(); useMods.getState().reset();
     setGame(path); setLanguage(lang);
-    try { const value = await api.open(path || null, lang); if (request.current === id) { setCatalog(value); setGame(value.game_path); } }
+    try { const value = await api.open(path || null, lang); if (request.current === id) { setCatalog(value); setGame(value.game_path); return true; } }
     catch (e) { if (request.current === id) setError(asError(e)); }
     finally { if (request.current === id) setLoading(false); }
+    return false;
   }, []);
   async function saveSettings(lang = language) {
     const id = ++request.current; setLoading(true); setError(null); setSettingsStatus('');
@@ -34,14 +39,17 @@ export default function App() {
       if (request.current !== id) return;
       setBoot(value); setCatalog(null); setLanguage(value.settings?.language ?? lang);
       setSavePath(value.settings?.save_dir ?? '');
-      setSettingsStatus('Settings saved. They will be loaded next time you start the app.');
       const choices = value.discovery.installations;
       const selected = value.discovery.configured_game ? choices[0] : choices.length === 1 ? choices[0] : null;
-      if (selected) await connect(selected.path, value.settings?.language ?? lang);
-      else { setGame(value.settings?.game_dir ?? ''); setLoading(false); setView('sources'); }
+      setSavedSources({game:value.settings?.game_dir??selected?.path??'',save:value.settings?.save_dir??''});
+      if (selected) {
+        const connected=await connect(selected.path, value.settings?.language ?? lang);
+        setSettingsStatus(connected?'Settings saved and catalog connected.':'Settings saved. The catalog could not be connected; check the error below.');
+      } else { setGame(value.settings?.game_dir ?? ''); setLoading(false); setView('sources'); setSettingsStatus('Settings saved. Choose an installation to connect.'); }
     } catch (e) { if (request.current === id) { setError(asError(e)); setLoading(false); } }
   }
   function changeLanguage(lang: string) {
+    if(sourceDraftDirty){setSettingsStatus('Save & connect the edited folders before changing item-name language.');return;}
     if (boot?.settings) void saveSettings(lang);
     else void connect(game, lang);
   }
@@ -54,76 +62,50 @@ export default function App() {
       setSavePath(value.settings?.save_dir ?? '');
       const choices = value.discovery.installations;
       const selected = value.discovery.configured_game ? choices[0] : choices.length === 1 ? choices[0] : null;
+      setSavedSources({game:value.settings?.game_dir??selected?.path??'',save:value.settings?.save_dir??''});
       if (selected && !value.settings_warning) void connect(selected.path, lang);
       else { setLoading(false); setView('sources'); }
     }).catch(e => { if (active) { setError(asError(e)); setLoading(false); } });
     return () => { active = false; };
   }, [connect, setView]);
+  useEffect(()=>{
+    setGameRunning(null);
+    if(!catalog)return;
+    let active=true,inFlight=false;
+    async function check(){if(inFlight)return;inFlight=true;try{const running=await api.marketplaceGameRunning(catalog!.session);if(active)setGameRunning(running)}catch{if(active)setGameRunning(null)}finally{inFlight=false}}
+    void check();const timer=setInterval(()=>void check(),5000);
+    return()=>{active=false;clearInterval(timer)};
+  },[catalog?.session]);
   const languages = boot?.languages ?? [{ language: 'ger' }, { language: 'eng' }];
   const detectedLanguage = language === 'auto' && catalog && (languageNames[catalog.info.index.language] ?? catalog.info.index.language);
   return <div className="workbench" data-ready={catalog ? 'true' : 'false'}>
     <aside className="sidebar"><div className="brand"><div className="brand-mark">C</div><div>CRIMSON<span>WORKBENCH</span></div></div>
       <div className="workspace-label">YOUR GAME DATA</div>
-      <nav aria-label="Main navigation"><button className={view === 'items' ? 'nav-active' : ''} onClick={() => setView('items')}><Box size={18} /><span>Item database</span>{catalog && <small>{count(catalog.info.item_count)}</small>}</button><button className={view === 'spawn' ? 'nav-active' : ''} onClick={() => setView('spawn')}><Box size={18} /><span>Item picker</span></button><button className={view === 'mounts' ? 'nav-active' : ''} onClick={() => setView('mounts')}><Box size={18} /><span>Mounts</span></button><button className={view === 'sockets' ? 'nav-active' : ''} onClick={() => setView('sockets')}><SlidersHorizontal size={18} /><span>Extra sockets</span></button><button className={view === 'crafting' ? 'nav-active' : ''} onClick={() => setView('crafting')}><Layers3 size={18} /><span>Crafting planner</span></button><button className={view === 'marketplace' ? 'nav-active' : ''} onClick={() => setView('marketplace')}><Layers3 size={18}/><span>Mod marketplace</span></button><button className={view === 'mods' ? 'nav-active' : ''} onClick={() => setView('mods')}><SlidersHorizontal size={18} /><span>Mod workshop</span></button><button className={view === 'sources' ? 'nav-active' : ''} onClick={() => setView('sources')}><Database size={18} /><span>Data sources</span></button></nav>
-      <div className="sidebar-note"><BookOpen size={20} strokeWidth={1.3} /><strong>Knowledge for your adventure.</strong><p>Browse the items of Pywel and discover what they can do.</p></div>
-      <div className="sidebar-bottom"><div className="read-only"><ShieldCheck size={17} /><div>Controlled access<span>Close the game before applying mods.</span></div></div><div className="version-line"><span>CRIMSON DESERT</span><span>v0.7.0</span></div></div>
+      <nav aria-label="Main navigation"><button className={view === 'spawn' ? 'nav-active' : ''} onClick={() => setView('spawn')}><Box size={18} /><span>Item picker</span></button><button className={view === 'mounts' ? 'nav-active' : ''} onClick={() => setView('mounts')}><Box size={18} /><span>Mounts</span></button><button className={view === 'sockets' ? 'nav-active' : ''} onClick={() => setView('sockets')}><SlidersHorizontal size={18} /><span>Extra sockets</span></button><button className={view === 'crafting' ? 'nav-active' : ''} onClick={() => setView('crafting')}><Layers3 size={18} /><span>Crafting planner</span></button><button className={view === 'marketplace' ? 'nav-active' : ''} onClick={() => setView('marketplace')}><Layers3 size={18}/><span>Mod marketplace</span></button><button className={view === 'mods' ? 'nav-active' : ''} onClick={() => setView('mods')}><SlidersHorizontal size={18} /><span>Mod workshop</span></button><button className={view === 'sources' ? 'nav-active' : ''} onClick={() => setView('sources')}><Database size={18} /><span>Data sources</span></button></nav>
+      <div className="sidebar-bottom"><div className="read-only"><ShieldCheck size={17} /><div>Controlled access<span>Each tool shows when it can be used.</span></div></div><div className="version-line"><span>CRIMSON DESERT</span><span>v{appVersion}</span></div></div>
     </aside>
-    <main className="main-area"><header className="topbar"><div className="breadcrumb">Workbench <ChevronRight size={12} /><span>{view === 'items' ? 'Item database' : view === 'spawn' ? 'Item picker' : view === 'mounts' ? 'Mounts' : view === 'sockets' ? 'Extra sockets' : view === 'crafting' ? 'Crafting planner' : view === 'marketplace' ? 'Mod marketplace' : view === 'mods' ? 'Mod workshop' : 'Data sources'}</span></div><div className="topbar-actions"><label className="language-picker"><Globe2 size={14} /><select aria-label="Item language" title="Item names follow the installed Steam game language. English is used if detection is unavailable. The interface stays English." value={language} disabled={loading} onChange={e => changeLanguage(e.target.value)}><option value="auto">Automatic{detectedLanguage ? ` · ${detectedLanguage}` : " (game language)"}</option>{languages.map(l => <option key={l.language} value={l.language}>{languageNames[l.language] ?? l.language}</option>)}</select></label><span className={`connection-pill ${catalog ? 'connected' : ''}`}><span className="status-dot" />{catalog ? 'Connected' : loading ? 'Checking' : 'Not connected'}</span></div></header>
-      {view === 'marketplace' && catalog ? <Marketplace key={catalog.session} catalog={catalog}/> : view === 'sockets' && catalog ? <ExtraSockets key={catalog.session} catalog={catalog} /> : view === 'mounts' && catalog ? <MountPicker key={catalog.session} catalog={catalog} /> : view === 'spawn' && catalog ? <ItemPicker key={catalog.session} catalog={catalog} /> : view === 'mods' && catalog ? <Mods key={catalog.session} session={catalog.session} /> : view === 'crafting' && catalog ? <Crafting key={catalog.session} session={catalog.session} /> : view === 'sources' ? <Sources boot={boot} catalog={catalog} game={game} setGame={setGame} savePath={savePath} setSavePath={setSavePath} settingsStatus={settingsStatus} saveSettings={() => void saveSettings()} loading={loading} connect={() => void connect(game, language)} /> : <>
-        <div className="page-heading"><div><div className="eyebrow">EXPLORE & DISCOVER</div><h1>Item database<span>.</span></h1><p>Every item. Every stat. From your own installation.</p></div><button className="secondary reload" disabled={loading} onClick={() => void connect(game, language)} title="Recheck installation and data"><RefreshCw size={15} className={loading ? 'spin' : ''} />Reload</button></div>
-        {error ? <ErrorCard error={error} retry={() => void connect(game, language)} settings={() => setView('sources')} /> : loading ? <div className="loading-workspace"><div className="loading-symbol"><Layers3 size={32} strokeWidth={1.1} /><LoaderCircle size={66} className="spin loading-ring" /></div><h2>Reading your game world.</h2><p>Checking the build, reading items and preparing the search index.</p><span>Game files and saves are read only.</span></div> : catalog ? <Items catalog={catalog} /> : <div className="loading-workspace"><FolderOpen size={40} strokeWidth={1.2} /><h2>Choose an installation</h2><p>Connect your local Crimson Desert folder.</p><button className="primary" onClick={() => setView('sources')}>Open data sources</button></div>}
+    <main className="main-area"><header className="topbar"><div className="breadcrumb">Workbench <ChevronRight size={12} /><span>{view === 'spawn' ? 'Item picker' : view === 'mounts' ? 'Mounts' : view === 'sockets' ? 'Extra sockets' : view === 'crafting' ? 'Crafting planner' : view === 'marketplace' ? 'Mod marketplace' : view === 'mods' ? 'Mod workshop' : 'Data sources'}</span></div><div className="topbar-actions"><label className="language-picker"><Globe2 size={14} /><span className="item-language-label">Item names</span><select aria-label="Item language" title="Item names follow the installed Steam game language. English is used if detection is unavailable. The interface stays English." value={language} disabled={loading||sourceDraftDirty} aria-description={sourceDraftDirty?'Save & connect edited folders before changing item-name language.':'The interface remains English.'} onChange={e => changeLanguage(e.target.value)}><option value="auto">Automatic{detectedLanguage ? ` · ${detectedLanguage}` : " (game language)"}</option>{languages.map(l => <option key={l.language} value={l.language}>{languageNames[l.language] ?? l.language}</option>)}</select></label><span className={`connection-pill ${catalog ? 'connected' : ''}`}><span className="status-dot" />{catalog ? 'Catalog loaded' : loading ? 'Reading catalog' : 'Catalog unavailable'}</span><span className={`game-state-pill ${gameRunning===true?'running':''}`} title="Live module connection is checked separately inside each tool.">{!catalog?'Game not checked':gameRunning===null?'Game status unknown':gameRunning?'Game running':'Game closed'}</span></div></header>
+      {view === 'marketplace' && catalog ? <Marketplace key={catalog.session} catalog={catalog}/> : view === 'sockets' && catalog ? <ExtraSockets key={catalog.session} catalog={catalog} /> : view === 'mounts' && catalog ? <MountPicker key={catalog.session} catalog={catalog} /> : view === 'spawn' && catalog ? <ItemPicker key={catalog.session} catalog={catalog} /> : view === 'mods' && catalog ? <Mods key={catalog.session} session={catalog.session} /> : view === 'crafting' && catalog ? <Crafting key={catalog.session} session={catalog.session} /> : view === 'sources' ? <Sources boot={boot} catalog={catalog} game={game} setGame={setGame} savePath={savePath} setSavePath={setSavePath} settingsStatus={settingsStatus} savedSources={savedSources} saveSettings={() => void saveSettings()} loading={loading} connect={() => void connect(game, language)} /> : <>
+        <div className="page-heading"><div><div className="eyebrow">CHOOSE ITEMS</div><h1>Item picker<span>.</span></h1><p>Icons, descriptions and values from your installation.</p></div><button className="secondary reload" disabled={loading} onClick={() => void connect(game, language)} title="Recheck installation and data"><RefreshCw size={15} className={loading ? 'spin' : ''} />Reload</button></div>
+        {error ? <ErrorCard error={error} retry={() => void connect(game, language)} settings={() => setView('sources')} /> : loading ? <div className="loading-workspace"><div className="loading-symbol"><Layers3 size={32} strokeWidth={1.1} /><LoaderCircle size={66} className="spin loading-ring" /></div><h2>Reading your game world.</h2><p>Checking the build, reading items and preparing the search index.</p><span>Game files and saves are read only.</span></div> : catalog ? <ItemPicker key={catalog.session} catalog={catalog} /> : <div className="loading-workspace"><FolderOpen size={40} strokeWidth={1.2} /><h2>Choose an installation</h2><p>Connect your local Crimson Desert folder.</p><button className="primary" onClick={() => setView('sources')}>Open data sources</button></div>}
       </>}
-      {view === 'sources' && error && <div className="source-error"><ErrorCard error={error} retry={() => void connect(game, language)} settings={() => setView('items')} /></div>}
+      {view === 'sources' && error && <div className="source-error"><ErrorCard error={error} retry={() => void connect(game, language)} settings={() => setView('sources')} /></div>}
     </main>
   </div>;
-}
-function Items({ catalog }: { catalog: Catalog }) {
-  const query = useCatalog(s => s.query), setQuery = useCatalog(s => s.setQuery), reset = useCatalog(s => s.reset);
-  const [rows, setRows] = useState<Item[]>([]), [total, setTotal] = useState(0), [busy, setBusy] = useState(false), [error, setError] = useState('');
-  const [advanced, setAdvanced] = useState(false);
-  const generation = useRef(0), pending = useRef(false), currentQuery = useRef<Query>(query);
-  const searchInput = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); searchInput.current?.focus(); } };
-    window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler);
-  }, []);
-  useEffect(() => {
-    const id = ++generation.current; pending.current = true; setBusy(true); setError(''); setRows([]); setTotal(0);
-    currentQuery.current = query;
-    const timer = setTimeout(() => { api.search(catalog.session, { ...query, offset: 0 }).then(page => {
-      if (id !== generation.current) return; setRows(page.items); setTotal(page.total);
-    }).catch(e => { if (id === generation.current) setError(asError(e).message); }).finally(() => { if (id === generation.current) { setBusy(false); pending.current = false; } }); }, query.text ? 240 : 0);
-    return () => { clearTimeout(timer); generation.current++; };
-  }, [catalog.session, query]);
-  async function more() {
-    if (pending.current || rows.length >= total) return;
-    const id = generation.current; pending.current = true; setBusy(true);
-    try { const page = await api.search(catalog.session, { ...currentQuery.current, offset: rows.length }); if (id === generation.current) setRows(prev => [...prev, ...page.items]); }
-    catch (e) { if (id === generation.current) setError(asError(e).message); }
-    finally { if (id === generation.current) { pending.current = false; setBusy(false); } }
-  }
-  const filterCount = [query.item_type, query.category, query.tier, query.stat_key].filter(v => v !== null).length + Number(query.stackable);
-  return <div className="catalog-layout"><div className="catalog-main"><div className="search-area"><label className="input-wrap main-search"><Search size={19} /><input ref={searchInput} aria-label="Search items" placeholder={query.regex?'Pattern, e.g. (lightning|fire).*arrow':'Name, partial word or item ID …'} value={query.text} maxLength={512} onChange={e => setQuery({ text: e.target.value })} /><kbd>Ctrl K</kbd>{query.text && <button className="icon-button" aria-label="Clear search" onClick={() => setQuery({ text: '' })}><X size={15} /></button>}</label>
-      <label className="checkbox-label search-mode"><input aria-label="Regex search" type="checkbox" checked={!!query.regex} onChange={e=>setQuery({regex:e.target.checked})}/>Regex search<span>{query.regex?'Use a search pattern':'Partial words also match compounds and plurals.'}</span></label>
-      <div className="filter-row"><FacetSelect label="Type" values={catalog.info.types} selected={query.item_type} onChange={item_type => setQuery({ item_type })} /><FacetSelect label="Category" values={catalog.info.categories} selected={query.category} onChange={category => setQuery({ category })} /><FacetSelect label="Tier" values={catalog.info.tiers} selected={query.tier} onChange={tier => setQuery({ tier })} /><button className={`filter-toggle ${advanced ? 'active' : ''}`} aria-expanded={advanced} onClick={() => setAdvanced(!advanced)}><SlidersHorizontal size={15} />More filters{filterCount > 0 && <small>{filterCount}</small>}</button>{filterCount > 0 && <button className="icon-button clear-filters" onClick={reset} aria-label="Reset all filters"><X size={16} /></button>}</div>
-      {advanced && <div className="advanced-filters"><label className="checkbox-label"><input type="checkbox" checked={query.stackable} onChange={e => setQuery({ stackable: e.target.checked })} />Stackable <span className="muted">(max. stack &gt; 1)</span></label><label className="stat-select">Stat ID<select aria-label="Stat ID" value={query.stat_key ?? ''} onChange={e => setQuery({ stat_key: e.target.value === '' ? null : Number(e.target.value) })}><option value="">All stats</option>{catalog.info.stats.map(f => <option key={f.value} value={f.value}>{hex(f.value)} · {f.count}</option>)}</select></label><p>Types and categories use their original game IDs.</p></div>}
-    </div>{error ? <div className="search-error" role="alert"><AlertTriangle size={20} /><p>{error}</p><button className="secondary" onClick={reset}>Reset search</button></div> : <ItemTable items={rows} total={total} session={catalog.session} loading={busy} more={rows.length < total} loadMore={() => void more()} reset={reset} />}</div><DetailPanel catalog={catalog} /></div>;
-}
-function FacetSelect({ label, values, selected, onChange }: { label: string; values: Facet[]; selected: number | null; onChange: (n: number | null) => void }) {
-  return <label className={`facet-select ${selected !== null ? 'active' : ''}`}><select aria-label={label} value={selected ?? ''} onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}><option value="">{label}: All</option>{values.map(f => <option key={f.value} value={f.value}>{label} {f.value} · {count(f.count)}</option>)}</select></label>;
 }
 function ErrorCard({ error, retry, settings }: { error: AppError; retry: () => void; settings: () => void }) {
   return <div className="error-card" role="alert"><AlertTriangle size={28} /><h2>{error.code === 'unsupported_build' ? 'This build is not supported yet.' : error.code === 'desktop_required' ? 'The desktop app is required.' : 'The data could not be read.'}</h2><p>{error.code === 'unsupported_build' ? 'The files do not match the verified reading schema. Supported EXE versions are 1.0.0.2944, 1.0.0.2949 and 1.0.0.2976 with matching original files. After a game update, a compatible Workbench version is required.' : 'Check the installation path and try again.'}</p><details><summary>Technical details</summary><pre>{error.message}</pre></details><div><button className="primary" onClick={retry}>Try again</button><button className="secondary" onClick={settings}>Check data source</button></div></div>;
 }
-function Sources({ boot, catalog, game, setGame, savePath, setSavePath, settingsStatus, saveSettings, loading, connect }: { boot: Bootstrap | null; catalog: Catalog | null; game: string; setGame: (p: string) => void; savePath: string; setSavePath: (p: string) => void; settingsStatus: string; saveSettings: () => void; loading: boolean; connect: () => void }) {
+function Sources({ boot, catalog, game, setGame, savePath, setSavePath, settingsStatus, savedSources, saveSettings, loading, connect }: { boot: Bootstrap | null; catalog: Catalog | null; game: string; setGame: (p: string) => void; savePath: string; setSavePath: (p: string) => void; settingsStatus: string; savedSources: {game:string;save:string}; saveSettings: () => void; loading: boolean; connect: () => void }) {
+  const dirty=sourceKey(game)!==sourceKey(savedSources.game)||sourceKey(savePath)!==sourceKey(savedSources.save);
   return <div className="sources"><div className="page-heading"><div><div className="eyebrow">LOCAL & TRANSPARENT</div><h1>Data sources<span>.</span></h1><p>Your installation is the source. Workbench reads its files.</p></div></div><section className="source-card"><div className="source-card-heading"><FolderOpen size={23} /><div><h2>Crimson Desert</h2><p>Steam, Epic Games or Game Pass</p></div>{catalog && <span className="verified-tag"><ShieldCheck size={14} />Reading schema verified</span>}</div>
     {boot && boot.discovery.installations.length > 0 && <label className="source-field">Detected installations<select aria-label="Detected installations" value={boot.discovery.installations.some(i => i.path === game) ? game : ''} onChange={e => setGame(e.target.value)}><option value="">Use a manual path</option>{boot.discovery.installations.map(i => <option value={i.path} key={i.path}>{i.platform.toUpperCase()} · {i.path}</option>)}</select></label>}
-    <form onSubmit={e => { e.preventDefault(); connect(); }}><label className="source-field">Installation folder<input aria-label="Installation folder" value={game} placeholder="C:\…\Crimson Desert" onChange={e => setGame(e.target.value)} disabled={loading} /></label><button className="primary" type="submit" disabled={loading}>{loading ? <LoaderCircle size={16} className="spin" /> : <RefreshCw size={16} />}{loading ? 'Checking …' : 'Read installation'}</button></form>
+    <form id="source-path-form" onSubmit={e => { e.preventDefault(); saveSettings(); }}><label className="source-field">Installation folder<input aria-label="Installation folder" value={game} placeholder="C:\…\Crimson Desert" onChange={e => setGame(e.target.value)} disabled={loading} /></label></form>
     <p className="fine-print">Your own Crimson Desert installation is required. Supported EXE versions: 1.0.0.2944, 1.0.0.2949 and 1.0.0.2976; files are also verified.</p>
-    <label className="source-field">Save folder<input aria-label="Save folder" value={savePath} placeholder="Automatic when one save folder is found" onChange={e => setSavePath(e.target.value)} disabled={loading} /></label>
+    <label className="source-field">Save folder<input form="source-path-form" aria-label="Save folder" value={savePath} placeholder="Automatic when one save folder is found" onChange={e => setSavePath(e.target.value)} disabled={loading} /></label>
     {boot && boot.discovery.save_directories.length > 0 && <label className="source-field">Detected save folders<select aria-label="Detected save folders" value={boot.discovery.save_directories.includes(savePath) ? savePath : ''} onChange={e => setSavePath(e.target.value)} disabled={loading}><option value="">Automatic / use a manual path</option>{boot.discovery.save_directories.map(path => <option value={path} key={path}>{path}</option>)}</select></label>}
     <p className="fine-print">Choose the main save folder above the account and slot folders. This applies to mounts, knowledge and extra sockets. Complete save.save/lobby.save pairs are supported; other save formats remain blocked. Empty paths use automatic detection.</p>
-    <button className="secondary" type="button" disabled={loading} onClick={saveSettings}>Save settings</button>
+    <p className={`source-draft-status ${dirty?'dirty':''}`} aria-live="polite">{dirty?'Unsaved path changes. Save & connect to use these folders or change item-name language.':'No unsaved path changes.'}</p><button className="primary" type="submit" form="source-path-form" disabled={loading}>{loading ? <LoaderCircle size={16} className="spin" /> : <RefreshCw size={16} />}{loading ? 'Saving & connecting …' : 'Save & connect'}</button><button className="secondary" type="button" disabled={loading||dirty||!catalog} onClick={connect}>Reload connected catalog</button>
     {settingsStatus && <p role="status">{settingsStatus}</p>}
     {boot?.settings_warning && <p role="alert">{boot.settings_warning}</p>}
     {catalog && <div className="source-metrics"><div><span>EXE version</span><strong>{catalog.info.exe_version}</strong></div><div><span>Items</span><strong>{count(catalog.info.item_count)}</strong></div><div><span>Item language</span><strong>{languageNames[catalog.info.index.language]}</strong><small>{catalog.item_language?.source === "steam" ? "Detected from Steam" : catalog.item_language?.source === "fallback" ? "English fallback — game language unavailable" : "Manual selection"}</small></div></div>}

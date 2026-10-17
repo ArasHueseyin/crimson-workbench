@@ -1,0 +1,12 @@
+.market-modal.workbench-dialog{color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:12px;box-sizing:border-box;width:min(900px,calc(100vw - 40px));max-width:none;max-height:calc(100dvh - 40px);margin:auto;padding:24px;overflow:auto}
+.workbench-dialog::backdrop{background:rgba(3,8,13,.78);backdrop-filter:blur(3px)}
+.runtime-card .runtime-badges{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}
+.runtime-state{display:inline-flex;align-items:center;gap:5px;font-size:10px;line-height:1.5;border:1px solid var(--line);border-radius:999px;padding:3px 8px;color:var(--muted)}
+.runtime-state.installed{color:#a5d4b3;border-color:#41644c}.runtime-state.update_available,.runtime-state.unsaved{color:#f1cc83;border-color:#6c5934}.runtime-state.conflict,.runtime-state.pending{color:#f3aaa4;border-color:#734b47}
+.runtime-feedback{font-size:12px;line-height:1.7;border-left:2px solid var(--accent);padding:8px 10px;margin:10px 0 0}
+.runtime-feedback.error{border-color:#df8580;color:#f3aaa4}.runtime-feedback.success{border-color:#79aa87;color:#b5dbbf}
+.runtime-precision{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.runtime-precision label{display:flex;gap:7px;align-items:center;font-size:11px}.runtime-precision input[type=number]{width:90px;min-width:0;padding:7px}
+.runtime-presets{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.runtime-presets button{padding:6px 9px;font-size:11px}.runtime-presets button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.runtime-normal-mode{display:grid;gap:7px;padding:9px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px}.market-jump-settings .runtime-normal-mode label{display:flex;justify-content:flex-start;gap:7px;align-items:center}.runtime-normal-mode input[type=radio]{accent-color:var(--accent)}
+.runtime-card .mod-actions{flex-wrap:wrap}.runtime-card[aria-busy=true]{outline:1px solid var(--accent);outline-offset:-1px}.runtime-card .draft-discard{font-size:11px}
+@media(max-width:600px){.market-modal.workbench-dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px);padding:16px}.runtime-precision{align-items:flex-start}.runtime-precision input[type=number]{width:80px}}

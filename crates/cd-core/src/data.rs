@@ -255,6 +255,7 @@ impl GameData {
                     "skill.",
                     "fieldinfo.",
                     "stageinfo.",
+                    "multichangeinfo.",
                 ]
                 .iter()
                 .any(|prefix| n.starts_with(prefix))

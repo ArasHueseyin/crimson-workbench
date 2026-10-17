@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$GameDirectory,
     [ValidateSet('Status', 'Install', 'Remove')][string]$Mode = 'Status',
-    [ValidateSet('blackstar', 'sleep_cooldown', 'sleep_duration')][string]$ModId,
+    [ValidateSet('blackstar', 'sleep_cooldown', 'sleep_duration', 'no_fall', 'player_stamina', 'mount_jump', 'player_jump', 'player_speed', 'preserve_consumables', 'mount_protection', 'free_crafting_materials', 'force_palm', 'force_palm_height', 'axiom_reach', 'glide_speed', 'mount_dismount', 'auto_loot', 'world_controls', 'photo_mode', 'teleport')][string]$ModId,
     [switch]$Elevate,
     [string]$ResultPath
 )
@@ -15,8 +15,8 @@ function Read-MarketplaceManifest {
     $path = Join-Path $PSScriptRoot 'marketplace-manifest.json'
     Assert-PlainPath $path
     $manifest = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
-    $names = @{ blackstar = 'CrimsonBlackstar.asi'; sleep_cooldown = 'CrimsonSleepCooldown.asi'; sleep_duration = 'CrimsonSleepDuration.asi' }
-    if ($manifest.schema -ne 1 -or $manifest.gameExeSha256 -ne $script:ExpectedGameHash -or @($manifest.mods).Count -ne 3) { throw 'Invalid marketplace package.' }
+    $names = @{ blackstar = 'CrimsonBlackstar.asi'; sleep_cooldown = 'CrimsonSleepCooldown.asi'; sleep_duration = 'CrimsonSleepDuration.asi'; no_fall = 'CrimsonNoFall.asi'; player_stamina = 'CrimsonPlayerStamina.asi'; mount_jump = 'CrimsonMountJump.asi'; player_jump = 'CrimsonPlayerJump.asi'; player_speed = 'CrimsonPlayerSpeed.asi'; preserve_consumables = 'CrimsonPreserveConsumables.asi'; mount_protection = 'CrimsonMountProtection.asi'; free_crafting_materials = 'CrimsonFreeCrafting.asi'; force_palm = 'CrimsonForcePalm.asi'; force_palm_height = 'CrimsonForcePalmHeight.asi'; axiom_reach = 'CrimsonAxiomReach.asi'; glide_speed = 'CrimsonGlideSpeed.asi'; mount_dismount = 'CrimsonMountDismount.asi'; auto_loot = 'CrimsonAutoLoot.asi'; world_controls = 'CrimsonWorldControls.asi'; photo_mode = 'CrimsonPhotoMode.asi'; teleport = 'CrimsonTeleport.asi' }
+    if ($manifest.schema -ne 1 -or $manifest.gameExeSha256 -ne $script:ExpectedGameHash -or @($manifest.mods).Count -ne $names.Count) { throw 'Invalid marketplace package.' }
     $seen = @{}
     foreach ($mod in $manifest.mods) {
         if (-not $names.ContainsKey($mod.id) -or $seen.ContainsKey($mod.id) -or $mod.file -ne $names[$mod.id] -or $mod.sha256 -cnotmatch '^[a-f0-9]{64}$') { throw 'Invalid marketplace module entry.' }
@@ -29,6 +29,13 @@ function Read-MarketplaceManifest {
     return $manifest
 }
 function Allowed-Hash($Mod, [string]$Hash) { return $Hash -eq $Mod.sha256 -or $Hash -in @($Mod.priorHashes) }
+function Test-WorldBroker([string]$Bin) {
+    $runtime = Read-RuntimeManifest $PSScriptRoot
+    $entry = @($runtime.files | Where-Object name -eq 'CrimsonLiveItems.asi')[0]
+    $installed = Join-Path $Bin 'CrimsonLiveItems.asi'
+    Assert-PlainPath $installed
+    return (Test-Path -LiteralPath $installed -PathType Leaf) -and (Get-RuntimeHash $installed) -eq $entry.sha256
+}
 function Read-ModReceipt($Mod, [string]$Path) {
     Assert-PlainPath $Path
     if (-not (Test-Path -LiteralPath $Path)) { return $null }
@@ -97,11 +104,15 @@ function Get-ModSnapshot($Manifest, [string]$Bin) {
                 if (-not (Allowed-Hash $mod $hash) -or ($r -and $r.sha256 -ne $hash)) { throw 'Existing module is modified or unknown. It will not be overwritten or removed.' }
                 if ($r) {
                     $state = if ($hash -eq $mod.sha256) { 'installed' } else { 'update_available' }
-                    $message = if ($state -eq 'installed') { 'Installed · loads at the next game start' } else { 'Known older version · update available' }
+                    $message = if ($state -eq 'installed') { 'Installed - loads at the next game start' } else { 'Known older version - update available' }
                     $canRemove = $true; $canInstall = $state -ne 'installed' -and $loaderReady
                 } else { $state = 'unmanaged'; $message = 'Your known existing mod can be imported and updated. Its original file will be backed up.' }
             } elseif ($r) { throw 'Managed module is missing. Restore it before changing ownership.' }
             if (-not $loaderReady -and $state -eq 'not_installed') { $message = 'Install the bundled game modules with Workbench setup first.' }
+            if ($mod.id -in @('world_controls', 'teleport') -and $state -notin @('pending', 'conflict') -and -not (Test-WorldBroker $Bin)) {
+                $canInstall = $false
+                $message = 'Update the bundled game modules with this Workbench setup first. Live controls require its matching LiveItems runtime.'
+            }
         } catch { $state = 'conflict'; $message = $_.Exception.Message; $canInstall = $false; $canRemove = $false }
         $items += [ordered]@{ id = $mod.id; state = $state; message = $message; can_install = $canInstall -and -not $running; can_remove = $canRemove -and -not $running }
     }
@@ -137,6 +148,7 @@ function Change-MarketplaceMod($Manifest, [string]$Bin) {
             $loader = Join-Path $Bin 'winmm.dll'
             Assert-PlainPath $loader
             if (-not (Test-Path -LiteralPath $loader) -or (Get-RuntimeHash $loader) -ne $script:ExpectedLoaderHash) { throw 'Install the bundled game modules with Workbench setup first. Existing loaders are preserved.' }
+            if ($mod.id -in @('world_controls', 'teleport') -and -not (Test-WorldBroker $Bin)) { throw 'Live controls require the matching LiveItems runtime. Update the bundled game modules with this Workbench setup first.' }
             if ($r -and $before -eq $mod.sha256) { return }
         }
         if ($before) {
@@ -164,17 +176,23 @@ function Change-MarketplaceMod($Manifest, [string]$Bin) {
 
 try {
     if ($Mode -ne 'Status' -and -not $ModId) { throw 'Select a marketplace mod.' }
+    # Refuse before requesting UAC or opening a worker. The exclusive game
+    # guard in Change-MarketplaceMod still covers a start after this check.
+    if ($Mode -ne 'Status' -and @(Get-Process -Name CrimsonDesert -ErrorAction SilentlyContinue).Count) { throw 'Close Crimson Desert before installing or removing a mod. Nothing was changed.' }
     if ($Elevate -and $Mode -ne 'Status') {
         if ($GameDirectory.Contains('"') -or $GameDirectory.Contains("`r") -or $GameDirectory.Contains("`n")) { throw 'Invalid game path.' }
         $result = Join-Path ([IO.Path]::GetTempPath()) ('crimson-marketplace-' + [guid]::NewGuid().ToString('N') + '.json')
         Assert-PlainPath $result
         $powershell = Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe'
-        $arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -GameDirectory "{1}" -Mode {2} -ModId {3} -ResultPath "{4}"' -f $PSCommandPath, $GameDirectory.TrimEnd('\'), $Mode, $ModId, $result
+        $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" -GameDirectory "{1}" -Mode {2} -ModId {3} -ResultPath "{4}"' -f $PSCommandPath, $GameDirectory.TrimEnd('\'), $Mode, $ModId, $result
         try {
-            $worker = Start-Process -FilePath $powershell -ArgumentList $arguments -Verb RunAs -WindowStyle Hidden -Wait -PassThru
+            $worker = Start-Process -FilePath $powershell -ArgumentList $arguments -Verb RunAs -WindowStyle Hidden -PassThru
+            $null = $worker.Handle
+            $worker.WaitForExit()
+            $worker.Refresh()
             if (-not (Test-Path -LiteralPath $result)) { throw 'Mod installation was canceled or the worker could not start.' }
             Assert-PlainPath $result
-            $output = Get-Content -LiteralPath $result -Raw
+            $output = Get-Content -LiteralPath $result -Raw -Encoding UTF8
             Write-Output $output
             exit $worker.ExitCode
         } finally { if (Test-Path -LiteralPath $result) { Remove-Item -LiteralPath $result } }

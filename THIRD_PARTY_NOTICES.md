@@ -48,7 +48,7 @@ executable, game data, save files, or third-party example plugins are included.
 
 | Component | Exact source | Included notice |
 |---|---|---|
-| MinHook 1.3.4, linked into Workbench's two ASIs | [TsudaKageyu/minhook v1.3.4](https://github.com/TsudaKageyu/minhook/tree/v1.3.4) | [`minhook-LICENSE.txt`](licenses/minhook-LICENSE.txt), including HDE32 and HDE64 notices |
+| MinHook 1.3.4, linked into Workbench's native ASIs | [TsudaKageyu/minhook v1.3.4](https://github.com/TsudaKageyu/minhook/tree/v1.3.4) | [`minhook-LICENSE.txt`](licenses/minhook-LICENSE.txt), including HDE32 and HDE64 notices |
 | Ultimate ASI Loader 9.7.4 x64 | [ThirteenAG, `6b440669144c4a0bef5718ab155df160d231cd42`](https://github.com/ThirteenAG/Ultimate-ASI-Loader/tree/6b440669144c4a0bef5718ab155df160d231cd42) | [`ultimate-asi-loader-LICENSE.txt`](licenses/ultimate-asi-loader-LICENSE.txt), MIT, Copyright (c) 2023 ThirteenAG |
 | Injector, included by the loader | [ThirteenAG/injector, `3a384e8d1b575c09383b0fab8bd92e34cb654949`](https://github.com/ThirteenAG/injector/tree/3a384e8d1b575c09383b0fab8bd92e34cb654949) | [`ultimate-asi-loader-injector-LICENSE.txt`](licenses/ultimate-asi-loader-injector-LICENSE.txt), zlib, Copyright (C) 2012–2014 LINK/2012 |
 | Injector's FunctionHookMinHook utility | [Same pinned injector revision, `utility/`](https://github.com/ThirteenAG/injector/tree/3a384e8d1b575c09383b0fab8bd92e34cb654949/utility) | [`ultimate-asi-loader-utility-LICENSE.txt`](licenses/ultimate-asi-loader-utility-LICENSE.txt), MIT, Copyright (c) 2019 praydog |

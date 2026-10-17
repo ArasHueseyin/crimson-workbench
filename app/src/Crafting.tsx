@@ -57,7 +57,7 @@ function Tree({ node, session, depth }: { node: CraftNode; session: number; dept
     {node.children.length > 0 && <details className="craft-children" open={depth < 2}><summary>{node.children.length} Ingredients <ChevronRight size={13} /></summary><div>{node.children.map((child,i) => <Tree key={`${i}:${child.item.key}`} node={child} session={session} depth={depth + 1} />)}</div></details>}
   </div>;
 }
-function ItemLink({ item }: { item: CraftItem }) { return <button className="text-button" onClick={() => { useCatalog.getState().select(item.key); useCatalog.getState().setView('items'); }}>Open item details <ArrowUpRight size={13} /></button>; }
+function ItemLink({ item }: { item: CraftItem }) { return <button className="text-button" onClick={() => { useCatalog.getState().select(item.key); useCatalog.getState().setView('spawn'); }}>Open in item picker <ArrowUpRight size={13} /></button>; }
 export function RecipeLinks({ session, itemKey }: { session: number; itemKey: number }) {
   const [data,setData] = useState<{ recipes: Recipe[]; used_in: Recipe[] } | null>(null), [error,setError] = useState('');
   useEffect(() => { let active=true;setData(null);setError('');api.craftItem(session,itemKey).then(d => { if(active)setData(d); }).catch(e => { if(active)setError(asError(e).message); });return () => {active=false;}; },[session,itemKey]);

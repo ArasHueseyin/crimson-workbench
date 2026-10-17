@@ -2,6 +2,50 @@ use super::*;
 use crimson_format::{Archive, checksum, overlay};
 
 #[test]
+fn region_script_overlay_uses_its_source_language_and_restores_atomically() {
+    let mut f = Fixture::new(1);
+    f.baseline = overlay::register(&f.baseline, "0014", 0x1234, 654).unwrap();
+    fs::write(f.temp.path().join(REGISTRY), &f.baseline).unwrap();
+    let scripts: BTreeMap<String, Vec<u8>> = overlay::REGION_TIMER_FILES
+        .iter()
+        .enumerate()
+        .map(|(i, name)| ((*name).into(), vec![i as u8 + 1; 256]))
+        .collect();
+    let pack = overlay::build_region_timers(&scripts, [0; 4]).unwrap();
+    let mut files = payload(&f.baseline, 1, 3);
+    let table_checksum = u32::from_le_bytes(files["0041/0.pamt"][..4].try_into().unwrap());
+    let registry = overlay::register(&f.baseline, "0042", 0x1234, pack.checksum).unwrap();
+    let registry = overlay::register(&registry, "0041", 0x7fff, table_checksum).unwrap();
+    files.insert("0042/0.pamt".into(), pack.pamt);
+    files.insert("0042/0.paz".into(), pack.paz);
+    files.insert(REGISTRY.into(), registry);
+    let mut engine = f.open();
+    let plan = engine.plan(&files).unwrap();
+    engine.apply(&plan, || Ok(()), None).unwrap();
+    let archive = Archive::open(f.temp.path()).unwrap();
+    let entries = archive.list_group("0042").unwrap();
+    assert_eq!(entries.len(), 4);
+    for entry in entries {
+        assert_eq!(entry.directory, overlay::REGION_TIMER_DIRECTORY);
+        assert_eq!(archive.extract(&entry).unwrap(), scripts[&entry.name]);
+    }
+    // Wrong registration language cannot be substituted, even for valid files.
+    let wrong = overlay::register(
+        &f.baseline,
+        "0042",
+        0x7fff,
+        u32::from_le_bytes(files["0042/0.pamt"][..4].try_into().unwrap()),
+    )
+    .unwrap();
+    let wrong = overlay::register(&wrong, "0041", 0x7fff, table_checksum).unwrap();
+    let mut invalid = files.clone();
+    invalid.insert(REGISTRY.into(), wrong);
+    assert!(engine.plan(&invalid).is_err());
+    engine.restore(|| Ok(()), None).unwrap();
+    f.baseline_restored();
+}
+
+#[test]
 fn marketplace_appearance_and_table_groups_apply_and_restore_together() {
     let mut f = Fixture::new(1);
     f.baseline = overlay::register(&f.baseline, "0009", 0x7f00, 987).unwrap();
@@ -11,12 +55,20 @@ fn marketplace_appearance_and_table_groups_apply_and_restore_together() {
         [0; 4],
     )
     .unwrap();
+    let rokade = overlay::build_rokade(
+        b"<Appearance CharacterScale=\"1.469\"/>\r\n".to_vec(),
+        [0; 4],
+    )
+    .unwrap();
     let mut files = payload(&f.baseline, 1, 3);
     let table_checksum = u32::from_le_bytes(files["0041/0.pamt"][..4].try_into().unwrap());
-    let registry = overlay::register(&f.baseline, "0042", 0x7f00, lion.checksum).unwrap();
+    let registry = overlay::register(&f.baseline, "0043", 0x7f00, rokade.checksum).unwrap();
+    let registry = overlay::register(&registry, "0042", 0x7f00, lion.checksum).unwrap();
     let registry = overlay::register(&registry, "0041", 0x7fff, table_checksum).unwrap();
     files.insert("0042/0.paz".into(), lion.paz);
     files.insert("0042/0.pamt".into(), lion.pamt);
+    files.insert("0043/0.paz".into(), rokade.paz);
+    files.insert("0043/0.pamt".into(), rokade.pamt);
     files.insert(REGISTRY.into(), registry);
     let mut engine = f.open();
     let plan = engine.plan(&files).unwrap();
@@ -33,6 +85,14 @@ fn marketplace_appearance_and_table_groups_apply_and_restore_together() {
     assert_eq!(
         archive.extract(appearance).unwrap(),
         b"<Appearance CharacterScale=\"1.17\"/>\r\n"
+    );
+    let appearance = entries
+        .iter()
+        .find(|e| e.name == overlay::ROKADE_FILE)
+        .unwrap();
+    assert_eq!(
+        archive.extract(appearance).unwrap(),
+        b"<Appearance CharacterScale=\"1.469\"/>\r\n"
     );
     engine.restore(|| Ok(()), None).unwrap();
     f.baseline_restored();

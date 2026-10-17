@@ -9,6 +9,7 @@
 #include "pipe.h"
 #include "dispatch.h"
 #include "pump.h"
+#include "task_observer_registry.h"
 
 namespace {
 using namespace crimson::live_items;
@@ -16,10 +17,20 @@ HMODULE module{};std::atomic<bool> started=false;
 Queue queue(GetCurrentProcessId(),GetTickCount64());
 Bindings bindings{};std::uintptr_t base{};
 TaskDispatch original{};
+TaskObservers observers;
 void log(const char* message);
 std::atomic<bool> context_logged=false;
+thread_local bool notifying_task=false;
 void after_task(void* context,int* error,std::uintptr_t caller) {
+    if(notifying_task)return;
+    struct Guard {Guard(){notifying_task=true;}~Guard(){notifying_task=false;}} guard;
     if(pump(queue,bindings,base,context,error,caller,GetTickCount64())&&!context_logged.exchange(true))log("CONTEXT: automatic server-player task confirmed; native lease, active identity and context pool validated.");
+    const TaskObservationV1 observation{sizeof(TaskObservationV1),kTaskObserverAbiV1,
+        base,context,error,caller,GetTickCount64(),0,0};
+    observers.notify(observation,[](TaskObservationV1& current) {
+        return task_player(current.base,current.context,current.native_error,
+            current.return_address,&current.identity)!=nullptr;
+    });
 }
 int* __fastcall hook(int* error,void* task,void* context) {
     return forward_task(original,after_task,error,task,context,reinterpret_cast<std::uintptr_t>(_ReturnAddress()));
@@ -56,6 +67,9 @@ DWORD WINAPI initialize(void*) {
         };
         for(auto pin:pins)if(crimson::repair::hash(std::span(reinterpret_cast<const std::uint8_t*>(base+pin.rva),pin.bytes))!=pin.hash){log("DISABLED: native routine mismatch.");return 0;}
         bindings={reinterpret_cast<Lookup>(base+0x8802fb0),reinterpret_cast<Definition>(base+0x38ab60),reinterpret_cast<Construct>(base+0x2409970),reinterpret_cast<Convert>(base+0x2449730),reinterpret_cast<Destroy>(base+0xf493f00),reinterpret_cast<Grant>(base+0x2b3ee50)};
+        HMODULE pinned{};
+        if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_PIN,
+            reinterpret_cast<LPCWSTR>(module),&pinned)||pinned!=module){log("DISABLED: module lifetime could not be pinned.");return 0;}
         if(MH_Initialize()!=MH_OK){log("DISABLED: hook engine unavailable.");return 0;}
         auto target=reinterpret_cast<void*>(base+0x2774b20);
         if(MH_CreateHook(target,reinterpret_cast<void*>(&hook),reinterpret_cast<void**>(&original))!=MH_OK){log("DISABLED: hook creation failed.");return 0;}
@@ -68,4 +82,14 @@ DWORD WINAPI initialize(void*) {
 void start(){if(started.exchange(true))return;auto thread=CreateThread(nullptr,0,initialize,nullptr,0,nullptr);if(thread)CloseHandle(thread);}
 }
 extern "C" __declspec(dllexport) void InitializeASI(){start();}
+extern "C" __declspec(dllexport) bool __cdecl RegisterWorkbenchTaskObserverV1(
+    std::uint32_t abi,std::uint32_t bytes,TaskObserverV1 callback) {
+    try {
+        return observers.add(abi,bytes,callback,[](TaskObserverV1 function) {
+            HMODULE pinned{};
+            return GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_PIN,
+                reinterpret_cast<LPCWSTR>(function),&pinned)!=FALSE;
+        });
+    } catch (...) {return false;} // Registration does not execute native game code.
+}
 BOOL APIENTRY DllMain(HMODULE h,DWORD reason,LPVOID){if(reason==DLL_PROCESS_ATTACH){module=h;DisableThreadLibraryCalls(h);start();}return TRUE;}

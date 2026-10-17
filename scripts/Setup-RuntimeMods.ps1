@@ -63,7 +63,7 @@ try {
     $message = $_.Exception.Message
     if ($ShowErrors) {
         Add-Type -AssemblyName System.Windows.Forms
-        [Windows.Forms.MessageBox]::Show("Die Spielmodule wurden nicht installiert. / Runtime installation failed.`r`n`r`n$message", 'Crimson Workbench', 'OK', 'Error') | Out-Null
+        [Windows.Forms.MessageBox]::Show("Game module installation failed.`r`n`r`n$message", 'Crimson Workbench', 'OK', 'Error') | Out-Null
     }
     [Console]::Error.WriteLine($message)
     exit 1

@@ -36,13 +36,13 @@ test('first run saves independent game and save roots and restores them and lang
   await expect(page.getByText('C:/Users/Friend/AppData/Local/CrimsonWorkbench', { exact: true })).toBeVisible();
   await page.getByLabel('Installation folder', { exact: true }).fill('C:/Friend Game');
   await page.getByLabel('Save folder', { exact: true }).fill('D:/Own Saves');
-  await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Save & connect', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Settings saved');
   await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'true');
   await expect(page.getByLabel('Item language')).toHaveValue('auto');
   await expect(page.getByLabel('Item language').locator('option:checked')).toHaveText('Automatic · Deutsch');
   await expect(page.getByText('Detected from Steam', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save & connect', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel('Item language')).toHaveValue('auto');
   await expect.poll(() => page.evaluate(() => (window as unknown as { setupOpened?: { language: string } }).setupOpened?.language)).toBe('auto');
@@ -60,17 +60,17 @@ test('first run saves independent game and save roots and restores them and lang
 test('invalid paths leave persisted preferences unchanged and show actionable error', async ({ page }) => {
   await setup(page);
   await page.getByLabel('Installation folder', { exact: true }).fill('C:/missing');
-  await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Save & connect', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Installation folder is unreachable');
   expect(await page.evaluate(() => localStorage.getItem('setup-test-preferences'))).toBeNull();
-  await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Save & connect', exact: true })).toBeEnabled();
 });
 
 test('damaged settings can be replaced from first-run UI', async ({ page }) => {
   await setup(page, true);
   await expect(page.getByRole('alert')).toContainText('Saved settings could not be loaded');
   await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'false');
-  await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Save & connect', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Settings saved');
   await expect(page.getByRole('alert')).toHaveCount(0);
 });

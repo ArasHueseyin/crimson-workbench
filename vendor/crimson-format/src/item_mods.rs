@@ -8,6 +8,7 @@ use crate::{
         keys::{BuffKey, StatusKey},
         structs::{
             EnchantData, EnchantDataList, EnchantLevelChange, EnchantStatChange, EquipmentBuff,
+            PassiveSkillLevel,
         },
     },
 };
@@ -67,6 +68,90 @@ pub struct ItemModInfo {
     pub can_copy_enchants: bool,
     pub stats: Vec<StatEdit>,
     pub buffs: Vec<BuffEdit>,
+    pub passive_skills: Vec<EquippedPassive>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct EquippedPassive {
+    pub skill: u32,
+    pub level: u32,
+}
+
+/// Only native effects observed on the exact supported weapon equipment types.
+#[derive(Clone, Copy, Debug)]
+pub enum WeaponEffect {
+    Lightning,
+    Fire,
+}
+impl WeaponEffect {
+    pub fn passive(self) -> EquippedPassive {
+        EquippedPassive {
+            skill: match self {
+                Self::Lightning => 91101,
+                Self::Fire => 91105,
+            },
+            level: 3,
+        }
+    }
+    pub fn compatible(self, info: &ItemModInfo) -> bool {
+        match (info.equip_type, info.category) {
+            (2914941932, 205) => true, // Native lightning/fire spear sources.
+            (1086980073, 202) | (604374103, 212) => matches!(self, Self::Lightning),
+            _ => false,
+        }
+    }
+}
+
+/// Change only the equipped-passive list, retaining the complete typed roundtrip.
+/// Existing native abilities can be replaced only after an explicit reviewed choice.
+pub fn transfer_weapon_effect(
+    bytes: &[u8],
+    effect: WeaponEffect,
+    replace_existing: bool,
+) -> io::Result<(Vec<u8>, Vec<ItemFieldChange>)> {
+    let info = item_mod_info(bytes)?;
+    if !effect.compatible(&info) || [1001062, 1000451].contains(&info.key) {
+        return Err(invalid(
+            "unsupported weapon or protected native effect source",
+        ));
+    }
+    let wanted = effect.passive();
+    if info.passive_skills == [wanted.clone()] {
+        return Ok((bytes.to_vec(), vec![]));
+    }
+    if !info.passive_skills.is_empty() && !replace_existing {
+        return Err(invalid(
+            "explicit replacement of existing native weapon abilities required",
+        ));
+    }
+    let describe = |values: &[EquippedPassive]| {
+        if values.is_empty() {
+            "none".into()
+        } else {
+            values
+                .iter()
+                .map(|p| format!("skill {} (level {})", p.skill, p.level))
+                .collect::<Vec<_>>()
+                .join(", ")
+        }
+    };
+    let before = describe(&info.passive_skills);
+    let after = describe(std::slice::from_ref(&wanted));
+    let mut item = parse(bytes)?;
+    item.equip_passive_skill_list.items = vec![PassiveSkillLevel {
+        skill: crate::item_info::keys::SkillKey(wanted.skill),
+        level: wanted.level,
+    }];
+    let mut output = Vec::new();
+    item.write_to(&mut output)?;
+    parse(&output)?;
+    Ok((
+        output,
+        vec![ItemFieldChange {
+            field: "equip_passive_skill_list".into(),
+            before,
+            after,
+        }],
+    ))
 }
 #[derive(Debug)]
 pub struct ItemFieldChange {
@@ -141,6 +226,15 @@ pub fn item_mod_info(bytes: &[u8]) -> io::Result<ItemModInfo> {
         can_copy_enchants: copyable_enchants(&i.enchant_data_list),
         stats,
         buffs,
+        passive_skills: i
+            .equip_passive_skill_list
+            .items
+            .iter()
+            .map(|p| EquippedPassive {
+                skill: p.skill.0,
+                level: p.level,
+            })
+            .collect(),
     }
     .with_instance_risk(
         i.drop_default_data.use_socket != 0
@@ -255,7 +349,7 @@ pub fn edit_item(bytes: &[u8], edit: &ItemEdit) -> io::Result<(Vec<u8>, Vec<Item
                         stat: StatusKey(s.stat),
                         change_mb: v,
                     });
-                    "nicht vorhanden".into()
+                    "not present".into()
                 }
             }
         } else {
@@ -322,7 +416,7 @@ pub fn edit_item(bytes: &[u8], edit: &ItemEdit) -> io::Result<(Vec<u8>, Vec<Item
                     buff: BuffKey(b.buff),
                     level: b.level,
                 });
-                "nicht vorhanden".into()
+                "not present".into()
             }
         };
         if before != b.level.to_string() {

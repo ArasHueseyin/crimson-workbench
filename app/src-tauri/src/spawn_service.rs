@@ -169,6 +169,10 @@ pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> 
     }
 }
 #[cfg(windows)]
+pub(crate) fn running_game_pid(game: &Path) -> Result<u32> {
+    windows::game_pid(game)
+}
+#[cfg(windows)]
 mod windows {
     use super::*;
     use std::{

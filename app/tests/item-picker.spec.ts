@@ -45,6 +45,7 @@ test('icons, descriptions, categories, exact ID and refinement values', async ({
   await expect(page.locator('.picker-hero img')).toBeVisible();
   await expect(page.locator('.picker-description')).toHaveText('Eine dunkle Testwaffe. Nur Testdaten.');
   await expect(page.locator('.picker-values')).toContainText(['25']);
+  await page.locator('.picker-more > summary').click();
   await page.getByLabel('Values for refinement level').selectOption('1');
   await expect(page.locator('.picker-values')).toContainText(['35']);
   await page.getByLabel('Desired item quantity').fill('500');
@@ -143,6 +144,7 @@ test('quantity can be cleared, typed and pasted; 100 items with stack10 show ten
 test('saved knowledge badges update for the chosen save without changing any game state',async({page})=>{
   await fixture(page,{knowledge:true});await page.getByRole('option',{name:/Dunkler Zweihänder/}).click();
   await expect(page.locator('.knowledge-badge')).toContainText('Knowledge already acquired');
+  await page.locator('.knowledge-drawer > summary').click();
   await page.getByLabel('Save for knowledge display').selectOption('123/slot1');await expect(page.locator('.knowledge-badge')).toContainText('Knowledge not yet acquired');
   expect(await page.evaluate(()=>(window as unknown as {spawnCalls:{command:string}[]}).spawnCalls.filter(c=>c.command==='spawn_grant').length)).toBe(0);
   await page.screenshot({path:'../.local/live-items-bag-mounts-20261003/knowledge-quantity-picker.png'});

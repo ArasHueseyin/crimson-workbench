@@ -5,7 +5,7 @@ import {count} from './format';
 import type {ModRequest} from './mod-types';
 import type {LiveUpdate,LiveStatus,LiveSetup,LiveReview,LiveRequest,LiveOperation,LiveJob} from './live-types';
 
-export function LiveApply({session,settings}:{session:number;settings:ModRequest|null}) {
+export function LiveApply({session,settings,onStatus}:{session:number;settings:ModRequest|null;onStatus?:(status:LiveStatus|null)=>void}) {
  const [status,setStatus]=useState<LiveStatus|null>(null),[ids,setIds]=useState<string[]>([]),[id,setId]=useState('');
  const [update,setUpdate]=useState<LiveUpdate|null>(null);
  const [setup,setSetup]=useState<LiveSetup|null>(null),[verified,setVerified]=useState(false);
@@ -13,6 +13,7 @@ export function LiveApply({session,settings}:{session:number;settings:ModRequest
  const [job,setJob]=useState<LiveJob|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const generation=useRef(0),pending=useRef(false),settingsKey=JSON.stringify(settings),latest=useRef(settingsKey);
  latest.current=settingsKey;
+ useEffect(()=>{onStatus?.(status)},[status,onStatus]);
  useEffect(()=>{generation.current++;setStatus(null);setIds([]);setId('');setSetup(null);setUpdate(null);setVerified(false);setReview(null);setRequest(null);setJob(null);setBusy(false);pending.current=false;setError('');return()=>{generation.current++}},[session]);
  useEffect(()=>{setReview(null);setRequest(null)},[settingsKey]);
  const running=job?.phase==='running';

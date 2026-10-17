@@ -1,5 +1,7 @@
 //! B0: isolated rehearsals and explicit, reviewed live transactions.
 pub(crate) mod guard;
+/// Read the process list without inspecting memory or changing the game.
+pub use guard::game_running;
 pub mod live;
 mod protected;
 pub mod recovery;
