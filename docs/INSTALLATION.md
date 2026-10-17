@@ -1,11 +1,11 @@
 # Install Crimson Workbench
 
-This guide describes the expanded **v0.9.0** feature set. Check GitHub Releases
+This guide describes the expanded **v0.9.1** feature set. Check GitHub Releases
 for published installers; older releases contain their earlier feature sets.
 
 ## Windows setup
 
-1. Open [GitHub Releases](https://github.com/ArasHueseyin/crimson-workbench/releases) and download `Crimson-Workbench_0.9.0_x64-setup.exe`. The automatically generated source-code ZIPs are for developers.
+1. Open [GitHub Releases](https://github.com/ArasHueseyin/crimson-workbench/releases) and download `Crimson-Workbench_0.9.1_x64-setup.exe`. The automatically generated source-code ZIPs are for developers.
 2. Close Crimson Desert and Workbench, then run the installer. **Live Items, Extra Sockets and their loader are included and selected by default.** Setup detects Steam game folders. If necessary, select your game installation folder: the folder that **contains `bin64`**. Windows may request administrator permission to install the game modules. You can deselect them to install only Workbench. No separate ZIP or PowerShell commands are needed. Setup and the app interface are in English. If WebView2 is missing, setup downloads it from Microsoft and needs an internet connection.
 3. Open Crimson Workbench from the Start menu. If the game is not detected, open **Data sources**, select your installation and, if necessary, your save folder, then choose **Save & connect**.
 
@@ -19,7 +19,7 @@ Separate in-game language overrides and Epic/Game Pass language settings are not
 
 ## Portable package and personal data
 
-Alternatively, extract `Crimson-Workbench_0.9.0_windows-x64-portable.zip` into a folder and run `crimson-workbench.exe`. WebView2 must already be installed. The portable package does not automatically install the game modules.
+Alternatively, extract `Crimson-Workbench_0.9.1_windows-x64-portable.zip` into a folder and run `crimson-workbench.exe`. WebView2 must already be installed. The portable package does not automatically install the game modules.
 
 By default, settings, caches, backups and exports are stored under `%LOCALAPPDATA%\CrimsonWorkbench`. No source-code checkout is needed. Use `--project "D:\My Workbench Data"` to select another writable data folder. Existing development checkouts and their `.env` files remain supported.
 
@@ -45,7 +45,7 @@ After a game update, affected features may remain unavailable until the new buil
 
 Since v0.6.2, the same setup EXE installs these optional modules. Reinstalling recognizes identical modules and preserves their configuration. Different or modified mods are not overwritten: setup reports the conflict and stops the module installation while leaving the Workbench app installed.
 
-Uninstalling the app does not remove game files. For targeted module removal, the app's `runtime-mods` folder contains the original `Uninstall-RuntimeMods.ps1`. Portable users can also download `Crimson-Workbench_0.9.0_optional-runtime-mods.zip`, which includes both modules, install/uninstall scripts, licenses and a neutral starting configuration. Follow its `README.md`. The scripts check the supported EXE, package files and existing mods before writing. Do not replace an existing loader with an unrelated file.
+Uninstalling the app does not remove game files. For targeted module removal, the app's `runtime-mods` folder contains the original `Uninstall-RuntimeMods.ps1`. Portable users can also download `Crimson-Workbench_0.9.1_optional-runtime-mods.zip`, which includes both modules, install/uninstall scripts, licenses and a neutral starting configuration. Follow its `README.md`. The scripts check the supported EXE, package files and existing mods before writing. Do not replace an existing loader with an unrelated file.
 
 These modules support only the tested **EXE 1.0.0.2976**, SHA-256 `57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7`. Compatibility checks still apply to each game installation and feature. Save and close the game before installation, socket changes or module removal. Do not replace your saves or configuration with another user's files.
 
@@ -58,7 +58,7 @@ The original Workbench code is under the included MIT license. You may use, modi
 With the GitHub CLI installed:
 
 ```powershell
-gh release download v0.9.0 --repo ArasHueseyin/crimson-workbench --pattern '*-setup.exe'
+gh release download v0.9.1 --repo ArasHueseyin/crimson-workbench --pattern '*-setup.exe'
 ```
 
 Run the downloaded setup file afterward; downloading alone does not install it. To check a file's SHA-256 checksum, use `Get-FileHash .\<Filename> -Algorithm SHA256`.

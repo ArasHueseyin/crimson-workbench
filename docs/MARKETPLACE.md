@@ -1,6 +1,6 @@
 # Free mod marketplace
 
-Version 0.9.0 contains **35 cards** covering the original 25 requested features, the later Force Palm height, spirit, Axiom reach and gliding-speed additions, and the existing sleep and mount-stamina mods. All mods are free. It works locally without an account, payment, server or separate mod downloads. The interface is English; game definitions use internal IDs and are independent of the game's display language. Game assets and personal saves are not distributed.
+Version 0.9.1 contains **35 cards** covering the original 25 requested features, the later Force Palm height, spirit, Axiom reach and gliding-speed additions, and the existing sleep and mount-stamina mods. All mods are free. It works locally without an account, payment, server or separate mod downloads. The interface is English; game definitions use internal IDs and are independent of the game's display language. Game assets and personal saves are not distributed.
 
 The expansion is prepared for **EXE 1.0.0.2976** and matching verified data. Automated and original-image checks do not establish in-game acceptance. The newly added workflows still need the user's game tests.
 
