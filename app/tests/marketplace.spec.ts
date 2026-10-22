@@ -993,7 +993,7 @@ test('journal knowledge previews this save, confirms changes and disables a comp
  const apply=dialog.getByRole('button',{name:'Back up & unlock knowledge',exact:true});
  await expect(apply).toBeDisabled();
  await dialog.getByLabel('Knowledge unlock save',{exact:true}).selectOption('123/slot0');
- await expect(dialog.locator('.skills-summary')).toContainText(['1966','111','1862']);
+ await expect(dialog.locator('.skills-summary strong')).toHaveText(['1966','111','1862']);
  await expect(apply).toBeDisabled();
  await dialog.getByLabel('Confirm knowledge save edit',{exact:true}).check();await apply.click();
  await expect(dialog).toContainText('Journal knowledge unlocked. Existing progress preserved.');
