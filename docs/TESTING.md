@@ -1,5 +1,7 @@
 # Test plan and evidence
 
+> **Historical test log.** Dated results and pending-test statements below apply to their recorded versions. They are not current contributor prerequisites. Use [Development: checks](DEVELOPMENT.md#checks) for the current local/CI workflow and individual feature guides for remaining gameplay limits.
+
 Status: phase 5, v0.5.9, 23.09.2026. Current status in [PROGRESS.md](PROGRESS.md), implementation limits in [MODS.md](MODS.md). Live-B0 is automatically tested on artificial installations. Basic change, inventory integration and confirmed third-party additions are implemented. The manual in-game validation remains **open**. At the request of the user from 20.09.2026, the manual in-game tests is carried out only after completion of the development of all phases. They do not block further development and are until then explicitly listed as untested.
 
 ## Inventory package serializer, module 0.23.0

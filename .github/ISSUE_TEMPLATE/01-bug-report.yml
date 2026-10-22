@@ -11,7 +11,7 @@ body:
     attributes:
       label: Workbench version
       description: Which release did you install? Enter "unknown" if you are unsure.
-      placeholder: "e.g. 0.8.0"
+      placeholder: "Version shown in Workbench or the installer filename"
     validations:
       required: true
   - type: input
@@ -56,4 +56,4 @@ body:
     id: supporting-details
     attributes:
       label: Screenshots, errors, or other details
-      description: Paste the exact error message or attach screenshots and relevant logs if available. Mention other installed mods if relevant.
+      description: Paste the exact error message or attach screenshots and relevant logs if available. Mention other installed mods if relevant. Redact personal information; do not attach saves or game archives.

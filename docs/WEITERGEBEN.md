@@ -18,7 +18,7 @@ Requirements: Windows x64, Node 22.22+, Rust 1.95+, Visual Studio 2022 C++ tools
 .\scripts\build-release.ps1
 ```
 
-The script downloads native dependencies pinned by SHA-256, builds LiveItems and then the matching Extra Sockets module, and embeds the module hash in the Rust build. It runs checks and creates the installer, portable ZIP, runtime-mod ZIP and `SHA256SUMS.txt` under `.local/release/0.8.0/assets`. Use a fresh `-OutputDirectory` for a subsequent run; existing release artifacts are not overwritten.
+The script downloads native dependencies pinned by SHA-256, builds LiveItems and then the matching Extra Sockets module, and embeds the module hash in the Rust build. It runs checks and creates the installer, portable ZIP, runtime-mod ZIP and `SHA256SUMS.txt` under `.local/release/<version>/assets`, using the version from `app/package.json`. Use a fresh `-OutputDirectory` for a subsequent run; existing release artifacts are not overwritten.
 
 The ordinary desktop build remains available:
 
@@ -32,9 +32,9 @@ It uses the existing approved native hash and does not rebuild the native module
 
 ## GitHub pipeline and testing
 
-`.github/workflows/release.yml` runs manually or for a `v*` tag. A fresh Windows 2022 runner builds and checks the packages. The package test installs setup, checks the packaged WebView interface with isolated user data, verifies all three marketplace module lifecycles in synthetic folders and uninstalls the test app. Assets are published as a regular **Latest** release only after successful checks for a matching version tag. Manual runs retain build artifacts. The tag, npm, Tauri and Cargo versions must agree.
+`.github/workflows/release.yml` runs manually or for a `v*` tag. A fresh Windows 2022 runner builds and checks the packages. The package test installs setup, checks the packaged WebView interface with isolated user data, verifies Marketplace module lifecycles in synthetic folders and uninstalls the test app. Assets are published as a regular **Latest** release only after successful checks for a matching version tag. Manual runs retain build artifacts. The tag, npm, Tauri and Cargo versions must agree.
 
-The native loader test runs in its own synthetic process and verifies that all five ASIs reject an unrelated EXE. Automated evidence does not replace testing a friend's particular installation. Compatibility guards and documented limitations remain active in regular releases.
+The native loader test runs in its own synthetic process and verifies that the packaged ASIs reject an unrelated EXE. Automated evidence does not replace testing a friend's particular installation. Compatibility guards and documented limitations remain active in regular releases.
 
 ## Licensing and requirements
 
