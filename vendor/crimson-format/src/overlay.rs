@@ -386,7 +386,7 @@ pub fn unregister(
     }
     let mut out = original[..12].to_vec();
     out[8] -= 1;
-    for (i, entry) in original[12..end].chunks_exact(12).enumerate() {
+    for (i, entry) in original[12..end].as_chunks::<12>().0.iter().enumerate() {
         if i == index {
             continue;
         }
