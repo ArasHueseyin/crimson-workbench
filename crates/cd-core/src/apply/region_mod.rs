@@ -170,7 +170,7 @@ pub fn change(game: &Path, install: bool) -> Result<Status> {
     #[cfg(not(windows))]
     {
         let _ = (game, install);
-        return Err(bad("Archive mod installation requires Windows x64."));
+        Err(bad("Archive mod installation requires Windows x64."))
     }
     #[cfg(windows)]
     {
