@@ -28,27 +28,37 @@ inline bool guarded_dt(const void* params,float& out) {
 }
 template<class Classify=KnownAnimations>
 inline bool guarded_publish(Address base,const void* method,const void* params,void* output,
-                            const Scope& before,float dt,std::uint32_t percent,Classify classify={}) {
+                            const Scope& before,float dt,std::uint32_t percent,Classify classify={},bool* scaled_nonzero=nullptr,
+                            bool inverse=false) {
     __try {
         Memory m;Scope checked{};Velocity v{};
-        return m.at<float>(reinterpret_cast<Address>(params)+0x6c)==dt &&
+        const bool changed=m.at<float>(reinterpret_cast<Address>(params)+0x6c)==dt &&
             capture(m,base,reinterpret_cast<Address>(method),checked,classify) && checked==before &&
-            prepare(m,reinterpret_cast<Address>(output),percent,v) &&
+            prepare(m,reinterpret_cast<Address>(output),percent,v,inverse) &&
             capture(m,base,reinterpret_cast<Address>(method),checked,classify) && checked==before &&
             publish(m,reinterpret_cast<Address>(output),v);
+        if (changed && scaled_nonzero)
+            *scaled_nonzero=(v.after[0]&0x7fffffffu)!=0 || (v.after[2]&0x7fffffffu)!=0;
+        return changed;
     } __except(EXCEPTION_EXECUTE_HANDLER) {return false;}
 }
 template<class Classify=KnownAnimations>
 inline std::uintptr_t dispatch(Speed original,Address base,Address caller,bool enabled,std::uint32_t percent,
-                               void* method,const void* params,void* output,Classify classify={}) {
+                               void* method,const void* params,void* output,Classify classify={},bool* scaled_nonzero=nullptr) {
+    if (scaled_nonzero) *scaled_nonzero=false;
     static thread_local bool active=false;
     Scope before{};float dt{};
     if (active || !enabled || percent<=100 || percent>500 || !speed_call(base,caller) ||
         !method || !params || !output || !guarded_dt(params,dt) || !guarded_capture(base,method,before,classify))
         return original(method,params,output);
     struct Invocation {bool& value;Invocation(bool& flag):value(flag) {value=true;} ~Invocation() {value=false;}} invocation(active);
+    // The native routine reads the incoming velocity before updating it. Feed
+    // that carried velocity back in native units, then scale its fresh result.
+    // Multiplying only the result compounds the boost on reused/cached input.
+    if (!guarded_publish(base,method,params,output,before,dt,percent,classify,nullptr,true))
+        return original(method,params,output);
     const auto result=original(method,params,output);
-    guarded_publish(base,method,params,output,before,dt,percent,classify);
+    guarded_publish(base,method,params,output,before,dt,percent,classify,scaled_nonzero);
     return result;
 }
 } // namespace crimson::marketplace::glide

@@ -11,6 +11,10 @@ description = "Read-only command line tools for Crimson Workbench"
 name = "cd-cli"
 path = "src/main.rs"
 
+[[bin]]
+name = "crimson-archive-mods"
+path = "src/archive_mods.rs"
+
 [dependencies]
 cd-core = { path = "../cd-core" }
 clap.workspace = true

@@ -11,6 +11,7 @@
 #include "../glide/glide_policy.h"
 #include "../glide/glide_hooks.h"
 #include "../glide/glide_settings.h"
+#include "glide_synthetic_fixture.h"
 #ifdef CRIMSON_PRIVATE_GLIDE_FIXTURE_HEADER
 #include CRIMSON_PRIVATE_GLIDE_FIXTURE_HEADER
 namespace fixture_data=crimson::marketplace::glide::fixture;
@@ -53,7 +54,7 @@ struct Fixture {
         put(state,0x68,address(actor));put(state,0xf0,std::uint8_t{0});
         for (unsigned i=0;i<4;++i) put(state,0xf8+8*i,address(method));
         put(method,0,base+0x55cab28);put(method,0x18,address(control));put(method,0x20,address(actor));
-        put(control,0x30,address(selector));put(selector,0x1b,std::uint8_t{0});put(control,0x88,address(layer));
+        put(control,0x30,address(selector));put(selector,0x1b,std::uint8_t{1});put(control,0x90,address(layer));
         put(layer,0x18,address(animation));put(animation,0x38,address(fixed));put(animation,0x10,address(package));
         put(animation,0x20,address(view));put(animation,0x30,address(conditions));put(view,0,address(instances));
         put(view,8,fixture_data::kSustainedEvents);put(package,0x1a0,address(buffer));
@@ -138,7 +139,7 @@ void rejected_scope_tests() {
         {address(f.control),f.base+1},{address(f.control)+8,0},{address(f.control)+0xc8,0},
         {address(f.control)+0x140,0},{address(f.state)+0x60,0},{address(f.state)+0x68,0},
         {address(f.state)+0xf0,4},{address(f.state)+0xf8,0},{address(f.control)+0x30,0},
-        {address(f.selector)+0x1b,1},{address(f.control)+0x88,0},{address(f.layer)+0x18,0},
+        {address(f.selector)+0x1b,2},{address(f.control)+0x90,0},{address(f.layer)+0x18,0},
         {address(f.animation)+0x38,0},{address(f.animation)+0x10,0},{address(f.animation)+0x20,0},
         {address(f.animation)+0x30,0},{address(f.view),0},{address(f.view)+8,1},
         {address(f.package)+0x1a0,0},{address(f.package)+0x1a8,kEventBytes+4},
@@ -166,8 +167,8 @@ void rejected_scope_tests() {
 void stale_and_recursive_tests() {
     Fixture f;native_effect=[&] {put(f.actor,0x60,std::uint32_t{123});};
     invoke(f,500,1);native_effect={};put(f.actor,0x60,std::uint32_t{0x12345678});
-    native_effect=[&] {put(f.selector,0x1b,std::uint8_t{1});};
-    invoke(f,500,1);native_effect={};put(f.selector,0x1b,std::uint8_t{0});
+    native_effect=[&] {put(f.selector,0x1b,std::uint8_t{0});};
+    invoke(f,500,1);native_effect={};put(f.selector,0x1b,std::uint8_t{1});
     native_effect=[&] {f.fixed=fixture_data::kLanding;put(f.view,8,fixture_data::kLandingEvents);};
     // These two snapshots intentionally change across native execution.
     native_calls=0;expect_arguments(f.method.data(),f.params.data(),f.output.data());
@@ -216,6 +217,12 @@ void compare_publish_tests() {
 void classification_tests() {
     for (const auto& animation:kAnimations)
         assert(KnownAnimations{}(animation.fingerprint,animation.events));
+    for (const auto& animation:kUpperAnimations) {
+        assert(!KnownAnimations{}(animation.fingerprint,animation.events,0));
+        assert(!KnownAnimations{}(animation.fingerprint,animation.events,2));
+    }
+    for (const auto& animation:kUnboostedAnimations)
+        assert(!KnownAnimations{}(animation.fingerprint,animation.events,1));
     assert(!KnownAnimations{}(0,0));
 #ifndef CRIMSON_PRIVATE_GLIDE_FIXTURE_HEADER
     // A public fixture can never become an accepted production fingerprint.
@@ -224,6 +231,108 @@ void classification_tests() {
     assert(!capture(memory,f.base,address(f.method),scope));
     assert(capture(memory,f.base,address(f.method),scope,FixtureAnimations{}));
 #endif
+}
+void active_layer_tests() {
+    // Regression: +88 is the upper layer; the lower layer is at +90. Both
+    // can drive movement. Only the native-selected layer may grant scaling.
+    using namespace synthetic_fixture;
+    Fixture f,inactive;
+    const auto configure=[](Fixture& value,std::uint8_t layer) {
+        put(value.selector,0x1b,layer);put(value.control,0x88+8*layer,address(value.layer));
+        value.fixed=layer==0?kUpperSustained:synthetic_fixture::kSustained;
+        put(value.view,8,layer==0?kUpperSustainedEvents:synthetic_fixture::kSustainedEvents);
+        put(value.package,0x1a8,layer==0?kUpperEventBytes:kEventBytes);
+        put(value.package,0x118,layer==0?kUpperConditionBytes:kConditionBytes);
+        put(value.package,0x120,layer==0?kUpperFinderCount:kFinderCount);
+    };
+    const auto check=[&](std::uint32_t percent,float factor,Address caller) {
+        expect_arguments(f.method.data(),f.params.data(),f.output.data());native_calls=0;
+        bool scaled=true;
+        assert(dispatch(native_speed,f.base,f.base+caller,true,percent,f.method.data(),f.params.data(),
+            f.output.data(),SyntheticAnimations{},&scaled)==result_value);
+        assert(scaled==(factor>1 && (original_velocity[0]!=0 || original_velocity[2]!=0)));
+        assert(native_calls==1);expect_velocity(f,factor);++invocations;
+    };
+    for (std::uint8_t layer=0;layer<2;++layer) {
+        configure(f,layer);
+        for (auto caller:kReturns) for (auto percent:{125u,200u,500u})
+            check(percent,layer==1?static_cast<float>(percent)/100:1,caller);
+        // Correct animation with the other package's layout must be rejected.
+        put(f.package,0x1a8,layer==0?kEventBytes:kUpperEventBytes);
+        check(500,1,kReturns[0]);configure(f,layer);
+        // The other layer's valid fingerprint also cannot cross the boundary.
+        f.fixed=layer==0?synthetic_fixture::kSustained:kUpperSustained;
+        put(f.view,8,layer==0?synthetic_fixture::kSustainedEvents:kUpperSustainedEvents);
+        check(500,1,kReturns[0]);configure(f,layer);
+        f.fixed=layer==0?kUpperLanding:synthetic_fixture::kLanding;
+        put(f.view,8,layer==0?kUpperLandingEvents:synthetic_fixture::kLandingEvents);
+        check(500,1,kReturns[0]);
+        // A sustained animation left on the inactive layer is not sufficient.
+        configure(inactive,static_cast<std::uint8_t>(1-layer));
+        put(f.control,0x88+8*(1-layer),address(inactive.layer));
+        check(500,1,kReturns[1]);
+    }
+    configure(f,0);
+    original_velocity={0,-3,0};check(500,1,kReturns[0]);original_velocity={2,-3,4};
+    for (std::size_t i=0;i<f.fixed.size();++i) {
+        f.fixed[i]^=1;check(500,1,kReturns[0]);f.fixed[i]^=1;
+    }
+    put(f.selector,0x1b,std::uint8_t{2});check(500,1,kReturns[0]);
+}
+bool reuse_velocity{};
+std::uintptr_t __fastcall feedback_speed(void* method,const void* params,void* output) {
+    assert(method==expected_method && params==expected_params && output==expected_output);++native_calls;
+    float velocity[3]{},dt{};std::memcpy(velocity,static_cast<unsigned char*>(output)+0x48,12);
+    std::memcpy(&dt,static_cast<const unsigned char*>(params)+0x6c,4);
+    if (!reuse_velocity) {velocity[0]+=0.25f*dt;velocity[2]+=0.75f*dt;}
+    std::memcpy(static_cast<unsigned char*>(output)+0x48,velocity,12);return result_value;
+}
+void carried_velocity_tests() {
+    // Real native code reads output+48/+50 before writing them. A fixed-output
+    // stub misses runaway feedback when that carried velocity is already boosted.
+    for (auto percent:{125u,250u,500u}) for (auto caller:kReturns) {
+        Fixture f;expect_arguments(f.method.data(),f.params.data(),f.output.data());
+        float expected[3]={2,-3,4};std::memcpy(f.output.data()+0x48,expected,12);
+        const auto factor=static_cast<float>(percent)/100;reuse_velocity=false;
+        const auto input=f.params;const auto record=f.fixed;
+        for (unsigned i=0;i<100;++i) {
+            if (i==80) reuse_velocity=true;
+            if (!reuse_velocity) {expected[0]+=factor*0.25f*0.5f;expected[2]+=factor*0.75f*0.5f;}
+            native_calls=0;
+            assert(fixture_dispatch(feedback_speed,f.base,f.base+caller,true,percent,
+                f.method.data(),f.params.data(),f.output.data())==result_value);
+            assert(native_calls==1);float actual[3]{};std::memcpy(actual,f.output.data()+0x48,12);
+            assert(std::fabs(actual[0]-expected[0])<0.01f && std::fabs(actual[2]-expected[2])<0.01f);
+            assert(actual[1]==expected[1] && f.params==input && f.fixed==record);++invocations;
+        }
+    }
+    reuse_velocity=false;
+}
+void ordinary_velocity_tests() {
+    // Ordinary wing glide must retain its native incoming and outgoing velocity,
+    // including on the first frame. A fixed-output stub cannot establish that.
+    using namespace synthetic_fixture;
+    for (std::uint8_t layer=0;layer<2;++layer)
+        for (auto caller:kReturns) for (auto percent:{125u,250u,500u}) {
+            Fixture f;put(f.selector,0x1b,layer);put(f.control,0x88+8*layer,address(f.layer));
+            f.fixed=layer==0?kUpperSustained:synthetic_fixture::kLanding;
+            put(f.view,8,layer==0?kUpperSustainedEvents:synthetic_fixture::kLandingEvents);
+            put(f.package,0x1a8,layer==0?kUpperEventBytes:kEventBytes);
+            put(f.package,0x118,layer==0?kUpperConditionBytes:kConditionBytes);
+            put(f.package,0x120,layer==0?kUpperFinderCount:kFinderCount);
+            expect_arguments(f.method.data(),f.params.data(),f.output.data());
+            float expected[3]={2,-3,4};std::memcpy(f.output.data()+0x48,expected,12);
+            const auto input=f.params;const auto record=f.fixed;
+            for (unsigned i=0;i<20;++i) {
+                expected[0]+=0.25f*0.5f;expected[2]+=0.75f*0.5f;native_calls=0;
+                bool scaled=true;
+                assert(dispatch(feedback_speed,f.base,f.base+caller,true,percent,
+                    f.method.data(),f.params.data(),f.output.data(),SyntheticAnimations{},&scaled)==result_value);
+                assert(native_calls==1 && !scaled);
+                assert(std::memcmp(f.output.data()+0x48,expected,12)==0);
+                assert(f.params==input && f.fixed==record);++invocations;
+            }
+        }
 }
 void synthetic_integration_test() {
     // Our C++ consumer checks the dispatch output contract. It is deliberately
@@ -289,7 +398,7 @@ void hooks_tests() {
 } // namespace
 int main() {
     settings_tests();classification_tests();dispatch_tests();rejected_scope_tests();stale_and_recursive_tests();
-    compare_publish_tests();synthetic_integration_test();hooks_tests();
+    compare_publish_tests();active_layer_tests();carried_velocity_tests();ordinary_velocity_tests();synthetic_integration_test();hooks_tests();
 #ifdef CRIMSON_PRIVATE_GLIDE_FIXTURE_HEADER
     copied_native_integration_test();
     std::puts("Private original-image integration fixture also passed.");

@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$GameDirectory,
     [ValidateSet('Status', 'Install', 'Remove')][string]$Mode = 'Status',
-    [ValidateSet('blackstar', 'sleep_cooldown', 'sleep_duration', 'no_fall', 'player_stamina', 'mount_jump', 'player_jump', 'player_speed', 'preserve_consumables', 'mount_protection', 'free_crafting_materials', 'force_palm', 'force_palm_height', 'axiom_reach', 'glide_speed', 'mount_dismount', 'auto_loot', 'world_controls', 'photo_mode', 'teleport')][string]$ModId,
+    [ValidateSet('blackstar', 'sleep_cooldown', 'sleep_duration', 'no_fall', 'player_stamina', 'mount_jump', 'player_jump', 'player_speed', 'preserve_consumables', 'mount_protection', 'free_crafting_materials', 'force_palm', 'force_palm_height', 'axiom_reach', 'glide_speed', 'mount_dismount', 'auto_loot', 'world_controls', 'photo_mode', 'teleport', 'region_return_30min')][string]$ModId,
     [switch]$Elevate,
     [string]$ResultPath
 )
@@ -84,6 +84,22 @@ function Finish-ModTransaction($Mod, [string]$Bin, [string]$Store) {
     if (Test-Path -LiteralPath $oldReceipt) { Remove-Checked $oldReceipt $p.receipt_before }
     Remove-Checked $pending $pendingHash
 }
+function Invoke-RegionArchiveMod([string]$Game, [string]$Action) {
+    $helper = Join-Path $PSScriptRoot 'CrimsonArchiveMods.exe'
+    $ledger = Join-Path $PSScriptRoot 'archive-mods-manifest.json'
+    foreach ($path in @($helper, $ledger)) { Assert-PlainPath $path }
+    if (-not (Test-Path -LiteralPath $ledger -PathType Leaf)) { throw 'Update the Workbench package to install the independent region mod.' }
+    $entry = Get-Content -LiteralPath $ledger -Raw | ConvertFrom-Json
+    if ($entry.schema -ne 1 -or $entry.file -ne 'CrimsonArchiveMods.exe' -or $entry.sha256 -cnotmatch '^[a-f0-9]{64}$' -or
+        (Get-RuntimeHash $helper) -ne $entry.sha256 -or (Get-Item -LiteralPath $helper).Length -ne $entry.bytes) { throw 'The archive mod installer is missing or damaged.' }
+    $output = & $helper --game $Game --mode $Action
+    $code = $LASTEXITCODE
+    $response = ($output -join "`n") | ConvertFrom-Json
+    if ($code -ne 0 -or -not $response.ok -or -not $response.status -or $response.status.id -ne 'region_return_30min') {
+        throw $(if ($response.message) { $response.message } else { 'The archive mod installer did not return a valid status.' })
+    }
+    return $response.status
+}
 function Get-ModSnapshot($Manifest, [string]$Bin) {
     $running = [bool]@(Get-Process -Name CrimsonDesert -ErrorAction SilentlyContinue).Count
     $loader = Join-Path $Bin 'winmm.dll'
@@ -116,6 +132,8 @@ function Get-ModSnapshot($Manifest, [string]$Bin) {
         } catch { $state = 'conflict'; $message = $_.Exception.Message; $canInstall = $false; $canRemove = $false }
         $items += [ordered]@{ id = $mod.id; state = $state; message = $message; can_install = $canInstall -and -not $running; can_remove = $canRemove -and -not $running }
     }
+    try { $items += Invoke-RegionArchiveMod (Split-Path -Parent $Bin) 'Status' }
+    catch { $items += [ordered]@{ id = 'region_return_30min'; state = 'conflict'; message = $_.Exception.Message; can_install = $false; can_remove = $false } }
     return [ordered]@{ mods = $items; game_running = $running }
 }
 function Change-MarketplaceMod($Manifest, [string]$Bin) {
@@ -202,7 +220,10 @@ try {
     Assert-PlainPath $bin
     if (-not (Test-Path -LiteralPath (Join-Path $bin 'CrimsonDesert.exe') -PathType Leaf)) { throw 'Select the game installation folder containing bin64.' }
     $manifest = Read-MarketplaceManifest
-    if ($Mode -ne 'Status') { Change-MarketplaceMod $manifest $bin }
+    if ($Mode -ne 'Status') {
+        if ($ModId -eq 'region_return_30min') { Invoke-RegionArchiveMod $game $Mode | Out-Null }
+        else { Change-MarketplaceMod $manifest $bin }
+    }
     $response = [ordered]@{ ok = $true; snapshot = Get-ModSnapshot $manifest $bin }
     $exitCode = 0
 } catch { $response = [ordered]@{ ok = $false; message = $_.Exception.Message }; $exitCode = 1 }

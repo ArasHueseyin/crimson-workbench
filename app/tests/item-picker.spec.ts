@@ -1,11 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-async function fixture(page: Page, live: { ready?: boolean; defer?: boolean; lostReply?: boolean; stack10?:boolean; knowledge?:boolean; arrows?:boolean; npcAmmo?:boolean } = {}) {
+async function fixture(page: Page, live: { ready?: boolean; defer?: boolean; lostReply?: boolean; stack10?:boolean; knowledge?:boolean; arrows?:boolean; npcAmmo?:boolean; specialStorage?:boolean } = {}) {
   await page.addInitScript(live => {
     const root = window as unknown as { isTauri: boolean; __TAURI_INTERNALS__: unknown; spawnCalls: { command: string; args: Record<string, unknown> }[] };
     root.isTauri = true;
     root.spawnCalls = [];
     const items = Array.from({ length: 450 }, (_, n) => ({ key: 1000 + n, name: live.arrows&&n<3?['Blitz-Pfeile','Feuerpfeile','Goldbarren'][n]:n === 0 ? 'Dunkler Zweihänder' : `Material ${n}`, internal_key: `Synthetic_${n}`, description: n === 0 ? 'Eine dunkle Testwaffe. <b>Nur Testdaten.</b>' : 'Material für Herstellung.', item_type: 1, category: 3, tier: 3, max_stack: live.stack10?'10':'1000', stat_keys: [7], knowledge_keys:live.knowledge&&n===0?[501]:[], icon_key: 1 }));
     if(live.npcAmmo) Object.assign(items[0],{key:1001315,name:'Blitzpfeil',internal_key:'Lightning_Arrow',use_restriction:'Monstermunition: Diese Variante ist für NPCs vorgesehen. Verwende Pfeil (ID 50001) oder Explosionspfeil (ID 1001321).'});
+    if(live.specialStorage) Object.assign(items[0],{name:'Kuku-Testgegenstand',use_restriction:'Requires Kuku storage. Direct creation in this container is not supported by the live item picker yet. No item request will be sent; ordinary inventory items remain available.'});
     root.__TAURI_INTERNALS__ = { invoke: async (command: string, args: Record<string, unknown> = {}) => {
       if (command.startsWith('spawn_')) {
         root.spawnCalls.push({ command, args });
@@ -37,6 +38,18 @@ async function fixture(page: Page, live: { ready?: boolean; defer?: boolean; los
   await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'true');
   await page.getByRole('button', { name: 'Item picker', exact: true }).click();
 }
+
+test('special-container items explain the restriction without sending or blocking ordinary items',async({page})=>{
+  await fixture(page,{ready:true,specialStorage:true});
+  await page.getByRole('option',{name:/Kuku-Testgegenstand/}).click();
+  await expect(page.getByRole('note')).toContainText('Requires Kuku storage');
+  await expect(page.getByRole('button',{name:'Add to inventory'})).toBeDisabled();
+  expect(await page.evaluate(()=>(window as unknown as {spawnCalls:{command:string}[]}).spawnCalls.filter(c=>c.command==='spawn_grant').length)).toBe(0);
+  await page.getByRole('option',{name:/Material 1\b/}).click();
+  await expect(page.getByRole('button',{name:'Add to inventory'})).toBeEnabled();
+  await page.getByRole('button',{name:'Add to inventory'}).click();
+  await expect.poll(()=>page.evaluate(()=>(window as unknown as {spawnCalls:{command:string}[]}).spawnCalls.filter(c=>c.command==='spawn_grant').length)).toBe(1);
+});
 test('icons, descriptions, categories, exact ID and refinement values', async ({ page }) => {
   await fixture(page);
   await page.getByRole('button', { name: 'Equipment', exact: true }).click();

@@ -3,6 +3,7 @@
 mod base;
 pub(crate) mod edit;
 pub(crate) mod files;
+mod riding;
 use crate::{Error, GameData, Result, fingerprint::hash_bytes};
 pub use files::{Receipt, SaveChoice};
 use serde::{Deserialize, Serialize};
@@ -87,6 +88,9 @@ pub fn catalog(data: &GameData) -> Result<Vec<Mount>> {
             .iter()
             .any(|s| internal.contains(s))
         {
+            continue;
+        }
+        if !riding::available(&mut r, vehicle)? {
             continue;
         }
         let name = names

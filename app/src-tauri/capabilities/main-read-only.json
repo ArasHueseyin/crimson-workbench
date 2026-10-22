@@ -17,6 +17,8 @@
     "allow-marketplace-weapon-effects",
     "allow-contribution-preview",
     "allow-contribution-apply",
+    "allow-knowledge-unlock-preview",
+    "allow-knowledge-unlock-apply",
     "allow-map-fog-preview",
     "allow-map-fog-apply",
     "allow-save-settings",

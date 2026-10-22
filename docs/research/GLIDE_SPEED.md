@@ -1,13 +1,20 @@
 # Gliding speed
 
-Local implementation, 17 October 2026. In-game acceptance is pending. No game,
-save or installed settings were changed during this work.
+Implementation updated 18 October 2026. The local **250% boost-only test passed**:
+the user confirmed the requested ordinary/fast glide comparison worked. The
+module logged `ACTIVE` for the fast boost. Read-only observations measured
+approximately **46.32 m/s** horizontal boost velocity, compared with **18.53 m/s**
+in the 100% baseline, matching the requested 2.5x factor without the previous
+runaway velocity. Ordinary wing glide is excluded from the hook's scope.
+Gameplay at 500% has not yet been checked with this corrected implementation.
 
 `CrimsonGlideSpeed.asi` applies a saved **100–500%** multiplier to the selected
-player's sustained gliding horizontal velocity. Native steering chooses the
-direction first; only X and Z are multiplied. Y, gravity, the original time
-step, spirit costs, eligibility and subsequent native movement checks remain
-under the game's control. This does not change normal walking, mounts,
+player's sustained **fast glide boost** horizontal velocity. On the tested
+controller mapping, Square opens the wings and X activates this boost. Ordinary
+wing glide remains native. Incoming X/Z velocity is normalized by the saved
+factor before the native update, then its fresh horizontal result is scaled.
+Y, gravity, the original time step, spirit costs, eligibility and subsequent
+native movement checks remain under the game's control. This does not change normal walking, mounts,
 animation playback or global time. Starts, landing, braking starts and
 dash-ready transitions retain native speed. A higher horizontal speed can
 naturally change the outcome of a collision; the engine still handles it.
@@ -23,8 +30,12 @@ PE timestamp `1790086912`, image size `389722112`.
   State initialization `88c530` registers this method for modes 0–3.
 - `ab96f0` composes the native speed and steering vector. Its final writes
   `abaa26`, `abaa2c` and `abaa32` populate output X/Y/Z at `+48/+4c/+50`.
-  The wrapper calls the original function first, retains its full RAX result,
-  and changes only the horizontal components of this invocation's output.
+  The same function first reads the carried X/Z values at `ab9d43` and
+  `ab9d49`. Multiplying only the result can feed boosted velocity back into
+  subsequent native updates. The wrapper divides incoming X/Z by the factor,
+  calls the original once, retains its full RAX result, and multiplies its
+  resulting X/Z. This also preserves cached native velocity without repeatedly
+  increasing it. Only this invocation's transient output is changed.
 - Both direct callers are pinned. At return `ab8775`, caller `ab8410` uses
   these components to compute movement length and integrates velocity times
   its unchanged `params+6c` time step at `ab8801`. At return `ab8c19`, caller
@@ -41,12 +52,30 @@ PE timestamp `1790086912`, image size `389722112`.
   The native-width decoder consumes it completely: 59 animation records,
   32 charts, 824 expression bytes, 181 expression references and 24,580
   cancel-expression bytes. Original animation-name indices at fixed-record
-  `+90` distinguish 39 sustained/steering records from 20 transitions.
+  `+90` and motion blend indices at `+96` identify five sustained fast boost
+  records (32, 33, 34, 56, 58), with three distinct fingerprint/event pairs and
+  blend indices 3, 4 or 5. The remaining 54 records, including ordinary glide,
+  starts, landing and directional dodges, do not qualify.
+- Native movement selects **upper layer 0 or lower layer 1**. The earlier
+  implementation incorrectly treated layer 0 as lower and required the lower
+  package's fingerprints there. Active lower-layer fast glide was therefore
+  excluded by the selector guard.
+  The corrected capture follows the actual native-selected slot at
+  `control+88+8*selector`. Only lower layer 1 with the exact lower package and
+  boost fingerprints qualifies; an upper-layer or inactive boost does not.
+- The upper glide package is 67,224 bytes, SHA256
+  `cd4db2678569395852bd80de73bc72fea616a228db032905a565a2963813212e`.
+  Its complete parse contains 76 animations, 680 expression bytes, 107 expression
+  references and 14,956 cancel-expression bytes. All upper records are excluded
+  from scaling. Fifteen ordinary sustained/steering fingerprints are retained
+  as explicit negative regression evidence. The user's read-only ordinary glide
+  samples match this upper package.
 
 The callback validates the selected actor's full identity, alive state,
 protagonist kind, possession round trip, component count/ownership, exact
 control/method types and control/state/method ownership. It follows the same
-active-layer selector as `ab96f0`, requires lower layer 0, and checks complete
+active-layer selector as `ab96f0`, accepts only the audited upper/lower slots,
+binds classification to the selected layer, and checks complete
 156-byte original-record fingerprints, event counts and exact package lengths.
 Merely having an old glide animation in an inactive layer does not qualify.
 Ownership and animation are captured before and rechecked after the native
@@ -75,14 +104,26 @@ an original trampoline published before activation, one installation attempt
 and retained trampoline lifetime after any activation attempt, including a
 failed activation. Hook failure leaves native passthrough available.
 
+`READY` means that the selected multiplier's hook is armed. A separate, one-time
+`ACTIVE` entry is written only after a nonzero horizontal glide velocity has
+actually been scaled. Standing still or merely loading the module cannot
+produce that entry.
+
 ## Verification
 
 MSVC x64 `/W4 /WX` builds the ASI and owned fixture executable. Public tests
-pass **337 dispatch/consumer invocations**, plus all 401 valid settings,
+pass **1355 dispatch/consumer invocations**, plus all 401 valid settings,
 malformed settings, publication rollback/foreign-change and hook-lifetime
 cases. They cover both accepted actor kinds, four native normal methods,
 both callers, repeated/recursive use, invalid/stale ownership, all 156
 single-byte record mutations, landing exclusion, invalid floats and overflow.
+Regression cases exercise both native-selected layers, cross-package
+fingerprint rejection, stale gliding on an inactive layer and zero-velocity
+activation reporting. Six hundred repeated invocations model incoming velocity
+feedback and cached output at 125%, 250% and 500% through both accepted callers;
+they verify linear acceleration without exponential growth. Another 240
+invocations verify ordinary glide and excluded lower motion retain the exact
+native incoming/outgoing velocity at those same multipliers.
 
 These checks use fabricated animation records and an owned C++ movement
 consumer. A test-only classifier is supplied explicitly; the default production
@@ -94,15 +135,20 @@ animation records or integration body.
 Optional private verification sets `CRIMSON_PRIVATE_GLIDE_FIXTURE_HEADER` to an
 absolute local header path. It supplies the original records and the owned copy
 of native `ab8bf0..ab8cef`, redirecting its callee and cell-size constant into
-owned memory. That run passes **353 invocations**, including original orientation
+owned memory. That run passes **1371 invocations**, including original orientation
 forwarding. The header stays in ignored local storage; public CI needs none of
 it, and the release build clears this option. Neither suite accesses a game
 process. A separate private read-only audit verifies compiled code witnesses,
 both direct callers, method slots, original transition exclusions and absence of
 overlap with existing hook entries and independent hash guards.
 
-Pending in-game acceptance: compare equal sustained glide intervals at 1x,
-2x and 5x; steer and brake; land and collide normally; check walking, mounts,
-ordinary jumps and aerial Force Palm are unaffected; change character and
-reload a save; reset to 1x on the next start. Real gameplay/collision quality
-at high multipliers is not established by the owned fixtures.
+In-game coverage established so far: the user completed the 100% ordinary/fast
+comparison, then accepted the installed correction at 250%. The latter run
+retained 171 fast-blend observations with a median horizontal speed of
+46.31 m/s and a maximum of 46.32 m/s. These samples belong to the lower-layer
+boost record and the native log confirms actual scaling.
+
+Remaining gameplay coverage includes 500%, steering/braking and obstacle
+collisions at the higher factor, other protagonists, mounts and unrelated
+movement, save reloads and resetting to 100%. Automated fixtures do not establish
+every gameplay or collision outcome at high multipliers.

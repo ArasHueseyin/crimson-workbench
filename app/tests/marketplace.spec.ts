@@ -3,6 +3,7 @@ import {expect,test,type Page} from '@playwright/test';
 async function fixture(page:Page,{running=false,version='1.0.0.2976',stale=false,nativeConflict=false,nativeUnmanaged=false,worldInstalled=false,photoInstalled=false,teleportInstalled=false,nativeReadError=false,jumpReadError=false,itemLanguage='eng'}={}) {
  await page.addInitScript(({running,version,stale,nativeConflict,nativeUnmanaged,worldInstalled,photoInstalled,teleportInstalled,nativeReadError,jumpReadError,itemLanguage})=>{
   const root=window as unknown as {isTauri:boolean;__TAURI_INTERNALS__:unknown;marketCalls:{command:string;args:Record<string,unknown>}[];marketRunning:boolean;marketGameError:boolean};root.isTauri=true;root.marketCalls=[];root.marketRunning=running;root.marketGameError=false;
+  let knowledgeUnlocked=false;
   let unlocked=false,jumpHeight=100,movementSpeed=100,mapRevealed=false;
   const runtimeSettings:Record<string,number>={force_palm_height:100,axiom_reach:100,glide_speed:100,player_resources:1};
   let protectedKeys:number[]=[];
@@ -17,7 +18,7 @@ async function fixture(page:Page,{running=false,version='1.0.0.2976',stale=false
   if(teleportInstalled)installed.add('teleport');
   const worldFlags=3;
   const worldSnapshot=()=>({pid:123,state:'published',id:'10',session:'11',generation:'12',monotonic_ms:'2000',reason:0,flags:worldFlags,identity:1,world:2,stage:3,clock_reason:0,weather_reason:0,time:{day:7,hour:12,minute:0,second:0,millisecond:0,weekday:0,rate:worldFlags&4?0:12,anchor:'123'},weather:{precipitation:0,cloudiness:0,humidity:0.5,wind_speed:10,height_fog:1,phase:0},time_receipt:'0',weather_receipt:'0',time_result:'ready',time_result_reason:0,weather_result:'ready',weather_result_reason:0});
-  const nativeStatus=()=>({game_running:root.marketRunning,mods:['sleep_cooldown','sleep_duration','blackstar','no_fall','player_stamina','mount_jump','player_jump','player_speed','preserve_consumables','mount_protection','free_crafting_materials','force_palm','force_palm_height','axiom_reach','glide_speed','mount_dismount','auto_loot','world_controls','photo_mode','teleport'].map(id=>({id,state:nativeConflict&&id==='blackstar'?'conflict':installed.has(id)?'installed':nativeUnmanaged&&id==='blackstar'?'unmanaged':'not_installed',message:nativeConflict&&id==='blackstar'?'Existing unknown module will not be overwritten.':installed.has(id)?'Installed · loads at the next game start':'Not installed',can_install:!root.marketRunning&&!installed.has(id)&&!(nativeConflict&&id==='blackstar'),can_remove:!root.marketRunning&&installed.has(id)}))});
+  const nativeStatus=()=>({game_running:root.marketRunning,mods:['sleep_cooldown','sleep_duration','blackstar','no_fall','player_stamina','mount_jump','player_jump','player_speed','preserve_consumables','mount_protection','free_crafting_materials','force_palm','force_palm_height','axiom_reach','glide_speed','mount_dismount','auto_loot','world_controls','photo_mode','teleport','region_return_30min'].map(id=>({id,state:nativeConflict&&id==='blackstar'?'conflict':installed.has(id)?'installed':nativeUnmanaged&&id==='blackstar'?'unmanaged':'not_installed',message:nativeConflict&&id==='blackstar'?'Existing unknown module will not be overwritten.':installed.has(id)?'Installed · loads at the next game start':'Not installed',can_install:!root.marketRunning&&!installed.has(id)&&!(nativeConflict&&id==='blackstar'),can_remove:!root.marketRunning&&installed.has(id)}))});
   const summary=()=>({total:140,new_abilities:unlocked?0:40,upgraded_abilities:unlocked?0:20,already_maxed:unlocked?140:80,gifted_points:unlocked?[0,0,0]:[20,15,10],available_points:[3,2,1]});
   root.__TAURI_INTERNALS__={invoke:async(command:string,args:Record<string,unknown>={})=>{
    root.marketCalls.push({command,args});
@@ -36,6 +37,12 @@ async function fixture(page:Page,{running=false,version='1.0.0.2976',stale=false
    if(command==='marketplace_consumables'){
     if(args.itemKeys!=null){if(running||stale)throw{message:'Close Crimson Desert before saving consumable settings.'};protectedKeys=[...(args.itemKeys as number[])].sort((a,b)=>a-b)}
     return{item_keys:[...protectedKeys],choices:consumableChoices,game_running:root.marketRunning,can_change:!running&&version==='1.0.0.2976',message:'Selection loads at game startup when the consumable mod is installed.'};
+   }
+   const knowledgePlan=()=>({save_sha256:'a'.repeat(64),lobby_sha256:'b'.repeat(64),plan_id:'f'.repeat(64),summary:{total:3939,new_entries:knowledgeUnlocked?0:1966,upgraded_entries:knowledgeUnlocked?0:111,already_complete:knowledgeUnlocked?3939:1862}});
+   if(command==='knowledge_unlock_preview')return{save_root:'C:/Synthetic Saves',saves:[{id:'123/slot0',label:'Manual save 0',modified:100}],selected_save:args.save??null,plan:args.save?knowledgePlan():null,game_running:root.marketRunning};
+   if(command==='knowledge_unlock_apply'){
+    if(root.marketRunning||stale)throw{message:root.marketRunning?'Close Crimson Desert first.':'Save changed since preview. Reload first.'};
+    const plan=knowledgePlan();knowledgeUnlocked=true;return{request:args.request,plan,backup:'C:/Synthetic/.local/knowledge-unlocks/backup',message:'Journal knowledge unlocked. Existing progress preserved.'};
    }
    if(command==='map_fog_preview')return{save_root:'C:/Synthetic Saves',saves:[{id:'123/slot0',label:'Manual save 0',modified:100}],selected_save:args.save??null,plan:args.save?mapPlan():null,game_running:root.marketRunning};
    if(command==='map_fog_apply'){
@@ -84,7 +91,7 @@ test('mod search finds English and German names without losing selections or uns
  await expect(page.locator('.market-card:visible')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'No mods match your search'})).toBeVisible();
  await page.getByRole('button',{name:'Clear mod search'}).click();
- await expect(page.locator('.market-card:visible')).toHaveCount(35);
+ await expect(page.locator('.market-card:visible')).toHaveCount(36);
  await expect(lion.getByRole('button',{name:'Deselect mod',exact:true})).toHaveAttribute('aria-pressed','true');
  await expect(jump.getByRole('slider')).toHaveValue('175');
  await expect(jump.getByRole('button',{name:'Save jump height'})).toBeEnabled();
@@ -191,9 +198,9 @@ test('startup controls unlock automatically after a running game closes without 
 });
 
 test('English cards, combined selection and reviewed export without automatic writes',async({page})=>{
- await fixture(page);await expect(page.locator('.market-card')).toHaveCount(35);await expect(page.locator('.market-free')).toHaveCount(0);
- await expect(page.locator('.market-card').getByLabel('Game availability',{exact:true})).toHaveCount(35);
- await expect(page.locator('.market-card .market-availability.closed')).toHaveCount(15);
+ await fixture(page);await expect(page.locator('.market-card')).toHaveCount(36);await expect(page.locator('.market-free')).toHaveCount(0);
+ await expect(page.locator('.market-card').getByLabel('Game availability',{exact:true})).toHaveCount(36);
+ await expect(page.locator('.market-card .market-availability.closed')).toHaveCount(16);
  await expect(page.locator('.runtime-card').getByText('Works while playing',{exact:true})).toHaveCount(17);
  await expect(page.locator('.runtime-card').getByText('Close game for setup',{exact:true})).toHaveCount(20);
  await expect(page.locator('.runtime-card').getByText('Adjust while playing',{exact:true})).toHaveCount(3);
@@ -320,17 +327,14 @@ test('stale contribution request retains its original targets for recovery',asyn
  await expect(dialog.getByLabel('Graymane contribution target',{exact:true})).toHaveValue('');
 });
 
-test('restricted-region timer selection requires a reviewed plan and revokes stale previews',async({page})=>{
+test('restricted-region timer has independent setup buttons and refuses changes while the game runs',async({page})=>{
  await fixture(page,{running:true});
  const card=page.locator('.market-card').filter({has:page.getByRole('heading',{name:'More time beyond restricted regions',exact:true})});
  await expect(card).toContainText('30 seconds → 30 minutes');
- await card.getByRole('button',{name:'Select mod',exact:true}).click();
- await page.getByRole('button',{name:'Review combined plan',exact:true}).click();
+ await expect(card.getByRole('button',{name:'Select mod',exact:true})).toHaveCount(0);
+ await expect(card.getByRole('button',{name:'Install mod',exact:true})).toBeDisabled();
  const calls=await page.evaluate(()=> (window as unknown as {marketCalls:{command:string;args:Record<string,unknown>}[]}).marketCalls);
- expect((calls.find(c=>c.command==='mod_preview')!.args.request as {marketplace:unknown}).marketplace).toMatchObject({region_return_30min:true});
- expect(calls.some(c=>['live_start','marketplace_mod_change'].includes(c.command))).toBe(false);
- await card.getByRole('button',{name:'Deselect mod',exact:true}).click();
- await expect(page.getByRole('button',{name:'Export local package'})).toHaveCount(0);
+ expect(calls.some(c=>['mod_preview','live_start','marketplace_mod_change'].includes(c.command))).toBe(false);
 });
 
 test('automatic fishing is explicit about casting and changes only its reviewed draft',async({page})=>{
@@ -495,7 +499,7 @@ test('known previous module is imported only on explicit request',async({page})=
  await expect(blackstar.getByRole('button',{name:'Remove mod'})).toBeEnabled();
 });
 test('skills require a selected reviewed save and explicit confirmation; completed action cannot grant again',async({page})=>{
- await fixture(page);await page.getByRole('button',{name:'Choose save & review'}).click();
+ await fixture(page);await page.locator('.skills-card').getByRole('button',{name:'Choose save & review'}).click();
  const apply=page.getByRole('button',{name:'Back up & unlock all skills'});await expect(apply).toBeDisabled();
  await page.getByLabel('Skill unlock save').selectOption('123/slot0');await expect(page.locator('.skills-summary')).toContainText('40');await expect(apply).toBeDisabled();
  await page.getByLabel('Confirm skill save edit').check();await expect(apply).toBeEnabled();await apply.click();
@@ -505,7 +509,7 @@ test('skills require a selected reviewed save and explicit confirmation; complet
  expect(requests[0].args.request).toMatchObject({save_root:'C:/Synthetic Saves',save:'123/slot0',save_sha256:'a'.repeat(64),lobby_sha256:'b'.repeat(64),plan_id:'c'.repeat(64)});
 });
 test('running game blocks skill editing and unsupported build disables every recipe',async({page})=>{
- await fixture(page,{running:true});await page.getByRole('button',{name:'Choose save & review'}).click();await page.getByLabel('Skill unlock save').selectOption('123/slot0');
+ await fixture(page,{running:true});await page.locator('.skills-card').getByRole('button',{name:'Choose save & review'}).click();await page.getByLabel('Skill unlock save').selectOption('123/slot0');
  await expect(page.getByLabel('Confirm skill save edit')).toBeDisabled();await expect(page.getByRole('button',{name:'Back up & unlock all skills'})).toBeDisabled();
  await page.getByRole('button',{name:'Close',exact:true}).click();
  for(const button of await page.locator('.runtime-card').getByRole('button',{name:'Install mod'}).all())await expect(button).toBeDisabled();
@@ -514,12 +518,12 @@ test('running game blocks skill editing and unsupported build disables every rec
 test('unknown version gives a clear explanation and no enabled install actions',async({page})=>{
  await fixture(page,{version:'1.0.0.9999'});await expect(page.getByRole('alert')).toContainText('require game version 1.0.0.2976');
  for (const button of await page.getByRole('button',{name:'Select mod',exact:true}).all())await expect(button).toBeDisabled();
- await expect(page.getByRole('button',{name:'Choose save & review'})).toBeDisabled();
+ await expect(page.locator('.skills-card').getByRole('button',{name:'Choose save & review'})).toBeDisabled();
  await expect(page.getByRole('button',{name:'Choose weapons & effects'})).toBeDisabled();
  for(const button of await page.locator('.runtime-card').getByRole('button',{name:'Install mod'}).all())await expect(button).toBeDisabled();
 });
 test('stale save is refused and retry keeps the same request ID',async({page})=>{
- await fixture(page,{stale:true});await page.getByRole('button',{name:'Choose save & review'}).click();await page.getByLabel('Skill unlock save').selectOption('123/slot0');
+ await fixture(page,{stale:true});await page.locator('.skills-card').getByRole('button',{name:'Choose save & review'}).click();await page.getByLabel('Skill unlock save').selectOption('123/slot0');
  await page.getByLabel('Confirm skill save edit').check();await page.getByRole('button',{name:'Back up & unlock all skills'}).click();await expect(page.getByRole('alert')).toContainText('Save changed since preview');
  await page.getByRole('button',{name:'Check / recover pending unlock'}).click();
  const requests=await page.evaluate(()=> (window as unknown as {marketCalls:{command:string;args:Record<string,unknown>}[]}).marketCalls.filter(c=>c.command==='skill_unlock_apply'));
@@ -528,7 +532,7 @@ test('stale save is refused and retry keeps the same request ID',async({page})=>
 
 
 test('individual skill selection is searchable and the exact keys survive preview and apply',async({page})=>{
- await fixture(page);await page.getByRole('button',{name:'Choose save & review'}).click();
+ await fixture(page);await page.locator('.skills-card').getByRole('button',{name:'Choose save & review'}).click();
  await page.getByLabel('Skill unlock save').selectOption('123/slot0');
  await page.getByRole('button',{name:'Clear selection',exact:true}).click();
  await expect(page.getByRole('button',{name:'Back up & unlock selected skills'})).toBeDisabled();
@@ -547,7 +551,7 @@ test('individual skill selection is searchable and the exact keys survive previe
 });
 
 test('changing skill selection revokes confirmation and the all-skills button restores full scope',async({page})=>{
- await fixture(page);await page.getByRole('button',{name:'Choose save & review'}).click();
+ await fixture(page);await page.locator('.skills-card').getByRole('button',{name:'Choose save & review'}).click();
  await page.getByLabel('Skill unlock save').selectOption('123/slot0');
  await page.getByLabel('Confirm skill save edit').check();
  await page.getByRole('checkbox',{name:'Unlock Sword Mastery I (40003)',exact:true}).uncheck();
@@ -977,4 +981,42 @@ test('free upgrades remain independent of crafting currency and require the revi
  const writes=await page.evaluate(()=> (window as unknown as {marketCalls:{command:string;args:Record<string,unknown>}[]}).marketCalls.filter(c=>['live_start','skill_unlock_apply','marketplace_mod_change'].includes(c.command)));
  expect(writes).toHaveLength(0);
  await upgrades.scrollIntoViewIfNeeded();await page.screenshot({path:'../.local/marketplace-upgrade-costs-preview.png'});
+});
+
+
+test('journal knowledge previews this save, confirms changes and disables a complete save',async({page})=>{
+ await fixture(page);
+ await page.getByRole('textbox',{name:'Search mods',exact:true}).fill('Wissenssammlung');
+ const card=page.locator('.market-card:visible');await expect(card).toHaveCount(1);
+ await card.getByRole('button',{name:'Choose save & review',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Unlock journal knowledge',exact:true});
+ const apply=dialog.getByRole('button',{name:'Back up & unlock knowledge',exact:true});
+ await expect(apply).toBeDisabled();
+ await dialog.getByLabel('Knowledge unlock save',{exact:true}).selectOption('123/slot0');
+ await expect(dialog.locator('.skills-summary')).toContainText(['1966','111','1862']);
+ await expect(apply).toBeDisabled();
+ await dialog.getByLabel('Confirm knowledge save edit',{exact:true}).check();await apply.click();
+ await expect(dialog).toContainText('Journal knowledge unlocked. Existing progress preserved.');
+ await expect(dialog).toContainText('Journal knowledge is already complete in this save.');
+ await expect(apply).toBeDisabled();
+ await expect(dialog).toContainText('C:/Synthetic/.local/knowledge-unlocks/backup');
+ const writes=await page.evaluate(()=>(window as unknown as {marketCalls:{command:string}[]}).marketCalls.filter(c=>c.command==='knowledge_unlock_apply'));
+ expect(writes).toHaveLength(1);
+});
+
+test('journal unlock blocks gameplay and retries the same stale request without silently switching saves',async({page})=>{
+ for(const running of [true,false]){
+  await fixture(page,{running,stale:true});
+  await page.locator('.knowledge-card').getByRole('button',{name:'Choose save & review',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Unlock journal knowledge',exact:true});
+  await dialog.getByLabel('Knowledge unlock save',{exact:true}).selectOption('123/slot0');
+  if(running){await expect(dialog.getByLabel('Confirm knowledge save edit',{exact:true})).toBeDisabled();continue}
+  await dialog.getByLabel('Confirm knowledge save edit',{exact:true}).check();
+  await dialog.getByRole('button',{name:'Back up & unlock knowledge',exact:true}).click();
+  await expect(dialog).toContainText('Save changed since preview');
+  await expect(dialog.getByLabel('Knowledge unlock save',{exact:true})).toBeDisabled();
+  await dialog.getByRole('button',{name:'Check / recover pending knowledge unlock',exact:true}).click();
+  const writes=await page.evaluate(()=>(window as unknown as {marketCalls:{command:string;args:Record<string,unknown>}[]}).marketCalls.filter(c=>c.command==='knowledge_unlock_apply'));
+  expect(writes).toHaveLength(2);expect(writes[0].args.request).toEqual(writes[1].args.request);
+ }
 });

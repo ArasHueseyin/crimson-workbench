@@ -4,6 +4,7 @@ const aliases:Record<string,string>={
  inventory_999:'Inventar Taschen Plätze Plaetze inventory slots',no_durability_loss:'Haltbarkeit Verschleiß Verschleiss durability',
  region_return_30min:'Abgesperrte Regionen Rückkehr Rueckkehr Timer Grenze 30 Minuten',automatic_fishing:'Automatisch Angeln Fischen fishing',
  free_upgrade_materials:'Kostenlos Verbessern Aufwerten Materialien upgrades',free_crafting_currency:'Herstellen Insekten Kosten Geld crafting fee',
+ knowledge:'Wissen Wissensstand Wissenssammlung Tagebuch freischalten knowledge journal unlock recipes',
  skills:'Fähigkeiten Faehigkeiten freischalten alle skills abilities',item_stacks:'Stapel Stapeltiefe Stapelgröße Stapelgroesse items stack size',
  map:'Karte Nebel aufdecken world map fog',contributions:'Beitragswerte Beitragspunkte contribution faction points',
  effects:'Elementarwaffen Waffen Effekte Blitz Feuer Donner lightning fire',teleport:'Teleportieren Position Wegpunkt Karte reisen',

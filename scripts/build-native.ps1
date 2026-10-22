@@ -73,7 +73,7 @@ $marketModules = @(
     @{ id = 'force_palm'; file = 'CrimsonForcePalm.asi'; priorHashes = @('7ab93ae127f11959904b13eef537f158141c125836ff3378c82900eb3d38ff70') },
     @{ id = 'force_palm_height'; file = 'CrimsonForcePalmHeight.asi'; priorHashes = @('13b287af5246d83a6f73872d3a1da357d692caad1d318e02d60b1788ad083da3') },
     @{ id = 'axiom_reach'; file = 'CrimsonAxiomReach.asi'; priorHashes = @('0610e54c48812f8042349a7974f95f76062886831fe5d7d70fa1fb76e7068450') },
-    @{ id = 'glide_speed'; file = 'CrimsonGlideSpeed.asi'; priorHashes = @('fbc4f4c084400859cf3ea0f07b55fd57594ac431173eb8c8e9eeaa8d58cbb059') },
+    @{ id = 'glide_speed'; file = 'CrimsonGlideSpeed.asi'; priorHashes = @('fbc4f4c084400859cf3ea0f07b55fd57594ac431173eb8c8e9eeaa8d58cbb059', '2c6bdd2adb3e014ef9a5049b3c9cef7eea4c2a0afbd946a09e70725914a46af8', 'afc8d4320a4cae92490e264a17e27d77d8096d71372ba6f1d6212aea930e1987', '9916efa51896537294058fed49347700f4ce413e6652fc9cfe3a273cd04b48e3') },
     @{ id = 'mount_dismount'; file = 'CrimsonMountDismount.asi'; priorHashes = @('4f1999f03bf2166b768e875b8173fc2c150b41f9893b25904156801105e49e13') },
     @{ id = 'auto_loot'; file = 'CrimsonAutoLoot.asi'; priorHashes = @('744b9f0d8eeac78c10f86b653094422bfe43820f3e76bafbbb384768f43ae907') },
     @{ id = 'world_controls'; file = 'CrimsonWorldControls.asi'; priorHashes = @('81862f017cc8d1c4c21579ba0547681feff9ead087e302c71e075b97e479a4cf','909daf3f9ae7d3cc35e48700c2b27b931b927b2077c57aea0268b384fafd8d10') },
@@ -114,6 +114,15 @@ $addonManifest = @($marketModules | ForEach-Object {
 })
 [IO.File]::WriteAllText((Join-Path $OutputDirectory 'marketplace-manifest.json'), (([ordered]@{ schema = 1; version = $Version; gameExeSha256 = '57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7'; mods = $addonManifest }) | ConvertTo-Json -Depth 6), [Text.UTF8Encoding]::new($false))
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Marketplace-Mods.ps1') -Destination $OutputDirectory
+# The small companion builds script overlays from each user's verified game
+# assets. No game scripts or personal archive registry are shipped.
+& cargo build -p cd-cli --bin crimson-archive-mods --release --locked
+if ($LASTEXITCODE -ne 0) { throw 'Archive mod installer build failed.' }
+$archiveHelper = Join-Path $repo 'target/release/crimson-archive-mods.exe'
+Copy-Item -LiteralPath $archiveHelper -Destination (Join-Path $OutputDirectory 'CrimsonArchiveMods.exe')
+[IO.File]::WriteAllText((Join-Path $OutputDirectory 'archive-mods-manifest.json'), (([ordered]@{
+    schema = 1; file = 'CrimsonArchiveMods.exe'; sha256 = (Hash $archiveHelper); bytes = (Get-Item -LiteralPath $archiveHelper).Length
+}) | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
 [IO.File]::WriteAllBytes((Join-Path $OutputDirectory 'CrimsonExtraSockets.dat'), $empty)
 New-Item -ItemType Directory -Path (Join-Path $OutputDirectory 'loader') | Out-Null
 Copy-Item -LiteralPath $loader -Destination (Join-Path $OutputDirectory 'loader/winmm.dll')

@@ -5,7 +5,7 @@ async function fixture(page:Page){
   root.isTauri=true;let resolve:(()=>void)|undefined;
   root.ux={running:false,delay:false,fail:false,readFailure:'',palmSaved:100,calls:[],release:()=>resolve?.()};
   const installed=new Set<string>(['photo_mode']);
-  const ids=['glide_speed','teleport','photo_mode','world_controls','auto_loot','mount_dismount','force_palm','force_palm_height','axiom_reach','free_crafting_materials','mount_protection','preserve_consumables','player_speed','player_jump','mount_jump','player_stamina','no_fall','sleep_cooldown','sleep_duration','blackstar'];
+  const ids=['glide_speed','teleport','photo_mode','world_controls','auto_loot','mount_dismount','force_palm','force_palm_height','axiom_reach','free_crafting_materials','mount_protection','preserve_consumables','player_speed','player_jump','mount_jump','player_stamina','no_fall','sleep_cooldown','sleep_duration','blackstar','region_return_30min'];
   const settings:Record<string,number>={player_jump:100,player_speed:100,force_palm_height:100,axiom_reach:100,glide_speed:100,player_resources:1};
   let selected:number[]=[];
   const status=()=>({game_running:root.ux.running,mods:ids.map(id=>({id,state:installed.has(id)?'installed':'not_installed',message:installed.has(id)?'Installed files':'Not installed',can_install:!root.ux.running&&!installed.has(id),can_remove:!root.ux.running&&installed.has(id)}))});
@@ -27,6 +27,22 @@ async function fixture(page:Page){
  await expect(page.getByRole('slider',{name:'Gliding speed multiplier'})).toBeEnabled();
 }
 const card=(page:Page,title:string)=>page.locator('.runtime-card').filter({has:page.getByRole('heading',{name:title,exact:true})});
+
+test('region countdown installs and removes independently and locks setup while the game runs',async({page})=>{
+ await fixture(page);const region=card(page,'More time beyond restricted regions');
+ await expect(region.getByText('Apply with game closed',{exact:true})).toBeVisible();
+ await expect(region.getByRole('button',{name:'Select mod',exact:true})).toHaveCount(0);
+ await region.getByRole('button',{name:'Install mod',exact:true}).click();
+ await expect(region.getByText('Installed · start game',{exact:true})).toBeVisible();
+ await page.evaluate(()=>(window as unknown as {ux:{running:boolean}}).ux.running=true);
+ await expect(region.getByRole('button',{name:'Remove mod',exact:true})).toBeDisabled();
+ await page.evaluate(()=>(window as unknown as {ux:{running:boolean}}).ux.running=false);
+ await expect(region.getByRole('button',{name:'Remove mod',exact:true})).toBeEnabled();
+ await region.getByRole('button',{name:'Remove mod',exact:true}).click();
+ await expect(region.getByRole('button',{name:'Install mod',exact:true})).toBeEnabled();
+ const writes=await page.evaluate(()=>(window as unknown as {ux:{calls:{command:string;args:Record<string,unknown>}[]}}).ux.calls.filter(c=>c.command==='marketplace_mod_change'));
+ expect(writes.map(c=>({id:c.args.id,enabled:c.args.enabled}))).toEqual([{id:'region_return_30min',enabled:true},{id:'region_return_30min',enabled:false}]);
+});
 test('startup drafts survive navigation, catalog reads, refresh and page reload until explicitly discarded',async({page})=>{
  await fixture(page);const glide=card(page,'Gliding speed');
  await glide.getByRole('spinbutton',{name:'Gliding speed exact value'}).fill('275');await expect(glide.getByText('Unsaved settings',{exact:true})).toBeVisible();

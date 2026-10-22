@@ -62,6 +62,76 @@ pub const LION_DIRECTORY: &str = "character/appearance/2_mon/cd_m0002_00_fourfee
 pub const LION_FILE: &str = "cd_m0002_00_lion_0001_00000.app_xml";
 pub const ROKADE_DIRECTORY: &str = "character/appearance/4_riding/cd_r0002_00_horse";
 pub const ROKADE_FILE: &str = "cd_r0002_00_horse_workbench_rokade_130.app_xml";
+pub const WOLF_DIRECTORY: &str = "character/appearance/2_mon/cd_m0002_00_fourfeet/cd_m0002_00_wolf";
+pub const TIGER_DIRECTORY: &str =
+    "character/appearance/2_mon/cd_m0002_00_fourfeet/cd_m0002_00_tiger";
+pub const WOLF_FILES: [&str; 3] = [
+    "cd_m0002_00_wolf_workbench_great_135.app_xml",
+    "cd_m0002_00_wolf_workbench_windpath_135.app_xml",
+    "cd_m0002_00_wolf_workbench_silverfang_135.app_xml",
+];
+pub const TIGER_FILES: [&str; 2] = [
+    "cd_m0002_00_tiger_workbench_140.app_xml",
+    "cd_m0002_00_tiger_workbench_bone_140.app_xml",
+];
+pub const TIGER_SKIN_DIRECTORIES: [&str; 4] = [
+    "character/bin__/prefab/2_mon/cd_m0002_00_fourfeet/cd_m0002_00_dog/cd_m0002_00_tiger",
+    "character/modelproperty/2_mon/cd_m0002_00_fourfeet/cd_m0002_00_dog/cd_m0002_00_tiger",
+    "character/texture",
+    "character/bin__",
+];
+const TIGER_SKIN_FILES: [&[&str]; 4] = [
+    &[
+        "wb_m0002_00_tiger_00_0001.prefab",
+        "wb_m0002_00_tiger_00_0001_bone01.prefab",
+    ],
+    &["cd_m0002_00_tiger_00_0001.pac_xml"],
+    &[
+        "wb_m0002_00_tiger_nude_0001_00_01_01.dds",
+        "wb_m0002_00_tiger_nude_0001_00_01_02.dds",
+        "wb_m0002_00_tiger_head_0001_00_01_01.dds",
+        "wb_m0002_00_tiger_head_0001_00_01_02.dds",
+    ],
+    &["partprefabtable.pappt"],
+];
+pub(crate) fn companion_resource(directory: &str, name: &str) -> bool {
+    (directory == WOLF_DIRECTORY && WOLF_FILES.contains(&name))
+        || (directory == TIGER_DIRECTORY && TIGER_FILES.contains(&name))
+        || TIGER_SKIN_DIRECTORIES
+            .iter()
+            .position(|d| *d == directory)
+            .is_some_and(|part| TIGER_SKIN_FILES[part].contains(&name))
+}
+
+/// Dedicated tiger prefabs/textures, material variations and prefab-name mapping.
+/// Callers must preserve the original material indices and append new ones;
+/// the name mapping must retain all original entries. Original geometry,
+/// prefab and texture destinations are never accepted.
+pub fn build_tiger_skin(
+    files: &BTreeMap<String, Vec<u8>>,
+    part: usize,
+    encryption_header: [u8; 4],
+) -> io::Result<Overlay> {
+    let directory = TIGER_SKIN_DIRECTORIES
+        .get(part)
+        .ok_or_else(|| invalid("unknown tiger skin resource kind"))?;
+    build_in_directory(files, encryption_header, true, directory)
+}
+
+/// Dedicated appearances for the selected mount definitions. Original shared
+/// appearances are never replaced. No arbitrary directory or filename allowed.
+pub fn build_companion_appearances(
+    files: &BTreeMap<String, Vec<u8>>,
+    encryption_header: [u8; 4],
+    wolves: bool,
+) -> io::Result<Overlay> {
+    let directory = if wolves {
+        WOLF_DIRECTORY
+    } else {
+        TIGER_DIRECTORY
+    };
+    build_in_directory(files, encryption_header, true, directory)
+}
 
 pub const REGION_TIMER_DIRECTORY: &str = "sequencer/binary__/stageseq/system";
 pub const REGION_TIMER_FILES: [&str; 4] = [
@@ -149,6 +219,21 @@ fn build_in_directory(
                 return Err(invalid(
                     "only verified restricted-region scripts are allowed",
                 ));
+            }
+        } else if directory == WOLF_DIRECTORY || directory == TIGER_DIRECTORY {
+            let allowed: &[&str] = if directory == WOLF_DIRECTORY {
+                &WOLF_FILES
+            } else {
+                &TIGER_FILES
+            };
+            if !raw || !allowed.contains(&name.as_str()) {
+                return Err(invalid(
+                    "only dedicated companion mount appearances are allowed",
+                ));
+            }
+        } else if let Some(part) = TIGER_SKIN_DIRECTORIES.iter().position(|d| *d == directory) {
+            if !raw || !TIGER_SKIN_FILES[part].contains(&name.as_str()) {
+                return Err(invalid("only dedicated tiger skin resources are allowed"));
             }
         } else {
             if stem.is_empty()
@@ -274,9 +359,80 @@ pub fn register(
     Ok(out)
 }
 
+/// Remove exactly one checked registration while preserving every other group's
+/// order, flags, language and checksum, including registrations added later.
+pub fn unregister(
+    original: &[u8],
+    name: &str,
+    language: u16,
+    pamt_checksum: u32,
+) -> io::Result<Vec<u8>> {
+    let groups = crate::archive::registry(original)?;
+    let index = groups
+        .iter()
+        .position(|g| g.name == name)
+        .ok_or_else(|| invalid("owned registration missing"))?;
+    let owned = &groups[index];
+    if owned.is_optional || owned.language != language || owned.pamt_checksum != pamt_checksum {
+        return Err(invalid("owned registration changed"));
+    }
+    let end = 12 + groups.len() * 12;
+    let names = &original[end + 4..];
+    let record = 12 + index * 12;
+    let start = u32::from_le_bytes(original[record + 4..record + 8].try_into().unwrap()) as usize;
+    let stop = start + name.len() + 1;
+    if names.get(start..stop) != Some([name.as_bytes(), &[0]].concat().as_slice()) {
+        return Err(invalid("owned name changed"));
+    }
+    let mut out = original[..12].to_vec();
+    out[8] -= 1;
+    for (i, entry) in original[12..end].chunks_exact(12).enumerate() {
+        if i == index {
+            continue;
+        }
+        let mut entry = entry.to_vec();
+        let offset = u32::from_le_bytes(entry[4..8].try_into().unwrap()) as usize;
+        if (start..stop).contains(&offset) {
+            return Err(invalid("overlapping registry name"));
+        }
+        if offset >= stop {
+            entry[4..8].copy_from_slice(&((offset - (stop - start)) as u32).to_le_bytes());
+        }
+        out.extend(entry);
+    }
+    number(&mut out, names.len() - (stop - start))?;
+    out.extend(&names[..start]);
+    out.extend(&names[stop..]);
+    let crc = checksum(&out[12..]);
+    out[4..8].copy_from_slice(&crc.to_le_bytes());
+    crate::archive::registry(&out)?;
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn independent_registration_removal_preserves_earlier_and_later_mods() {
+        let mut empty = vec![0; 16];
+        empty[0] = 7;
+        empty[11] = 42;
+        empty[4..8].copy_from_slice(&checksum(&[0; 4]).to_le_bytes());
+        let before = register(&empty, "0044", 0x7fff, 123).unwrap();
+        let installed = register(&before, "9000", 0x1234, 456).unwrap();
+        assert_eq!(unregister(&installed, "9000", 0x1234, 456).unwrap(), before);
+        let later = register(&installed, "0046", 0x7fff, 789).unwrap();
+        let removed = unregister(&later, "9000", 0x1234, 456).unwrap();
+        assert_eq!(removed, register(&before, "0046", 0x7fff, 789).unwrap());
+        assert!(unregister(&later, "9000", 0x7fff, 456).is_err());
+        assert!(unregister(&later, "9000", 0x1234, 999).is_err());
+        assert!(unregister(&later, "9999", 0x1234, 456).is_err());
+        let mut changed_flags = installed;
+        changed_flags[12] = 1;
+        let crc = checksum(&changed_flags[12..]);
+        changed_flags[4..8].copy_from_slice(&crc.to_le_bytes());
+        assert!(unregister(&changed_flags, "9000", 0x1234, 456).is_err());
+    }
     #[test]
     fn rokade_overlay_accepts_only_the_dedicated_path() {
         let bytes = b"<Appearance/>".to_vec();
@@ -287,6 +443,41 @@ mod tests {
         );
         let shared = BTreeMap::from([("cd_r0002_00_horse_01007.app_xml".into(), bytes)]);
         assert!(build_in_directory(&shared, [0; 4], true, ROKADE_DIRECTORY).is_err());
+    }
+    #[test]
+    fn companion_overlays_are_limited_to_the_curated_resource_paths() {
+        for (wolves, names) in [
+            (true, WOLF_FILES.as_slice()),
+            (false, TIGER_FILES.as_slice()),
+        ] {
+            let files = names
+                .iter()
+                .map(|name| ((*name).to_owned(), b"<Appearance/>".to_vec()))
+                .collect();
+            let pack = build_companion_appearances(&files, [0; 4], wolves).unwrap();
+            assert_eq!(
+                validate_pair(&pack.pamt, &pack.paz).unwrap().len(),
+                names.len()
+            );
+            let shared = BTreeMap::from([("shared.app_xml".into(), vec![1])]);
+            assert!(build_companion_appearances(&shared, [0; 4], wolves).is_err());
+        }
+        for (part, allowed) in TIGER_SKIN_FILES.iter().enumerate() {
+            let files = allowed
+                .iter()
+                .map(|name| ((*name).to_owned(), vec![1; 12]))
+                .collect();
+            let pack = build_tiger_skin(&files, part, [0; 4]).unwrap();
+            assert_eq!(
+                validate_pair(&pack.pamt, &pack.paz).unwrap().len(),
+                allowed.len()
+            );
+            let arbitrary = BTreeMap::from([("other.dds".into(), vec![1])]);
+            assert!(build_tiger_skin(&arbitrary, part, [0; 4]).is_err());
+        }
+        let unrelated_mapping = BTreeMap::from([("other.pappt".into(), vec![1])]);
+        assert!(build_tiger_skin(&unrelated_mapping, 3, [0; 4]).is_err());
+        assert!(build_tiger_skin(&BTreeMap::new(), 4, [0; 4]).is_err());
     }
     #[test]
     fn region_overlay_accepts_only_the_complete_curated_set() {

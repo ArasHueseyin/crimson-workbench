@@ -11,6 +11,8 @@ fn main() {
         "marketplace_weapon_effects",
         "contribution_preview",
         "contribution_apply",
+        "knowledge_unlock_preview",
+        "knowledge_unlock_apply",
         "map_fog_preview",
         "map_fog_apply",
         "save_settings",

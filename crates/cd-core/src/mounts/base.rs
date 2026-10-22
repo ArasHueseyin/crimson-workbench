@@ -191,9 +191,12 @@ pub(super) fn build(source: &ObjectBlock, key: u32) -> Result<ObjectBlock> {
     let mut out = blank(source, "MercenarySaveData", MERCENARY)?;
     scalar(&mut out, "_characterKey", ScalarValue::U32(key))?;
     scalar(&mut out, "_mercenaryNo", ScalarValue::U64(0))?; // caller assigns a fresh number
-    // Ownership makes the new entry available to Kliff, without copying the
-    // donor's active/main/last-summoned flags or replacing an existing mount.
-    scalar(&mut out, "_ownedCharacterKey", ScalarValue::U32(1))?;
+    // A stable registration must remain unassigned. Native summon selection
+    // (build2976, 214c350 -> 2156fa0) selects the first entry assigned to the
+    // current character in a shared mercenary category. Assigning every new
+    // animal to Kliff produces several candidates for the same summon slot,
+    // even when their main/last-summoned flags are absent. The in-game stable
+    // selection assigns the chosen animal and releases the previous one.
     scalar(&mut out, "_isInitialize", ScalarValue::Bool(0))?;
     Ok(out)
 }
@@ -203,7 +206,6 @@ pub(super) fn verify(o: &ObjectBlock) -> Result<()> {
     let expected = [
         "_characterKey",
         "_mercenaryNo",
-        "_ownedCharacterKey",
         "_levelData",
         "_isInitialize",
     ];
@@ -211,10 +213,6 @@ pub(super) fn verify(o: &ObjectBlock) -> Result<()> {
         || o.fields
             .iter()
             .any(|f| f.present && !expected.contains(&f.name.as_str()))
-        || !o.fields.iter().any(|f| {
-            f.name == "_ownedCharacterKey"
-                && matches!(f.value, FieldValue::Scalar(ScalarValue::U32(1)))
-        })
         || !o.fields.iter().any(|f| {
             f.name == "_isInitialize" && matches!(f.value, FieldValue::Scalar(ScalarValue::Bool(0)))
         })

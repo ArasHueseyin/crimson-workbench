@@ -1,6 +1,6 @@
 # Free mod marketplace
 
-Version 0.9.1 contains **35 cards** covering the original 25 requested features, the later Force Palm height, spirit, Axiom reach and gliding-speed additions, and the existing sleep and mount-stamina mods. All mods are free. It works locally without an account, payment, server or separate mod downloads. The interface is English; game definitions use internal IDs and are independent of the game's display language. Game assets and personal saves are not distributed.
+Version 0.10.0 contains **36 cards** covering the original 25 requested features, the later Force Palm height, spirit, Axiom reach and gliding-speed additions, and the existing sleep and mount-stamina mods. All mods are free. It works locally without an account, payment, server or separate mod downloads. The interface is English; game definitions use internal IDs and are independent of the game's display language. Game assets and personal saves are not distributed.
 
 The expansion is prepared for **EXE 1.0.0.2976** and matching verified data. Automated and original-image checks do not establish in-game acceptance. The newly added workflows still need the user's game tests.
 
@@ -11,12 +11,13 @@ Each card carries an availability label:
 | Card type | Setup and changes | Use in the game |
 | --- | --- | --- |
 | Archive recipes and save actions | Close the game before applying the reviewed change | Applied definitions or save changes take effect when loaded |
+| More time beyond restricted regions | Its own Install mod / Remove mod buttons, with the game closed | The 30-minute scripts load at game startup and stay installed between starts |
 | Runtime mods | Close the game to install/remove the ASI or save startup settings | The module works during play after the next game start |
 | Live time/weather, photo and teleport | Install the matching runtime with the game closed | Adjust through the card's live panel while playing |
 
 Browsing, searching and preparing a draft does not apply changes. Selecting a card is not an installation status. Runtime cards install independently of the combined archive plan.
 
-**Search mods** filters names, effects and categories, including common German aliases. Category and status filters can be combined with the search. **Installed** and **Updates** use verified runtime-file status; combined-plan selections are labelled **Draft selected** and do not imply installation. **Live controls** shows cards that can be adjusted while playing after setup. The search remains visible while scrolling on desktop-sized windows; **Ctrl+K** focuses it.
+**Search mods** filters names, effects and categories, including common German aliases. Category and status filters can be combined with the search. **Installed** and **Updates** use verified mod-file status, including the independent region mod; combined-plan selections are labelled **Draft selected** and do not imply installation. **Live controls** shows cards that can be adjusted while playing after setup. The search remains visible while scrolling on desktop-sized windows; **Ctrl+K** focuses it.
 
 Unsaved startup settings stay on this device across navigation and status refreshes. **Save** writes the selected setting; **Discard changes** restores its last saved value. Sliders also provide exact number inputs and presets. Axiom explicitly separates normal **1×** reach from the extended **2×–5×** range. A runtime file being installed does not prove that its module has loaded in the current game session.
 
@@ -40,6 +41,14 @@ Progress and results appear on the affected runtime card. Dialogs support keyboa
 3. Open **Live apply & restore**, complete the existing baseline/source checks, close the game and apply the reviewed plan.
 
 The recipes combine with the current Workshop draft. Applying replaces the previous Workbench overlay. Deselect a recipe and apply again to remove it; restore the complete managed overlay through the existing restore workflow. Unknown or conflicting modifications remain blocked. A read-only preview/export of verified original data does not grant permission to overwrite unmanaged files.
+
+## Restricted-region countdown
+
+**More time beyond restricted regions** uses its own **Install mod / Remove mod** buttons. Close the game, install once and start the game. It changes the four supported desert, snow, water and general-region return warnings from 30 seconds to 30 minutes. Other quest timers and world boundaries keep their native rules.
+
+The installer builds four scripts from the user's hash-verified original assets and adds a separate archive registration. It preserves every existing registration and refuses another mod overriding these same scripts. Removal checks its own files and removes only its registration from the current list, preserving mods added later. Registry backups and a recoverable transaction are stored under `bin64/CrimsonWorkbench-mods/region_return_30min`. **Recover operation** finishes recovery before another installation is attempted. Modified or unknown files are preserved.
+
+The combined archive workflow may require removing this independent registration first; it does not adopt or overwrite unknown registrations. Legacy CLI plans retain their original region recipe support. The desktop card no longer selects that combined-plan recipe.
 
 ## Save actions
 
@@ -76,3 +85,20 @@ Travel goes through the normal native field-transition queue and may load the de
 ## Verification
 
 Owned native, UI, protocol, package-lifecycle and recovery fixtures cover implementation behavior without modifying or controlling the running game. Public checks use synthetic records, semantic metadata and short compatibility/ABI signatures. Full original-record and copied engine-function fixtures, decoded assets and private saves stay in ignored local storage and are not distributed. Optional private verification is separate from the game-free CI checks. The current implementation checkpoint and remaining game acceptance work are recorded in [the planned feature list](PLANNED_MODS.md) and each linked research note.
+
+## Unlock journal knowledge
+
+The **Unlock journal knowledge** save action completes 3,939 supported visible
+journal entries for game build 1.0.0.2976. Select a save and review its new,
+upgraded and already-complete counts. Only missing entries and levels are added;
+existing higher levels, skill knowledge, skill points and unrelated save records
+are preserved. Journal content includes people, places, creatures, recipes and
+quest information, including story spoilers. Hidden internal groups are excluded.
+
+Close the game before applying. Workbench binds the preview to both save files,
+creates a backup, checks the game build and commits through the existing guarded
+save transaction. An interrupted request can be checked or recovered using the
+same request ID. Load that selected save in game afterwards. This is a progression
+edit, so reverting to the backup also discards later progress. No personal save
+or account data is bundled; different users receive changes calculated from their
+own save and can use any supported game text language.
