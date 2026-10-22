@@ -1,5 +1,16 @@
 # Item selection and live spawner
 
+Items whose default destination is Kuku storage, warehouses, vehicle/ship
+storage, housing storage or another unverified special container are now
+refused before native creation. Detection uses inventory IDs in the item data,
+not translated names. Other placement-context entries do not establish that a
+pot is interchangeable or owned. The UI explains the required storage and the
+ASI independently checks the currently loaded definition. Such a refusal leaves
+the session ready for ordinary items; it does not require a game restart.
+Direct creation inside special containers is not implemented. It requires a
+verified native capture/storage path and target identity, not merely a different
+inventory number. Existing uncertain requests retain their no-retry protection.
+
 Status: 03.10.2026. **Selection and automatic live output are implemented, tested outside the game and installed when the game is closed. Additional suspension is no longer provided for. The decrease in the real game is still pending.**
 
 Open: Desktop shortcut **Crimson Workbench**, navigation **Item selection**.

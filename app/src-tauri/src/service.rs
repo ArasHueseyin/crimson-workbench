@@ -92,6 +92,20 @@ impl AppService {
     ) -> Result<cd_core::contribution_action::Receipt> {
         self.with_session(id, |s| s.contribution_apply(&self.project, request))
     }
+    pub fn knowledge_unlock_preview(
+        &self,
+        id: u64,
+        save: Option<&str>,
+    ) -> Result<cd_core::knowledge_unlock::Preview> {
+        self.with_session(id, |s| s.knowledge_unlock_preview(save))
+    }
+    pub fn knowledge_unlock_apply(
+        &self,
+        id: u64,
+        request: &cd_core::knowledge_unlock::Request,
+    ) -> Result<cd_core::knowledge_unlock::Receipt> {
+        self.with_session(id, |s| s.knowledge_unlock_apply(&self.project, request))
+    }
     pub fn skill_unlock_preview(
         &self,
         id: u64,

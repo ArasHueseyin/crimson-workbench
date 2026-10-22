@@ -1,10 +1,23 @@
 # mounts select and register in the stable
 
+**Player-riding check, 2026-10-22:** The current catalog requires a matching
+player Ride interaction in the build-pinned CharacterInfo record. VehicleInfo
+alone also occurs on calves, carcasses and NPC-only animals. Of the previous
+322 candidates, 296 have a matching player interaction; the other 26 are no
+longer offered. `Ai_Wolf_Ride` does not qualify. In particular, tiger 1003776
+has carrying/skinning and AI interactions, but lacks player `Wolf_Ride` (468).
+The regular tiger 1001077 has that interaction. The earlier 24-candidate test
+verified save structure, not rideability; its updated version checks twelve
+eligible species/variants, including the two camels with player riding.
+Existing saves are not automatically rewritten by this catalog filter.
+
 Status: 04.10.2026: Extension for additional animal species finished and tested on private save copies and installed when the game/Workbench is closed. Desktop EXE, 37 unchanged files including all 13 saves, 23 backups and the existing desktop shortcut are independently checked back. The new route generates a **base entry** from the scheme of the selected save. It is marked as **in-game test open**: The structural check does not confirm successful initialization, visibility, summoning or riding function in the game. The older extension for assigned template animals and portraits is already installed.
 
 **New basic entries:** Even without a stored animal of the same family, red feather raptor, elephant, both giant iguanas, wolves, adult camels and other normal mount families can be selected. The verified private copy of account <account ID>, slot 0 shows 288 instead of 219 addable entries. 24 separate encrypted candidates, including all 13 adult camel variants, pass full back comparison, new numbers and double lock. Camel calves and livestock shall not be given a basic entry.
 
-The basic entry contains a fresh animal number, the selected character key, empty level/day counter structures, Kliff’s ownership identifier and an initialization flag explicitly set to false. The initialization by the game is intended, but not yet observed. HP, equipment, spawn position, names, working conditions and active summoning flags of another animal are not adopted. Neither old 170 byte templates nor foreign class or field indices are recorded. The 44 current Mercenary fields and the two nested classes are checked by name and type; Deviating layouts block the route. An already suitable healthy family template has priority and retains the previous cloning path.
+The basic entry contains a fresh animal number, the selected character key, empty level/day counter structures and an initialization flag explicitly set to false. It has no character assignment, main-mount flag or last-summoned flag. Select the animal in the game's stable to assign it to a summon slot. HP, equipment, spawn position, names and working conditions of another animal are not adopted. Neither old 170 byte templates nor foreign class or field indices are recorded. The 44 current Mercenary fields and the two nested classes are checked by name and type; deviating layouts block the route. An already suitable healthy family template has priority and retains the previous cloning path.
+
+**Assignment correction, 2026-10-22:** Earlier base registrations incorrectly set `_ownedCharacterKey` to Kliff for every added animal. Several animals could then compete for the same summon selection, producing an incorrect animal or no visible response. Native selection `214c350` calls `2156fa0`, which matches the assigned character at runtime record `+148`; the separate main flag does not disambiguate these duplicate assignments. Both registration paths now verify that the new record is unassigned. Twenty-four encrypted species/variant candidates passed full-save inverse checks and assignment isolation. Existing conflicting assignments require a separate backed-up repair; installing the corrected application alone does not rewrite existing saves. In-game acceptance of the repair remains pending.
 
 **To be checked:** At first only register a desired exotic variant, load the same save and check stall/special mount menu, call-out and riding. Only after successful storage and reloading will further variants be added. A backup from Save and Lobby is created before each registration. Quests, animal knowledge and riding skills are not additionally unlocked; Such prerequisites or non-ridable animal models may still prevent their use. The desktop installation itself does not forgive animals. Evidence: `.local/mount-family-investigation-20261004/`.
 

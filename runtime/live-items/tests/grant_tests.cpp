@@ -66,6 +66,26 @@ int main(){
     auto grants_before=grants;assert(execute(b,holder.data(),r).state==State::applied&&grants==grants_before+1);
     *reinterpret_cast<unsigned*>(def.data()+0x228)=6;assert(execute(b,holder.data(),r).error==Error::socket_limit);
     *reinterpret_cast<unsigned*>(def.data()+0x228)=0;
+    // All special destinations are refused before construction, conversion or
+    // grant. A Kuku/warehouse refusal must not poison the session or permit a
+    // replay. Ordinary items remain usable immediately afterwards.
+    Queue storage(123,456);storage.observe(20);
+    const auto before_constructs=constructs,before_grants=grants;
+    for(std::uint16_t destination:{2,3,5,6,7,8,9,10,11,12,14,15,16,17,18,19,20,0xffff}) {
+        *reinterpret_cast<std::uint16_t*>(def.data()+0x428)=destination;
+        auto special=req(static_cast<unsigned>(100+destination));
+        assert(storage.handle(special,21).state==State::queued);assert(storage.take(21));
+        const auto denied=execute(b,holder.data(),special);
+        assert(denied.state==State::rejected&&denied.error==Error::special_storage);
+        storage.finish(special,denied.state,denied.error);
+        assert(storage.handle(status,22).state==State::ready);
+        assert(storage.handle(special,22).state==State::rejected);
+        assert(constructs==before_constructs&&grants==before_grants);
+    }
+    *reinterpret_cast<std::uint16_t*>(def.data()+0x428)=1;
+    auto normal=req(80);assert(storage.handle(normal,23).state==State::queued);assert(storage.take(23));
+    auto accepted=execute(b,holder.data(),normal);assert(accepted.state==State::applied);
+    storage.finish(normal,accepted.state,accepted.error);assert(storage.handle(status,24).state==State::ready);
     *reinterpret_cast<unsigned*>(def.data())=999;assert(execute(b,holder.data(),r).error==Error::definition_mismatch);
     assert(!server_holder(0,nullptr));assert(!server_holder(0,reinterpret_cast<void*>(1)));
     std::int64_t sum{};assert(!total(nullptr,41,&sum));

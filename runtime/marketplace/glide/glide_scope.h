@@ -12,7 +12,7 @@ struct Scope {
     Address selector{},layer{},animation{},fixed{},package{},view{},instances{},conditions{},buffer{};
     std::uint64_t fingerprint{};
     std::uint32_t identity{},component_count{};
-    std::uint8_t kind{},mode{},events{};
+    std::uint8_t kind{},mode{},layer_index{},events{};
     bool operator==(const Scope&) const=default;
 };
 inline bool speed_call(Address base,Address caller) {
@@ -21,9 +21,11 @@ inline bool speed_call(Address base,Address caller) {
     return false;
 }
 struct KnownAnimations {
-    constexpr bool operator()(std::uint64_t fingerprint,std::uint8_t events) const {
-        for (const auto& value:kAnimations)
-            if (value.events==events && value.fingerprint==fingerprint) return true;
+    constexpr bool operator()(std::uint64_t fingerprint,std::uint8_t events,std::uint8_t layer=1) const {
+        if (layer==1) {
+            for (const auto& value:kAnimations)
+                if (value.events==events && value.fingerprint==fingerprint) return true;
+        }
         return false;
     }
 };
@@ -60,10 +62,13 @@ bool capture(Read& read,Address base,Address method,Scope& out,Classify classify
         read.template at<Address>(s.state+0x68)!=s.actor) return false;
     s.mode=read.template at<std::uint8_t>(s.state+0xf0);
     if (s.mode>3 || read.template at<Address>(s.state+0xf8+Address{s.mode}*8)!=method) return false;
-    // ab96f0 selects this very layer, rather than any lingering lower animation.
+    // Follow ab96f0's actual selector: upper layer 0 or lower layer 1.
+    // A lingering glide animation on the inactive layer must never qualify.
     s.selector=read.template at<Address>(s.control+0x30);
-    if (!s.selector || read.template at<std::uint8_t>(s.selector+0x1b)!=0) return false;
-    s.layer=read.template at<Address>(s.control+0x88);
+    if (!s.selector) return false;
+    s.layer_index=read.template at<std::uint8_t>(s.selector+0x1b);
+    if (s.layer_index>1) return false;
+    s.layer=read.template at<Address>(s.control+0x88+Address{s.layer_index}*8);
     if (!s.layer) return false;
     s.animation=read.template at<Address>(s.layer+0x18);
     if (!s.animation) return false;
@@ -72,9 +77,9 @@ bool capture(Read& read,Address base,Address method,Scope& out,Classify classify
     s.view=read.template at<Address>(s.animation+0x20);
     s.conditions=read.template at<Address>(s.animation+0x30);
     if (!s.fixed || s.fixed>UINTPTR_MAX-156 || !s.package || !s.view || !s.conditions ||
-        read.template at<std::uint32_t>(s.package+0x1a8)!=kEventBytes ||
-        read.template at<std::uint32_t>(s.package+0x118)!=kConditionBytes ||
-        read.template at<std::uint32_t>(s.package+0x120)!=kFinderCount) return false;
+        !package_matches(s.layer_index,read.template at<std::uint32_t>(s.package+0x1a8),
+            read.template at<std::uint32_t>(s.package+0x118),
+            read.template at<std::uint32_t>(s.package+0x120))) return false;
     s.events=read.template at<std::uint8_t>(s.view+8);
     s.instances=read.template at<Address>(s.view);
     s.buffer=read.template at<Address>(s.package+0x1a0);
@@ -82,7 +87,7 @@ bool capture(Read& read,Address base,Address method,Scope& out,Classify classify
     s.fingerprint=14695981039346656037ull;
     for (unsigned i=0;i<156;++i)
         s.fingerprint=(s.fingerprint^read.template at<unsigned char>(s.fixed+i))*1099511628211ull;
-    if (!classify(s.fingerprint,s.events)) return false;
+    if (!classify(s.fingerprint,s.events,s.layer_index)) return false;
     out=s;
     return read.template at<Address>(method)==base+0x55cab28 &&
         read.template at<Address>(method+0x18)==s.control &&
@@ -94,20 +99,25 @@ bool capture(Read& read,Address base,Address method,Scope& out,Classify classify
         read.template at<std::uint8_t>(s.actor+0x96)==1 &&
         read.template at<Address>(s.control+0xc8)==s.state &&
         read.template at<Address>(s.state+0xf8+Address{s.mode}*8)==method &&
-        read.template at<Address>(s.control+0x88)==s.layer &&
+        read.template at<Address>(s.control+0x30)==s.selector &&
+        read.template at<std::uint8_t>(s.selector+0x1b)==s.layer_index &&
+        read.template at<Address>(s.control+0x88+Address{s.layer_index}*8)==s.layer &&
         read.template at<Address>(s.layer+0x18)==s.animation &&
         read.template at<Address>(s.animation+0x38)==s.fixed;
 }
 struct Velocity {
     std::array<std::uint32_t,3> before{},after{};
 };
-template<class Read> bool prepare(Read& read,Address output,std::uint32_t percent,Velocity& out) {
+template<class Read> bool prepare(Read& read,Address output,std::uint32_t percent,Velocity& out,bool inverse=false) {
     if (percent<=100 || percent>500 || !output || output>UINTPTR_MAX-0x54 || (output&3)) return false;
     for (unsigned i=0;i<3;++i) {
         out.before[i]=read.template at<std::uint32_t>(output+0x48+4*i);
         float value{};std::memcpy(&value,&out.before[i],4);
         if (!std::isfinite(value)) return false;
-        if (i!=1) value*=static_cast<float>(percent)/100.0f;
+        if (i!=1) {
+            const auto factor=static_cast<float>(percent)/100.0f;
+            value=inverse?value/factor:value*factor;
+        }
         if (!std::isfinite(value)) return false;
         std::memcpy(&out.after[i],&value,4);
     }

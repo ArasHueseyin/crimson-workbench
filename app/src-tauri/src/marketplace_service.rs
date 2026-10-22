@@ -81,6 +81,7 @@ pub fn invoke(resources: &Path, game: &Path, action: Option<(&str, bool)>) -> Re
             "world_controls",
             "photo_mode",
             "teleport",
+            "region_return_30min",
         ]
         .contains(&id)
     {

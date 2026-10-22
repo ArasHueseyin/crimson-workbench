@@ -16,10 +16,15 @@ constexpr std::uint64_t fingerprint(const std::array<unsigned char,156>& bytes) 
 }
 inline constexpr auto kSustained=record(0x47);
 inline constexpr auto kLanding=record(0xa3);
+inline constexpr auto kUpperSustained=record(0x61);
+inline constexpr auto kUpperLanding=record(0xc7);
 inline constexpr std::uint8_t kSustainedEvents=6,kLandingEvents=17;
+inline constexpr std::uint8_t kUpperSustainedEvents=7,kUpperLandingEvents=14;
 struct SyntheticAnimations {
-    constexpr bool operator()(std::uint64_t value,std::uint8_t events) const {
-        return value==fingerprint(kSustained) && events==kSustainedEvents;
+    constexpr bool operator()(std::uint64_t value,std::uint8_t events,std::uint8_t layer=1) const {
+        // The upper wing animation is ordinary gliding, not the native boost.
+        if (layer==0) return false;
+        return layer==1 && value==fingerprint(kSustained) && events==kSustainedEvents;
     }
 };
 } // namespace crimson::marketplace::glide::synthetic_fixture

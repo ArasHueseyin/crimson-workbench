@@ -98,7 +98,7 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
             "starting" => {
                 "Load a save and return to the game briefly. The module connects to the active inventory automatically."
             }
-            "ready" => "Live-Spawner verbunden.",
+            "ready" => "Live item module connected.",
             "queued" => {
                 "Request is waiting for the next character update. Return to the game briefly; you do not need to pick anything up."
             }
@@ -108,6 +108,9 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
                 "The game did not process a matching character call within 30 seconds. No items were given."
             }
             "cancelled" => "Request cancelled before execution.",
+            "uncertain" => {
+                "A previous item request could not be confirmed. Further grants are blocked for this game session. Check your inventory, then save and restart the game before adding more items. The previous request will not be retried."
+            }
             _ => "Live module not connected.",
         },
         1 => "Protocol version mismatch.",
@@ -122,13 +125,22 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
         8 => {
             "Inventory context unverified or changed after loading/switching characters. No items given."
         }
-        9 => "Native exception. Result uncertain; no automatic retry.",
-        10 => "The game reported an error. Result uncertain; check inventory.",
-        11 => "The additional quantity could not be confirmed. Result uncertain; check inventory.",
+        9 => {
+            "The item module encountered an exception. Check your inventory, then save and restart the game before adding more items. This request will not be retried."
+        }
+        10 => {
+            "The game reported an error while adding the item. Check your inventory, then save and restart the game before adding more items. This request will not be retried."
+        }
+        11 => {
+            "The additional item quantity could not be confirmed. Check your inventory, then save and restart the game before adding more items. This request will not be retried."
+        }
         12 => "Request log is full. Save and restart the game.",
         13 => "Native item definition is missing or does not match the selected ID.",
         14 => "This item has more than five preset sockets. Native output supports at most five.",
         15 => "Native conversion changed the item ID or quantity. Nothing was given.",
+        16 => {
+            "This item requires a special container or storage interaction that the live item picker does not support yet. Nothing was given. You can continue adding ordinary inventory items without restarting the game."
+        }
         _ => return Err(error("Unknown live module error.")),
     };
     Ok(Snapshot {
@@ -309,6 +321,40 @@ mod tests {
             epoch: 456,
             key: 2200,
             quantity: 10,
+        }
+    }
+    #[test]
+    fn special_storage_rejection_does_not_claim_disconnection_or_require_a_restart() {
+        let mut reply = [0; 48];
+        reply[..4].copy_from_slice(&MAGIC.to_le_bytes());
+        reply[4..6].copy_from_slice(&WIRE_VERSION.to_le_bytes());
+        reply[6..8].copy_from_slice(&5u16.to_le_bytes());
+        reply[8..12].copy_from_slice(&123u32.to_le_bytes());
+        reply[12..16].copy_from_slice(&16u32.to_le_bytes());
+        let status = decode(&reply, 123, None).unwrap();
+        assert_eq!(status.state, "rejected");
+        assert!(status.message.contains("Nothing was given"));
+        assert!(status.message.contains("without restarting"));
+        assert!(!status.message.contains("not connected"));
+    }
+    #[test]
+    fn uncertain_status_explains_the_session_block_without_claiming_disconnection() {
+        let mut reply = [0; 48];
+        reply[..4].copy_from_slice(&MAGIC.to_le_bytes());
+        reply[4..6].copy_from_slice(&WIRE_VERSION.to_le_bytes());
+        reply[6..8].copy_from_slice(&6u16.to_le_bytes());
+        reply[8..12].copy_from_slice(&123u32.to_le_bytes());
+        let status = decode(&reply, 123, None).unwrap();
+        assert_eq!(status.state, "uncertain");
+        assert!(status.message.contains("blocked for this game session"));
+        assert!(status.message.contains("restart the game"));
+        assert!(!status.message.contains("not connected"));
+        for reason in [9u32, 10, 11] {
+            reply[12..16].copy_from_slice(&reason.to_le_bytes());
+            let status = decode(&reply, 123, None).unwrap();
+            assert!(status.message.contains("Check your inventory"));
+            assert!(status.message.contains("restart the game"));
+            assert!(status.message.contains("will not be retried"));
         }
     }
     #[test]

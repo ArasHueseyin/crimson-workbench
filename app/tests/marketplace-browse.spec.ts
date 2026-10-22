@@ -6,7 +6,7 @@ async function fixture(page:Page,{nativeReadError=false}={}) {
  await page.addInitScript(({nativeReadError})=>{
   const root=window as unknown as {isTauri:boolean;__TAURI_INTERNALS__:unknown;browseCalls:{command:string;args:Record<string,unknown>}[]};
   root.isTauri=true;root.browseCalls=[];
-  const ids=['sleep_cooldown','sleep_duration','blackstar','no_fall','player_stamina','mount_jump','player_jump','player_speed','preserve_consumables','mount_protection','free_crafting_materials','force_palm','force_palm_height','axiom_reach','glide_speed','mount_dismount','auto_loot','world_controls','photo_mode','teleport'];
+  const ids=['sleep_cooldown','sleep_duration','blackstar','no_fall','player_stamina','mount_jump','player_jump','player_speed','preserve_consumables','mount_protection','free_crafting_materials','force_palm','force_palm_height','axiom_reach','glide_speed','mount_dismount','auto_loot','world_controls','photo_mode','teleport','region_return_30min'];
   const installed=new Set(['world_controls','blackstar']);
   const settings:Record<string,number>={force_palm_height:100,axiom_reach:100,glide_speed:100,player_resources:1};
   let jumpHeight=100,speed=100;
@@ -34,7 +34,7 @@ async function fixture(page:Page,{nativeReadError=false}={}) {
  },{nativeReadError});
  await page.goto('/');await expect(page.locator('.workbench')).toHaveAttribute('data-ready','true');
  await page.getByRole('button',{name:'Mod marketplace',exact:true}).click();
- await expect(page.locator('.market-card')).toHaveCount(35);
+ await expect(page.locator('.market-card')).toHaveCount(36);
 }
 
 const card=(page:Page,name:string)=>page.locator('.market-card').filter({has:page.getByRole('heading',{name,exact:true})});
@@ -42,13 +42,13 @@ const filter=(page:Page,name:string)=>page.getByRole('group',{name:'Mod status f
 
 test('category, status and translated search combine with accurate counts',async({page})=>{
  await fixture(page);
- await expect(page.locator('.market-browse [role=status]')).toHaveText('35 mods available');
+ await expect(page.locator('.market-browse [role=status]')).toHaveText('36 mods available');
  await card(page,'Larger lion').getByRole('button',{name:'Select mod',exact:true}).click();
  await filter(page,'Installed').click();
  await expect(page.locator('.market-card:visible')).toHaveCount(2);
- await expect(page.locator('.market-browse [role=status]')).toHaveText('2 of 35 mods');
+ await expect(page.locator('.market-browse [role=status]')).toHaveText('2 of 36 mods');
  await expect(card(page,'Larger lion')).toBeHidden();
- await expect(page.locator('.market-browse-note')).toContainText('verified runtime modules');
+ await expect(page.locator('.market-browse-note')).toContainText('verified mod files');
  await page.getByLabel('Mod category',{exact:true}).selectOption('WORLD');
  await expect(page.locator('.market-card:visible')).toHaveCount(1);
  await expect(card(page,'Live time & weather')).toBeVisible();
@@ -57,7 +57,7 @@ test('category, status and translated search combine with accurate counts',async
  await expect(page.locator('.market-card:visible')).toHaveCount(1);
  await expect(card(page,'Blackstar anywhere')).toBeVisible();
  await page.getByRole('textbox',{name:'Search mods',exact:true}).fill('Schwarzstern');
- await expect(page.locator('.market-browse [role=status]')).toHaveText('1 of 35 mods');
+ await expect(page.locator('.market-browse [role=status]')).toHaveText('1 of 36 mods');
  await page.getByRole('button',{name:'Clear mod search'}).click();
  await filter(page,'Live controls').click();
  await expect(page.locator('.market-card:visible')).toHaveCount(3);
@@ -75,9 +75,9 @@ test('filtering keeps all cards mounted and preserves draft selections and start
  await expect(page.locator('.market-card:visible')).toHaveCount(2);
  await filter(page,'Live controls').click();
  await expect(page.getByRole('heading',{name:'No mods match your search'})).toBeVisible();
- await expect(page.locator('.market-card')).toHaveCount(35);
+ await expect(page.locator('.market-card')).toHaveCount(36);
  await page.getByRole('button',{name:'Show all mods',exact:true}).click();
- await expect(page.locator('.market-card:visible')).toHaveCount(35);
+ await expect(page.locator('.market-card:visible')).toHaveCount(36);
  await expect(lion.locator('.market-draft-badge')).toHaveText('Draft selected');
  await expect(lion.getByRole('button',{name:'Deselect mod',exact:true})).toHaveAttribute('aria-pressed','true');
  await expect(jump.getByRole('slider')).toHaveValue('175');
@@ -92,10 +92,10 @@ test('installed filter follows accepted installation and removal snapshots',asyn
  await glide.getByRole('button',{name:'Install mod',exact:true}).click();
  await filter(page,'Installed').click();
  await expect(glide).toBeVisible();
- await expect(page.locator('.market-browse [role=status]')).toHaveText('1 of 35 mods');
+ await expect(page.locator('.market-browse [role=status]')).toHaveText('1 of 36 mods');
  await glide.getByRole('button',{name:'Remove mod',exact:true}).click();
  await expect(glide).toBeHidden();
- await expect(page.locator('.market-browse [role=status]')).toHaveText('0 of 35 mods');
+ await expect(page.locator('.market-browse [role=status]')).toHaveText('0 of 36 mods');
 });
 
 test('unknown installation status does not claim modules are absent or selected drafts installed',async({page})=>{

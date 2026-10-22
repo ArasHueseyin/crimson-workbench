@@ -224,6 +224,24 @@ async fn contribution_apply(
     blocking(move || state.contribution_apply(session, &request)).await
 }
 #[tauri::command]
+async fn knowledge_unlock_preview(
+    state: State<'_, Arc<AppService>>,
+    session: u64,
+    save: Option<String>,
+) -> Result<cd_core::knowledge_unlock::Preview> {
+    let state = state.inner().clone();
+    blocking(move || state.knowledge_unlock_preview(session, save.as_deref())).await
+}
+#[tauri::command]
+async fn knowledge_unlock_apply(
+    state: State<'_, Arc<AppService>>,
+    session: u64,
+    request: cd_core::knowledge_unlock::Request,
+) -> Result<cd_core::knowledge_unlock::Receipt> {
+    let state = state.inner().clone();
+    blocking(move || state.knowledge_unlock_apply(session, &request)).await
+}
+#[tauri::command]
 async fn skill_unlock_preview(
     state: State<'_, SharedService>,
     session: u64,
@@ -527,6 +545,8 @@ pub fn run() {
             contribution_apply,
             map_fog_preview,
             map_fog_apply,
+            knowledge_unlock_preview,
+            knowledge_unlock_apply,
             skill_unlock_preview,
             skill_unlock_apply,
             foreign_preview,

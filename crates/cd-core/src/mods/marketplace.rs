@@ -11,7 +11,7 @@ use super::{Change, bad};
 use crate::{Result, fingerprint::hash_bytes};
 pub(super) use effects::choices as weapon_effect_choices;
 pub use effects::{EffectSource, WeaponEffectEdit};
-pub(super) use regions::region_timers;
+pub(crate) use regions::region_timers;
 pub(super) use rokade::rokade;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

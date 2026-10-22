@@ -14,7 +14,7 @@
 namespace {
 using namespace crimson::marketplace::glide;
 HMODULE module{};
-std::atomic<bool> started=false,enabled=false;
+std::atomic<bool> started=false,enabled=false,reported_scaling=false;
 std::atomic<Speed> original_speed{};
 std::uint32_t speed_percent=100;
 Address base{};
@@ -99,9 +99,13 @@ std::uint32_t load_setting() {
     CloseHandle(file);return valid?setting(bytes,count):100;
 }
 std::uintptr_t __fastcall on_speed(void* method,const void* params,void* output) {
-    return dispatch(original_speed.load(std::memory_order_acquire),base,
+    bool scaled{};
+    const auto result=dispatch(original_speed.load(std::memory_order_acquire),base,
         reinterpret_cast<Address>(_ReturnAddress()),enabled.load(std::memory_order_acquire),
-        speed_percent,method,params,output);
+        speed_percent,method,params,output,KnownAnimations{},&scaled);
+    if (scaled && !reported_scaling.exchange(true,std::memory_order_relaxed))
+        log("ACTIVE: native fast-glide boost scaled with incoming-velocity compensation. Ordinary wing glide and directional dodges remain native.");
+    return result;
 }
 DWORD WINAPI initialize(void*) {
     wchar_t path[32768];
@@ -123,7 +127,7 @@ DWORD WINAPI initialize(void*) {
         log("DISABLED: glide-speed hook transaction failed; native passthrough and published trampoline lifetime preserved.");return 0;
     }
     char message[256]{};
-    std::snprintf(message,sizeof(message),"READY: selected-player sustained glide horizontal speed %u%%. Start/landing, vertical velocity, native steering, time step and downstream collision checks retained. Build 2976 only. In-game acceptance pending.",speed_percent);
+    std::snprintf(message,sizeof(message),"READY: fast-glide boost %u%% armed with velocity-feedback compensation. Ordinary wing glide, opening/landing and directional dodges remain native. ACTIVE follows the first nonzero native boost. Build 2976 only.",speed_percent);
     log(message);
     return 0;
 }

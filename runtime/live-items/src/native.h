@@ -100,6 +100,15 @@ inline Outcome execute(Bindings b,void* holder,const Request& r) noexcept {
         // +0x42 is optional. Native grant explicitly accepts its 0xffff
         // sentinel (e.g. Extra-large Bag 6003); it is not an invalid key.
         if(!def||*reinterpret_cast<std::uint32_t*>(def)!=r.key)return {State::rejected,Error::definition_mismatch};
+        // Build2976 ItemInfo's default InventoryInfo index. Confirmed by the
+        // native destination readers e465140/e449ef0 and captured definitions.
+        // Additional entries describe different placement contexts, not a list
+        // of freely interchangeable pots. This grant path has no target-pot
+        // identity or capture data. Refuse special storage BEFORE any mutation,
+        // even when a compatible pot/storage may exist in another owner.
+        const auto destination=*reinterpret_cast<const std::uint16_t*>(def+0x428);
+        if(destination!=0 && destination!=1 && destination!=4 && destination!=13)
+            return {State::rejected,Error::special_storage};
         // The native InitData serializer contains five inline socket records.
         if(def[0x244]>5||*reinterpret_cast<std::uint32_t*>(def+0x228)>5)return {State::rejected,Error::socket_limit};
         if(!def[0x3f0]&&r.quantity>100)return {State::rejected,Error::quantity_limit};

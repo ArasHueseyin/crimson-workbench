@@ -460,7 +460,8 @@ pub(super) fn build(
     }
     if donor_key == 0 {
         base::verify(elements.last().unwrap())?;
-    } else if elements
+    }
+    if elements
         .last()
         .unwrap()
         .fields
@@ -468,7 +469,7 @@ pub(super) fn build(
         .any(|f| f.present && (f.name == "_mercenaryName" || ASSIGNMENT.contains(&f.name.as_str())))
     {
         return Err(bad(
-            "Template name or active assignment was unexpectedly copied.",
+            "New registration contains a name or active mount assignment.",
         ));
     }
     let mut new_ids = BTreeSet::from([first]);
@@ -638,6 +639,7 @@ mod tests {
             "_mercenaryName",
             "_isMainMercenary",
             "_lastSummoned",
+            "_ownedCharacterKey",
         ] {
             assert!(
                 !field(&blank, name).unwrap().present,
@@ -670,11 +672,10 @@ mod tests {
         assert!(base::verify(&unexpected_hp).is_err());
         let mut view = mounts.clone();
         annotate(&save, &mut view).unwrap();
-        // Every requested family plus all adult camel variants. No candidates
+        // Requested families and the camels with player riding interactions. No candidates
         // are written to the game's save folder or installed by this test.
         let keys = [
-            1000265, 1000523, 1000363, 1000254, 1000264, 1000520, 1003918, 1002059, 29448, 1003912,
-            1001077,
+            1000265, 1000523, 1000363, 1000254, 1000264, 1003918, 1002059, 29448, 1003912, 1001077,
         ];
         let tested: Vec<_> = view
             .iter()
@@ -682,12 +683,12 @@ mod tests {
                 keys.contains(&m.key) || (m.vehicle == 16978 && !m.internal.contains("Baby_"))
             })
             .collect();
-        assert_eq!(tested.len(), 24);
-        assert!(
-            view.iter()
-                .find(|m| m.key == 32387)
-                .is_some_and(|m| !m.supported)
-        );
+        assert_eq!(tested.len(), 12);
+        // A VehicleInfo tag also occurs on calves, ordinary non-riding camels,
+        // bosses and the Tiger carcass variant. None may be offered as a mount.
+        for key in [32387, 30067, 1000520, 1003776] {
+            assert!(!view.iter().any(|m| m.key == key));
+        }
         for mount in &tested {
             assert!(mount.supported, "Unsupported: {}", mount.name);
             assert_eq!(mount.registration, "base");
@@ -702,6 +703,15 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
+            assert!(
+                !has_assignment(
+                    list(&parsed[clan(&parsed).unwrap()], "_mercenaryDataList")
+                        .unwrap()
+                        .last()
+                        .unwrap()
+                ),
+                "New animals must not compete for the current character's summon slot"
+            );
             let mut owned = mounts.clone();
             annotate(&new.save, &mut owned).unwrap();
             assert_eq!(owned.iter().find(|m| m.key == mount.key).unwrap().owned, 1);

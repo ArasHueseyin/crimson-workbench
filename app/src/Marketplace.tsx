@@ -1,6 +1,6 @@
 import {ModAvailability} from './ModAvailability';
 import {useEffect,useRef,useState} from 'react';
-import {Check,Fish,Footprints,Gauge,Hourglass,ListChecks,LoaderCircle,Map,Package,ShieldCheck,Sparkles,Swords,ToggleLeft,ToggleRight,Zap} from 'lucide-react';
+import {BookOpen,Check,Fish,Footprints,Gauge,ListChecks,LoaderCircle,Map,Package,ShieldCheck,Sparkles,Swords,ToggleLeft,ToggleRight,Zap} from 'lucide-react';
 import {api,asError} from './api';
 import {useCatalog,useMods} from './store';
 import {LiveApply} from './LiveApply';
@@ -13,6 +13,7 @@ import {MarketplaceSkills} from './MarketplaceSkills';
 import {MarketplaceStacks} from './MarketplaceStacks';
 import {MarketplaceEffects} from './MarketplaceEffects';
 import {MarketplaceContributions} from './MarketplaceContributions';
+import {MarketplaceKnowledge} from './MarketplaceKnowledge';
 import {MarketplaceMap} from './MarketplaceMap';
 import {MarketplaceBrowseControls} from './MarketplaceBrowseControls';
 import {emptyMarketplaceBrowseFilter,matchesMarketplaceBrowse,type MarketplaceBrowseFilter,type MarketplaceBrowseSnapshot} from './marketplace-browse';
@@ -26,7 +27,6 @@ const mods=[
  {id:'no_mount_stamina',title:'No mount stamina cost',tag:'STAMINA',icon:Zap,description:'Remove stamina consumption and increase stamina regeneration for the circus lion and Rokade. Player stamina stays unchanged.',detail:'Mount stamina cost: 0 · regeneration boosted'},
  {id:'inventory_999',title:'999 inventory slots',tag:'INVENTORY',icon:Package,description:'Expand player inventory capacity to 999 slots using the verified player inventory definition.',detail:'Player inventory: 999 slots'},
  {id:'no_durability_loss',title:'No durability loss',tag:'EQUIPMENT',icon:ShieldCheck,description:'Prevent ordinary equipment wear for weapons, armor and tools. Existing lost durability is not repaired.',detail:'Wear disabled · finite durability uses the engine sentinel'},
- {id:'region_return_30min',title:'More time beyond restricted regions',tag:'EXPLORATION',icon:Hourglass,description:'Extend the return warning in restricted desert, snow, water and general regions to 30 minutes. Other quest timers and world boundaries keep their existing rules.',detail:'Return countdown: 30 seconds → 30 minutes'},
  {id:'automatic_fishing',title:'Automatic fishing',tag:'FISHING',icon:Fish,description:'Give every supported fishing rod the Crab rod’s automatic reeling effect. Equip a rod and start fishing normally; it reels in fish after a bite. Cast again yourself for the next fish.',detail:'Native auto-reel · all four fishing rods'},
  {id:'free_upgrade_materials',title:'Free equipment upgrades',tag:'CRAFTING',icon:ShieldCheck,description:'Remove material and refinement-token costs from all supported equipment upgrade recipes. Use your existing equipment and follow the original refinement, tool and unlock requirements.',detail:'17,069 upgrade recipes · existing equipment still required'},
  {id:'free_crafting_currency',title:'No Clockwork Insect crafting fee',tag:'CRAFTING',icon:Package,description:'Remove the 300 Clockwork Insects charged by the Kuku drone backpack recipe. Blueprint requirements and results stay unchanged. Material costs are controlled separately.',detail:'Currency component · combine with Free crafting materials'},
@@ -34,20 +34,21 @@ const mods=[
 ] as const;
 
 const extraModText={
+ knowledge:'Unlock journal knowledge people places creatures recipes quest information missing entries levels save action',
  skills:'Skill unlocks progression save action individual abilities unlock all 140 abilities Kliff Oongka Damiane available points',
  item_stacks:'Item stack limits inventory maximum stack size choose item quantities',
  map:'Reveal world map exploration save action map fog quest knowledge discovered locations fast travel',
  contributions:'Contribution points progression save action faction contribution balances experience levels currencies',
  effects:'Native weapon effects equipment game mod Electro-Mecha Longsword lightning attack Flame Spear fire upgrades sockets native abilities',
 };
-const extraModTags:Record<keyof typeof extraModText,string>={skills:'PROGRESSION',item_stacks:'INVENTORY',map:'EXPLORATION',contributions:'PROGRESSION',effects:'EQUIPMENT'};
+const extraModTags:Record<keyof typeof extraModText,string>={knowledge:'PROGRESSION',skills:'PROGRESSION',item_stacks:'INVENTORY',map:'EXPLORATION',contributions:'PROGRESSION',effects:'EQUIPMENT'};
 
 export function Marketplace({catalog}:{catalog:Catalog}) {
  const request=useMods(s=>s.request),set=useMods(s=>s.set),setView=useCatalog(s=>s.setView);
  const selected={...emptySelection,...request.marketplace};
  const [preview,setPreview]=useState<ModPreview|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[exported,setExported]=useState(''),[skills,setSkills]=useState(false),[effects,setEffects]=useState(false);
  const [contributions,setContributions]=useState(false);
- const [map,setMap]=useState(false);
+ const [map,setMap]=useState(false),[knowledge,setKnowledge]=useState(false);
  const [query,setQuery]=useState('');
  const [browseFilter,setBrowseFilter]=useState<MarketplaceBrowseFilter>({...emptyMarketplaceBrowseFilter});
  const [runtimeSnapshot,setRuntimeSnapshot]=useState<MarketplaceBrowseSnapshot>(null);
@@ -85,6 +86,7 @@ export function Marketplace({catalog}:{catalog:Catalog}) {
    <button className={`secondary market-toggle ${selected[mod.id]?'selected':''}`} disabled={busy||!supported} aria-pressed={selected[mod.id]} onClick={()=>toggle(mod.id)}>{selected[mod.id]?<ToggleRight size={24}/>:<ToggleLeft size={24}/>} {selected[mod.id]?'Deselect mod':'Select mod'}</button>
    <span className="market-hint">{selected[mod.id]?'Selected in draft · not an installation status':'Combine with the other game mods'}</span>
   </article>})}
+   <article hidden={!matches('knowledge')} className="market-card knowledge-card"><div className="market-card-top"><div className="market-icon all-skills"><BookOpen size={28}/></div></div><small>PROGRESSION · SAVE ACTION</small><h2>Unlock journal knowledge</h2><ModAvailability mode="closed"/><p>Complete 3,939 supported journal entries. Add missing knowledge and levels for your selected save, keeping existing entries and skill points.</p><div className="market-detail">People, places, creatures, recipes and quest information</div><button className="primary" disabled={!supported} onClick={()=>setKnowledge(true)}>Choose save & review <ListChecks size={16}/></button><span className="market-hint">Includes story spoilers · backup before changes</span></article>
    <article hidden={!matches('skills')} className="market-card skills-card"><div className="market-card-top"><div className="market-icon all-skills"><Sparkles size={28}/></div></div><small>PROGRESSION · SAVE ACTION</small><h2>Skill unlocks</h2><ModAvailability mode="closed"/><p>Choose individual abilities or unlock all 140 abilities across Kliff, Oongka and Damiane. Keep your available points, inventory and other save progress.</p><div className="market-detail">One selected save · backup before changes</div><button className="primary" disabled={!supported} onClick={()=>setSkills(true)}>Choose save & review <ListChecks size={16}/></button><span className="market-hint">A save edit; it cannot be toggled off like a game mod</span></article>
    <MarketplaceStacks catalog={catalog} supported={supported} hidden={!matches('item_stacks')}/>
    <article hidden={!matches('map')} className="market-card"><div className="market-card-top"><div className="market-icon"><Map size={28}/></div></div><small>EXPLORATION · SAVE ACTION</small><h2>Reveal world map</h2><ModAvailability mode="closed"/><p>Remove world map fog in a selected save. Preserve quest progress, knowledge, discovered locations and fast-travel unlocks.</p><div className="market-detail">Map fog only · selected save · automatic backup</div><button className="secondary" disabled={!supported} onClick={()=>setMap(true)}>Choose save & reveal map</button><span className="market-hint">Save action · close the game before applying</span></article>
@@ -104,6 +106,7 @@ export function Marketplace({catalog}:{catalog:Catalog}) {
    </div>}
   </section>
   <LiveApply session={catalog.session} settings={preview?.files.length?preview.request:null}/>
+  {knowledge&&<MarketplaceKnowledge catalog={catalog} close={()=>setKnowledge(false)}/>}
   {skills&&<MarketplaceSkills catalog={catalog} close={()=>setSkills(false)}/>}
   {effects&&<MarketplaceEffects catalog={catalog} close={()=>setEffects(false)}/>}
   {contributions&&<MarketplaceContributions catalog={catalog} close={()=>setContributions(false)}/>}

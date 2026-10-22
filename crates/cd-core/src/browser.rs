@@ -123,6 +123,19 @@ impl BrowserSession {
     ) -> Result<crate::contribution_action::Receipt> {
         crate::contribution_action::apply(self.game_root(), project, self.save_root()?, request)
     }
+    pub fn knowledge_unlock_preview(
+        &self,
+        save: Option<&str>,
+    ) -> Result<crate::knowledge_unlock::Preview> {
+        crate::knowledge_unlock::preview(self.game_root(), self.save_root()?, save)
+    }
+    pub fn knowledge_unlock_apply(
+        &self,
+        project: &Path,
+        request: &crate::knowledge_unlock::Request,
+    ) -> Result<crate::knowledge_unlock::Receipt> {
+        crate::knowledge_unlock::apply(self.game_root(), project, self.save_root()?, request)
+    }
     pub fn skill_unlock_preview(
         &self,
         save: Option<&str>,
@@ -235,7 +248,9 @@ impl BrowserSession {
                     stat_keys: raw.stat_keys.clone(),
                     knowledge_keys: raw.knowledge_keys.clone(),
                     icon_key: raw.icon_path,
-                    use_restriction: grant_restriction(raw.key, &raw.string_key).map(str::to_owned),
+                    use_restriction: grant_restriction(raw.key, &raw.string_key)
+                        .map(str::to_owned)
+                        .or_else(|| storage_restriction(&raw.inventory_info_list)),
                 }
             })
             .collect();
@@ -442,6 +457,54 @@ fn grant_restriction(key: u32, internal: &str) -> Option<&'static str> {
             "Monster ammunition: this arrow variant is intended for NPCs in the game data. Adding it to inventory does not make it regular player ammunition. Use Arrow (ID 50001), Poison Arrow (ID 50003) or Explosive Arrow (ID 1001321).",
         ),
         _ => None,
+    }
+}
+fn storage_restriction(inventories: &[u16; 10]) -> Option<String> {
+    // The first entry is the default destination. The other entries correspond
+    // to placement contexts, not alternative player-owned containers. Never
+    // infer eligibility from translated names or the presence of an 8/13 later
+    // in the list. Recheck the loaded definition independently in the ASI.
+    let name = match inventories[0] {
+        1 | 2 | 5 | 14 => return None,
+        3 => "account storage".to_owned(),
+        4 => "character storage".to_owned(),
+        6 => "a wagon".to_owned(),
+        7 => "pet or vehicle storage".to_owned(),
+        8 => "camp storage".to_owned(),
+        9 => "a warehouse".to_owned(),
+        13 => "Kuku storage".to_owned(),
+        15..=19 => "housing storage".to_owned(),
+        21 => "ship storage".to_owned(),
+        255 | 65535 => "an unspecified special container".to_owned(),
+        key => format!("special storage (inventory ID {key})"),
+    };
+    Some(format!(
+        "Requires {name}. Direct creation in this container is not supported by the live item picker yet. Use the game's capture or storage interaction. No item request will be sent; ordinary inventory items remain available."
+    ))
+}
+
+#[cfg(test)]
+mod storage_tests {
+    use super::storage_restriction;
+    #[test]
+    fn special_storage_is_language_independent_and_not_limited_to_kuku() {
+        for key in [
+            3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 255, 65535, 42,
+        ] {
+            let mut destinations = [255; 10];
+            destinations[0] = key;
+            destinations[1] = 2; // A different placement context is not permission.
+            assert!(storage_restriction(&destinations).is_some(), "{key}");
+        }
+        assert!(storage_restriction(&[13; 10]).unwrap().contains("Kuku"));
+    }
+    #[test]
+    fn supported_player_destinations_keep_their_existing_behavior() {
+        for key in [1, 2, 5, 14] {
+            let mut destinations = [13; 10];
+            destinations[0] = key;
+            assert!(storage_restriction(&destinations).is_none());
+        }
     }
 }
 fn filter_sort<'a>(

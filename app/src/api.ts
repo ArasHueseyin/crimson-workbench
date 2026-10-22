@@ -35,6 +35,8 @@ export const api = {
   marketplaceModStatus:(session:number)=>call<import('./marketplace-types').NativeModSnapshot>('marketplace_mod_status',{session}),
   marketplaceGameRunning:(session:number)=>call<boolean>('marketplace_game_running',{session}),
   marketplaceModChange:(session:number,id:import('./marketplace-types').NativeModId,enabled:boolean)=>call<import('./marketplace-types').NativeModSnapshot>('marketplace_mod_change',{session,id,enabled}),
+  knowledgeUnlockPreview:(session:number,save:string|null=null)=>call<import('./marketplace-types').KnowledgePreview>('knowledge_unlock_preview',{session,save}),
+  knowledgeUnlockApply:(session:number,request:import('./marketplace-types').KnowledgeRequest)=>call<import('./marketplace-types').KnowledgeReceipt>('knowledge_unlock_apply',{session,request}),
   skillUnlockPreview:(session:number,save:string|null=null,abilities:number[]|null=null)=>call<import('./marketplace-types').SkillPreview>('skill_unlock_preview',{session,save,abilities}),
   skillUnlockApply:(session:number,request:import('./marketplace-types').SkillRequest)=>call<import('./marketplace-types').SkillReceipt>('skill_unlock_apply',{session,request}),
   extraSockets:(session:number)=>call<ExtraSnapshot>('extra_sockets_snapshot',{session}),

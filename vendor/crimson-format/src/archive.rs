@@ -551,7 +551,8 @@ pub(crate) fn validate_overlay_pair(pamt: &[u8], paz: &[u8]) -> io::Result<Vec<S
                 .iter()
                 .all(|name| names.contains(name))
             && e.flags == 0;
-        if !lion && !rokade && !region_timer {
+        let companion = e.flags == 0 && crate::overlay::companion_resource(&e.directory, &e.name);
+        if !lion && !rokade && !region_timer && !companion {
             let (stem, ext) = e
                 .name
                 .split_once('.')

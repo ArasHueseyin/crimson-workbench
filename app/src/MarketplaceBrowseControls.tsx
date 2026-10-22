@@ -30,6 +30,6 @@ export function MarketplaceBrowseControls({query,changeQuery,filter,changeFilter
    <label className="market-category-filter">Category<select aria-label="Mod category" value={filter.category} onChange={event=>changeFilter({...filter,category:event.target.value})}><option value="all">All categories</option>{marketplaceBrowseCategories.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
    {filtered&&<button className="market-reset-filters" type="button" onClick={()=>changeFilter({...emptyMarketplaceBrowseFilter})}>Reset filters</button>}
   </div>
-  {(filter.status==='installed'||filter.status==='updates')&&<p className="market-browse-note">{snapshot?'Installed and update filters show verified runtime modules. Game mods in your combined plan have a separate apply workflow.':'Runtime installation status is unavailable. Refresh runtime status below to check installed modules.'}</p>}
+  {(filter.status==='installed'||filter.status==='updates')&&<p className="market-browse-note">{snapshot?'Installed and update filters show verified mod files. Mods selected for a combined plan have a separate apply workflow.':'Mod installation status is unavailable. Refresh status below to check installed mods.'}</p>}
  </div>;
 }

@@ -5,6 +5,7 @@ pub use guard::game_running;
 pub mod live;
 mod protected;
 pub mod recovery;
+pub mod region_mod;
 #[path = "transaction_v2.rs"]
 mod transaction;
 // Preserve the previous implementation and its tests while the new kernel matures.

@@ -21,6 +21,7 @@ mod index;
 pub mod installation;
 pub mod item_groups;
 pub mod knowledge;
+pub mod knowledge_unlock;
 pub mod language;
 pub mod map_fog;
 pub mod map_fog_action;

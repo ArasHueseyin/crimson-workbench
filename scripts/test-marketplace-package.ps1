@@ -18,25 +18,29 @@ Assert ($published.schema -eq 1 -and $published.version -eq $baseManifest.versio
 Assert (@($published.mods).Count -eq 20 -and @($published.mods.id | Select-Object -Unique).Count -eq 20) 'Exactly twenty distinct optional modules must be packaged.'
 Assert (@(Compare-Object $expectedIds @($published.mods.id)).Count -eq 0) 'Optional module IDs do not match the shipped cards.'
 Assert (@($published.mods.file | Select-Object -Unique).Count -eq 20) 'Optional payload filenames must be unique.'
+$archiveLedger = Get-Content -LiteralPath (Join-Path $package 'archive-mods-manifest.json') -Raw | ConvertFrom-Json
+$archiveHelper = Join-Path $package 'CrimsonArchiveMods.exe'
+Assert ($archiveLedger.schema -eq 1 -and $archiveLedger.file -eq 'CrimsonArchiveMods.exe' -and (Hash $archiveHelper) -eq $archiveLedger.sha256 -and (Get-Item -LiteralPath $archiveHelper).Length -eq $archiveLedger.bytes) 'Independent archive installer is missing or damaged.'
 foreach ($entry in $published.mods) {
     Assert ($entry.file -cmatch '^Crimson[A-Za-z]+\.asi$') 'Optional payload must be a fixed ASI basename.'
     $payload = Join-Path $package ('addons/' + $entry.file)
     Assert ($entry.sha256 -cmatch '^[a-f0-9]{64}$' -and (Hash $payload) -eq $entry.sha256 -and (Get-Item -LiteralPath $payload).Length -eq $entry.bytes) "Invalid optional payload metadata: $($entry.id)"
     foreach ($prior in @($entry.priorHashes)) { Assert ($prior -cmatch '^[a-f0-9]{64}$') "Invalid previous-module hash: $($entry.id)" }
 }
-# These verified local-test modules were actually distributed to the current
-# installation. A rebuild on a fresh runner must recognize them as known older
-# modules, even though MSVC produces a different binary digest there.
+# Recognize distributed local-test modules and the published 0.9.1 glide ASI
+# as known older modules, including builds produced on a fresh runner.
 $knownPrevious = @{
     player_stamina = 'bbab63542f81c570116163d6381cb88af07ee353448c977554faa0f8f18b8d82'
     player_jump = '6a021b1d1e9faa8441605df304bddb953985b2c556211191f0e4e65f4dbe21ec'
     force_palm_height = '13b287af5246d83a6f73872d3a1da357d692caad1d318e02d60b1788ad083da3'
     axiom_reach = '0610e54c48812f8042349a7974f95f76062886831fe5d7d70fa1fb76e7068450'
-    glide_speed = 'fbc4f4c084400859cf3ea0f07b55fd57594ac431173eb8c8e9eeaa8d58cbb059'
+    glide_speed = @('fbc4f4c084400859cf3ea0f07b55fd57594ac431173eb8c8e9eeaa8d58cbb059', '2c6bdd2adb3e014ef9a5049b3c9cef7eea4c2a0afbd946a09e70725914a46af8', 'afc8d4320a4cae92490e264a17e27d77d8096d71372ba6f1d6212aea930e1987', '9916efa51896537294058fed49347700f4ce413e6652fc9cfe3a273cd04b48e3')
 }
 foreach ($id in $knownPrevious.Keys) {
     $entry = @($published.mods | Where-Object id -eq $id)[0]
-    Assert ($entry.sha256 -eq $knownPrevious[$id] -or @($entry.priorHashes) -contains $knownPrevious[$id]) "Known previous module is missing from the upgrade ledger: $id"
+    foreach ($previous in @($knownPrevious[$id])) {
+        Assert ($entry.sha256 -eq $previous -or @($entry.priorHashes) -contains $previous) "Known previous module is missing from the upgrade ledger: $id"
+    }
 }
 function Game([string]$Name) {
     $path = Join-Path $testRoot $Name
@@ -57,6 +61,8 @@ function Run([string]$Game, [string]$Mode = 'Status', [string]$Id = 'blackstar',
 $unsupported = Game 'unsupported'
 Run $unsupported Install blackstar $false | Out-Null
 Assert (-not (Test-Path -LiteralPath (Join-Path $unsupported 'bin64/CrimsonBlackstar.asi'))) 'Unsupported EXE was changed.'
+Run $unsupported Install region_return_30min $false | Out-Null
+Assert (-not (Test-Path -LiteralPath (Join-Path $unsupported '9000'))) 'Region installer changed an unsupported game.'
 
 # Only private temporary copies admit fake bytes and suppress the process list.
 # Neither bypass is available in the shipped scripts.
