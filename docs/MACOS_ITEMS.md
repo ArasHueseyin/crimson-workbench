@@ -165,5 +165,16 @@ The packaged native app opened and loaded all 6,816 items. Its real launch comma
 refused the already-running diagnostic game, and its grant button stayed disabled
 while disconnected. The final app passes strict deep code-signature verification
 with a local ad-hoc identity; the DMG checksum verifies. Developer ID signing and
-notarization have not been performed. The app-driven live connection check is
-pending normal exit of the read-only diagnostic game; no second grant is authorized.
+notarization have not been performed. The app-driven live connection check subsequently passed: the app launched game
+PID 12208 after verifying all 11 backup copies, accepted the pinned executable,
+and reported “Live item module connected” after loading the existing save.
+The backup and runtime log are under the app's local data directory in
+`item-backups/1792754852219789000`.
+
+The user then independently tested the Item Picker with 35 ordinary Timber and
+confirmed that the required amount was added in game. The runtime logged native
+type 1243, quantity 35, then `key=710001 quantity=35 state=4 error=0`: both the
+carried and aggregate inventory delta checks passed. The agent submitted no grant
+in this session. At the user's request, testing stopped after this confirmation.
+Save/reload persistence of this 35-item request has not been checked; the earlier
+single-Timber persistence test remains the verified save/reload evidence.
