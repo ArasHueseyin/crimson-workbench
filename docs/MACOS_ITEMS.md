@@ -181,8 +181,8 @@ single-Timber persistence test remains the verified save/reload evidence.
 
 ## Live mount registration investigation (23 October 2026)
 
-The offline mount registration path was confirmed in game by the user. Live
-registration remains under implementation; no live grant endpoint is enabled.
+The native registration path was traced before enabling the live endpoint
+described below.
 
 On the hash-pinned Mac executable above, RTTI and resolved chained fixups identify
 the hire cheat decoder at 0x1009f8dc4 (vtable dispatch slot 0x107e43cd8). Its
@@ -233,4 +233,3 @@ A subsequent read of the saved stable confirmed one raptor entry. Loading that
 save again and other species remain separate verification steps. The packaged
 launcher retains a hash-verified module copy per launch so app updates cannot
 replace code loaded by a running game.
-
