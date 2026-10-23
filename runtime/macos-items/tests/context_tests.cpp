@@ -51,6 +51,15 @@ int main() {
     };
     auto local = [&] { return inspect_local_actor(0x5000, 0, local_read); };
     assert(local().keys_match);
+    const auto snapshot = inspect_local_actor(0, 0, local_read);
+    assert(snapshot.selection_valid && snapshot.client_key == 42 && !snapshot.keys_match);
+    auto unstable = [&](std::uintptr_t address, std::uintptr_t& value) {
+        static unsigned reads = 0;
+        if (!local_read(address, value)) return false;
+        if (address == 0x108a6a938 && ++reads == 2) value++;
+        return true;
+    };
+    assert(!inspect_local_actor(0, 0, unstable).selection_valid);
     memory[0x5100] = 43;
     assert(!local().keys_match);
     memory[0x5100] = 42;

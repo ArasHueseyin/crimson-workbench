@@ -6,7 +6,7 @@
 namespace crimson::mac_items {
 struct ItemCount { bool valid{}; std::int64_t quantity{}; };
 
-// Candidate layout for observation only until calibrated against the game's UI.
+// Bucket 0 was calibrated against Kliff's inventory; totals include other allocated storage.
 template<class Read>
 ItemCount count_items(std::uintptr_t holder, std::uint16_t type, Read read,
     std::uint32_t bucket_index = UINT32_MAX) {
@@ -23,7 +23,9 @@ ItemCount count_items(std::uintptr_t holder, std::uint16_t type, Read read,
     for (unsigned i = 0; i < count; ++i) {
         if (bucket_index != UINT32_MAX && i != bucket_index) continue;
         std::uintptr_t bucket{}, slots{}, size{};
-        if (!field(buckets, i*8, bucket) || !field(bucket, 0, slots) || !field(bucket, 8, size)) return {};
+        if (!field(buckets, i*8, bucket)) return {};
+        if (!bucket) continue;
+        if (!field(bucket, 0, slots) || !field(bucket, 8, size)) return {};
         size &= 0xffffffff;
         if (size > 16384 || (size && !slots)) return {};
         for (unsigned n = 0; n < size; ++n) {

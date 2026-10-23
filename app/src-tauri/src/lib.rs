@@ -527,6 +527,7 @@ pub fn run() {
             extra_socket_candidates,
             extra_socket_add,
             live_status,
+            spawn_launch,
             spawn_status,
             spawn_grant,
             spawn_cancel,
@@ -810,6 +811,42 @@ async fn teleport_change(
         teleport_service::exchange(&game, Some(&request))
     })
     .await
+}
+#[tauri::command]
+async fn spawn_launch(
+    app: tauri::AppHandle,
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<serde_json::Value> {
+    #[cfg(target_os = "macos")]
+    {
+        let resources = app.path().resource_dir().map_err(|e| AppError {
+            code: "live_items",
+            message: e.to_string(),
+        })?;
+        let data = app.path().app_local_data_dir().map_err(|e| AppError {
+            code: "live_items",
+            message: e.to_string(),
+        })?;
+        let state = Arc::clone(&state);
+        blocking(move || {
+            let game = state.with_session(session, |s| Ok(s.game_root().to_owned()))?;
+            let launch = spawn_service::macos::launch(&game, &resources, &data)?;
+            serde_json::to_value(launch).map_err(|e| AppError {
+                code: "live_items",
+                message: e.to_string(),
+            })
+        })
+        .await
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, state, session);
+        Err(AppError {
+            code: "live_items",
+            message: "This launcher is available on macOS.".into(),
+        })
+    }
 }
 #[tauri::command]
 async fn spawn_status(

@@ -16,6 +16,7 @@ export function useItemSpawner(session: number, game: string) {
   const [result, setResult] = useState<SpawnSnapshot | null>(null);
   const [message, setMessage] = useState('Checking live module …');
   const [sending, setSending] = useState(false);
+  const [launching, setLaunching] = useState(false), [backup, setBackup] = useState('');
   const active = useRef(true), latch = useRef(false), current = useRef(pending), lastResult = useRef<SpawnSnapshot | null>(null), generation = useRef(0);
   const terminal = (value: SpawnSnapshot) => {
     if (!['queued', 'executing', 'uncertain'].includes(value.state)) {
@@ -28,17 +29,29 @@ export function useItemSpawner(session: number, game: string) {
     const restored = restore(storageKey); current.current = restored; setPending(restored); setRuntime(null); lastResult.current = null; setResult(null);
     async function poll() {
       if (polling || latch.current) return; polling = true;
+      const request = current.current;
       try {
-        const value = await api.spawnStatus(session, current.current);
-        if (!alive || token !== generation.current) return;
-        if (current.current) terminal(value); else { setRuntime(value); if (!lastResult.current) setMessage(value.message); }
+        const value = await api.spawnStatus(session, request);
+        if (!alive || token !== generation.current || current.current !== request) return;
+        if (request) terminal(value); else { setRuntime(value); if (!lastResult.current) setMessage(value.message); }
       } catch (e) {
-        if (alive) { setRuntime(null); setMessage(current.current ? `${asError(e).message} The request stays saved; no automatic retry.` : asError(e).message); }
+        if (alive && token === generation.current && current.current === request) { setRuntime(null); setMessage(current.current ? `${asError(e).message} The request stays saved; no automatic retry.` : asError(e).message); }
       } finally { polling = false; }
     }
     void poll(); const timer = window.setInterval(() => void poll(), 2000);
     return () => { alive = false; active.current = false; window.clearInterval(timer); };
   }, [session, storageKey]);
+  async function launch() {
+    if (latch.current || current.current) return;
+    latch.current = true; const token = generation.current; setLaunching(true);
+    try {
+      const value = await api.spawnLaunch(session);
+      if (active.current && token === generation.current) {
+        setBackup(value.backup_path); setMessage('Game launched. Load a save and move your character briefly to connect.');
+      }
+    } catch (e) { if (active.current && token === generation.current) setMessage(asError(e).message); }
+    finally { latch.current = false; if (active.current) setLaunching(false); }
+  }
   async function give(key: number, quantity: number) {
     if (latch.current || current.current || runtime?.state !== 'ready' || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 10000) return;
     latch.current = true; const token = generation.current; setSending(true); lastResult.current = null; setResult(null);
@@ -59,7 +72,7 @@ export function useItemSpawner(session: number, game: string) {
     finally { latch.current = false; if (active.current) setSending(false); }
   }
   function acknowledge() {
-    if (sending) return; localStorage.removeItem(storageKey); current.current = null; setPending(null); lastResult.current = null; setResult(null); setMessage('Result checked. Refreshing connection.');
+    if (sending || lastResult.current?.state !== 'uncertain') return; localStorage.removeItem(storageKey); current.current = null; setPending(null); lastResult.current = null; setResult(null); setMessage('Result checked. Refreshing connection.');
   }
-  return { ready: runtime?.state === 'ready' && !pending && !sending, pending, result, message, sending, give, cancel, acknowledge };
+  return { launch, launching, backup, connected: runtime !== null, ready: runtime?.state === 'ready' && !pending && !sending && !launching, pending, result, message, sending, give, cancel, acknowledge };
 }

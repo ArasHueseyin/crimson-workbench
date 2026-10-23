@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-async function fixture(page: Page, live: { ready?: boolean; defer?: boolean; lostReply?: boolean; stack10?:boolean; knowledge?:boolean; arrows?:boolean; npcAmmo?:boolean; specialStorage?:boolean } = {}) {
+async function fixture(page: Page, live: { ready?: boolean; defer?: boolean; lostReply?: boolean; stack10?:boolean; knowledge?:boolean; arrows?:boolean; npcAmmo?:boolean; specialStorage?:boolean; deferStatus?:boolean } = {}) {
   await page.addInitScript(live => {
-    const root = window as unknown as { isTauri: boolean; __TAURI_INTERNALS__: unknown; spawnCalls: { command: string; args: Record<string, unknown> }[] };
+    const root = window as unknown as { isTauri: boolean; __TAURI_INTERNALS__: unknown; spawnCalls: { command: string; args: Record<string, unknown> }[]; releaseStatus?: () => void; holdStatus?: boolean };
     root.isTauri = true;
     root.spawnCalls = [];
     const items = Array.from({ length: 450 }, (_, n) => ({ key: 1000 + n, name: live.arrows&&n<3?['Blitz-Pfeile','Feuerpfeile','Goldbarren'][n]:n === 0 ? 'Dunkler Zweihänder' : `Material ${n}`, internal_key: `Synthetic_${n}`, description: n === 0 ? 'Eine dunkle Testwaffe. <b>Nur Testdaten.</b>' : 'Material für Herstellung.', item_type: 1, category: 3, tier: 3, max_stack: live.stack10?'10':'1000', stat_keys: [7], knowledge_keys:live.knowledge&&n===0?[501]:[], icon_key: 1 }));
@@ -12,6 +12,7 @@ async function fixture(page: Page, live: { ready?: boolean; defer?: boolean; los
         root.spawnCalls.push({ command, args });
         if (!live.ready) throw { message: 'Live module not connected.' };
         const request = args.request as { id: string; key: number; quantity: number } | null;
+        if (command === 'spawn_status' && !request && live.deferStatus && root.holdStatus) await new Promise<void>(resolve => {root.holdStatus=false;root.releaseStatus=resolve;});
         if (command === 'spawn_grant' && live.lostReply) throw { message: 'No complete response.' };
         const state = command === 'spawn_cancel' ? 'cancelled' : !request ? 'ready' : command === 'spawn_grant' || live.defer ? 'queued' : 'applied';
         return { state, pid: 123, epoch: 456, id: request?.id ?? '', key: request?.key ?? 0, quantity: request?.quantity ?? 0, message: state === 'applied' ? 'Item quantity confirmed. Save normally now.' : state === 'queued' ? 'Request waiting for inventory event.' : state === 'cancelled' ? 'Anfrage cancelled.' : 'Live spawner connected.' };
@@ -139,6 +140,8 @@ test('lost reply and page reload query the stored ID without re-granting', async
   await page.getByRole('option', { name: /Dunkler Zweihänder/ }).click();
   await page.getByRole('button', { name: 'Add to inventory' }).click();
   await expect(page.locator('.picker-runtime-note')).toContainText('No complete response');
+  await expect(page.getByRole('button', { name: 'Result checked in game' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Cancel request' })).toBeVisible();
   const record = await page.evaluate(() => localStorage.getItem('crimson-live-item-request-v1:c:/synthetic'));
   expect(record).toBeTruthy(); await page.reload();
   await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'true');
@@ -164,4 +167,20 @@ test('saved knowledge badges update for the chosen save without changing any gam
   await page.getByLabel('Search item picker').fill('1001');await page.getByRole('option',{name:/Material 1/}).click();
   await expect(page.locator('.knowledge-badge')).toContainText('Knowledge: unknown');
   await expect(page.locator('.knowledge-badge')).toContainText('No unique knowledge reward');
+});
+
+test('an older status reply cannot forget a new request after its grant reply is lost', async ({page}) => {
+  await fixture(page, {ready:true,lostReply:true,deferStatus:true});
+  await page.getByRole('option', {name:/Dunkler Zweihänder/}).click();
+  await expect(page.getByRole('button', {name:'Add to inventory'})).toBeEnabled();
+  await page.evaluate(() => {(window as unknown as {holdStatus:boolean}).holdStatus=true;});
+  await expect.poll(()=>page.evaluate(()=>typeof (window as unknown as {releaseStatus?:()=>void}).releaseStatus)).toBe('function');
+  await page.getByRole('button', {name:'Add to inventory'}).click();
+  await expect(page.locator('.picker-runtime-note')).toContainText('No complete response');
+  const before = await page.evaluate(()=>localStorage.getItem('crimson-live-item-request-v1:c:/synthetic'));
+  expect(before).toBeTruthy();
+  await page.evaluate(()=>(window as unknown as {releaseStatus:()=>void}).releaseStatus());
+  await expect(page.getByRole('button', {name:'Add to inventory'})).toBeDisabled();
+  await expect(page.getByRole('button', {name:'Result checked in game'})).toHaveCount(0);
+  expect(await page.evaluate(()=>localStorage.getItem('crimson-live-item-request-v1:c:/synthetic'))).toBe(before);
 });

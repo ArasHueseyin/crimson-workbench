@@ -54,6 +54,7 @@
     "allow-installation-audit-cancel",
     "allow-installation-audit-export",
     "allow-live-status",
+    "allow-spawn-launch",
     "allow-spawn-status",
     "allow-spawn-grant",
     "allow-spawn-cancel",

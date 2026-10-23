@@ -2,8 +2,9 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function setup(page: Page, damaged = false, readOnly = false) {
   await page.addInitScript(({ damaged, readOnly }) => {
-    const root = window as unknown as { isTauri: boolean; __TAURI_INTERNALS__: unknown; setupOpened?: Record<string, unknown> };
+    const root = window as unknown as { isTauri: boolean; __TAURI_INTERNALS__: unknown; setupOpened?: Record<string, unknown>; setupCalls: string[] };
     root.isTauri = true;
+    root.setupCalls = []; let launched = false;
     const defaults = { version: 1, game_dir: null, save_dir: null, language: 'auto' };
     function bootstrap() {
       const settings = JSON.parse(localStorage.getItem('setup-test-preferences') ?? JSON.stringify(defaults));
@@ -11,6 +12,9 @@ async function setup(page: Page, damaged = false, readOnly = false) {
         discovery: { installations: settings.game_dir ? [{ path: settings.game_dir, platform: 'explicit', build_id: 'synthetic' }] : damaged && !localStorage.getItem('setup-test-preferences') ? [{ path: 'C:/Detected Game', platform: 'steam', build_id: 'synthetic' }] : [], configured_game: settings.game_dir, save_directories: ['C:/Friend Saves'] }, languages: [{ language: 'ger' }, { language: 'eng' }] };
     }
     root.__TAURI_INTERNALS__ = { invoke: async (command: string, args: Record<string, unknown> = {}) => {
+      root.setupCalls.push(command);
+      if (command === 'spawn_launch') { launched = true; return {pid:42, backup_path:'/Synthetic verified backup'}; }
+      if (command === 'spawn_status' && launched) return {state:'ready',pid:42,epoch:7,id:'',key:0,quantity:0,message:'Live item module connected.'};
       if (command === 'bootstrap') return bootstrap();
       if (command === 'save_settings') {
         const value = args.settings as typeof defaults;
@@ -75,11 +79,20 @@ test('damaged settings can be replaced from first-run UI', async ({ page }) => {
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
- test('Mac catalog explains read-only limits after connection', async ({ page }) => {
+ test('Mac catalog offers explicit backed-up item launch and explains remaining limits', async ({ page }) => {
   await setup(page, false, true);
   await page.getByLabel('Installation folder', { exact: true }).fill('/Games/CrimsonDesert_Steam.app');
   await page.getByRole('button', { name: 'Save & connect', exact: true }).click();
   await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'true');
-  await expect(page.getByText('Mac preview · Read only.', { exact: true })).toBeVisible();
-  await expect(page.getByText('Browse items and plan crafting.', { exact: false })).toBeVisible();
+  await expect(page.getByText('Mac preview · Experimental item spawning.', { exact: true })).toBeVisible();
+  await expect(page.locator('.source-assurance[role=status]')).toContainText('Game file edits and other runtime mods remain unavailable.');
+  await page.getByRole('button', {name:'Item picker',exact:true}).click();
+  const launch = page.getByRole('button', {name:'Launch game with item spawning'});
+  await expect(launch).toBeEnabled();
+  expect(await page.evaluate(() => (window as unknown as {setupCalls:string[]}).setupCalls.filter(c=>c==='spawn_launch'||c==='spawn_grant'))).toEqual([]);
+  await launch.click();
+  await expect(page.getByText('Verified save backup: /Synthetic verified backup')).toBeVisible();
+  await expect(launch).toBeDisabled();
+  expect(await page.evaluate(() => (window as unknown as {setupCalls:string[]}).setupCalls.filter(c=>c==='spawn_launch'||c==='spawn_grant'))).toEqual(['spawn_launch']);
+  await page.screenshot({path:'../.local/macos-items/mac-launch-picker.png'});
 });

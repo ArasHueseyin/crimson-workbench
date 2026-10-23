@@ -7,7 +7,7 @@ const WIRE_VERSION: u16 = 2;
 #[derive(Clone, Deserialize)]
 pub struct GrantRequest {
     pub id: String,
-    #[cfg_attr(not(any(windows, test)), allow(dead_code))]
+    #[cfg_attr(not(any(windows, target_os = "macos", test)), allow(dead_code))]
     pub pid: u32,
     pub epoch: u64,
     pub key: u32,
@@ -27,6 +27,14 @@ fn error(message: impl Into<String>) -> AppError {
     AppError {
         code: "live_items",
         message: message.into(),
+    }
+}
+#[cfg(any(windows, target_os = "macos", test))]
+fn ended_session(request: &GrantRequest) -> Snapshot {
+    Snapshot {
+        state: "uncertain", pid: request.pid, epoch: request.epoch, id: request.id.clone(),
+        key: request.key, quantity: request.quantity,
+        message: "The original game session ended. Its request cannot execute again, but its saved outcome is unknown. Check inventory before making a new request.".into(),
     }
 }
 fn id_bytes(id: &str) -> Result<[u8; 16]> {
@@ -57,7 +65,7 @@ fn encode(operation: u16, request: Option<&GrantRequest>) -> Result<[u8; 40]> {
     }
     Ok(out)
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -> Result<Snapshot> {
     let u16_at = |n| u16::from_le_bytes(bytes[n..n + 2].try_into().unwrap());
     let u32_at = |n| u32::from_le_bytes(bytes[n..n + 4].try_into().unwrap());
@@ -141,6 +149,9 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
         16 => {
             "This item requires a special container or storage interaction that the live item picker does not support yet. Nothing was given. You can continue adding ordinary inventory items without restarting the game."
         }
+        17 => {
+            "This item's native creation data is outside the supported limits. Nothing was added."
+        }
         _ => return Err(error("Unknown live module error.")),
     };
     Ok(Snapshot {
@@ -152,6 +163,23 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
         quantity: u32_at(36),
         message: detail.into(),
     })
+}
+#[cfg(any(windows, target_os = "macos", test))]
+fn decode_exchange(
+    bytes: &[u8; 48],
+    pid: u32,
+    request: Option<&GrantRequest>,
+    operation: u16,
+) -> Result<Snapshot> {
+    if operation != 2
+        && let Some(r) = request
+    {
+        let status = decode(bytes, pid, None)?;
+        if status.epoch != r.epoch {
+            return Ok(ended_session(r));
+        }
+    }
+    decode(bytes, pid, request)
 }
 pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> Result<Snapshot> {
     if operation == 2 {
@@ -172,14 +200,37 @@ pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> 
             ));
         }
         let bytes = windows::transact(pid, &wire)?;
-        decode(&bytes, pid, request)
+        decode_exchange(&bytes, pid, request, operation)
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        let pids = macos::game_pids(game)?;
+        if let Some(r) = request
+            && !pids.contains(&r.pid)
+        {
+            if macos::process_exited(r.pid)? {
+                return Ok(ended_session(r));
+            }
+            return Err(error(
+                "The original game process cannot be verified. Its request remains saved.",
+            ));
+        }
+        if pids.len() != 1 {
+            return Err(error(
+                "A single running Crimson Desert instance could not be identified. Use Launch game with item spawning.",
+            ));
+        }
+        let pid = pids[0];
+        decode_exchange(&macos::transact(pid, &wire)?, pid, request, operation)
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
     {
         let _ = (game, wire);
         Err(error("The live spawner requires Windows."))
     }
 }
+#[cfg(target_os = "macos")]
+pub(crate) mod macos;
 #[cfg(windows)]
 pub(crate) fn running_game_pid(game: &Path) -> Result<u32> {
     windows::game_pid(game)
@@ -381,6 +432,22 @@ mod tests {
         reply[32] -= 1;
         reply[40] += 1;
         assert!(decode(&reply, 123, Some(&r)).is_err());
+    }
+    #[test]
+    fn ended_session_requires_inventory_check_but_cannot_execute_again() {
+        let r = request();
+        let mut bytes = [0u8; 48];
+        bytes[..4].copy_from_slice(&MAGIC.to_le_bytes());
+        bytes[4..6].copy_from_slice(&WIRE_VERSION.to_le_bytes());
+        bytes[6..8].copy_from_slice(&5u16.to_le_bytes());
+        bytes[8..12].copy_from_slice(&r.pid.to_le_bytes());
+        bytes[40..48].copy_from_slice(&(r.epoch + 1).to_le_bytes());
+        let receipt = decode_exchange(&bytes, r.pid, Some(&r), 3).unwrap();
+        assert_eq!(receipt.state, "uncertain");
+        assert_eq!(receipt.id, r.id);
+        assert!(receipt.message.contains("cannot execute again"));
+        assert!(decode_exchange(&bytes, r.pid, Some(&r), 2).is_err());
+        assert!(decode_exchange(&bytes, r.pid + 1, Some(&r), 3).is_err());
     }
     #[cfg(windows)]
     #[test]

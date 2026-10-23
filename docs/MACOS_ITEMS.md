@@ -42,7 +42,7 @@ Observed locally on native Steam version 1.0.35, bundle build 338:
   `actor+0x108` and holder at `component+0xb8`. These are candidate observation
   checks, not authority to write inventory or proof of the selected player.
 
-## Live diagnostic progress
+## Historical live diagnostic progress
 
 The exact-build read-only observer reached native movement dispatch on a loaded
 save and confirmed the server actor class and holder-owner round trip. No grant
@@ -65,9 +65,9 @@ to exact `ClientActorManager` vtable `0x10833e4e0`, manager `+0x100` to exact
 The `+0x130` server field previously compared with controller `+0x100` is an
 ownership association and must not substitute for that actor-key comparison.
 
-## One-item diagnostic
+## Historical one-item diagnostic
 
-The default launch remains read-only. The development-only per-process flag
+The initial diagnostic defaulted to read-only. Its development-only per-process flag
 `CW_MAC_ITEMS_TEST_ONCE=one-timber` arms at most one attempt, with no retry or
 general grant endpoint. It additionally requires server TLS mode, the server
 controller's `+0x220` actor association, the client/server identity match, and
@@ -117,9 +117,53 @@ and Fine Timber 85. Logs are local in `.local/macos-items/game-one-timber.log`
 and `game-persistence.log`. No additional grants were submitted.
 
 This proves a native single-material spawn and persistence on this pinned build.
-Workbench Item Picker transport, general item/quantity support, and other native
-features are not established by this experiment.
+This experiment alone does not establish general item/quantity support or other
+native features.
 
 Addresses are unslid virtual addresses for this exact executable. They are not
 cross-version signatures. Local disassembly and metadata remain private; no game
 bytes are distributed.
+
+## Item Picker integration
+
+The production `libCrimsonItems.dylib` retires the one-off environment flag and
+accepts only explicit app requests. The Mac launcher requires the game to be
+closed, verifies the executable hash, copies discovered save folders into the
+app's local data directory under `item-backups/`, verifies each copy against
+SHA-256 before and after copying, and records `workbench-backup.json`. A partial
+or failed backup prevents launch. Keep Steam open. No game bundle files or OS
+security settings are changed.
+
+The local socket lives in an owned mode-0700 directory, with a mode-0600 socket.
+The app verifies its peer UID and PID before sending any request. The runtime
+reuses the existing bounded request queue and receipts; a request ID is never
+replayed. Inventory execution occurs in the verified native server callback,
+with local actor identity, owner, holder and server TLS checks repeated before
+submission. No engine pointer is retained by the transport thread.
+
+Only items targeting native InventoryKey 2 (Character inventory) are accepted.
+Special-storage destinations are rejected. Quantities are limited to 10,000;
+non-stackable items to 100. Native value export additionally requires bounded
+socket and property lists. Both carried inventory (bucket 0) and aggregate
+inventory must increase by exactly the requested quantity. Any uncertain native
+result blocks further grants for that game session. A lost reply retains the
+request ID and permits cancellation or receipt polling, not acknowledgement of
+a possibly queued request. After an old game session ends, inventory must be
+checked before acknowledging its unknown saved outcome.
+
+Builds compile the native module automatically and bundle it as a Mac resource.
+Fixtures cover malformed contexts, sparse buckets, serializer bounds, destination
+restrictions, post-grant delta checks, request replay, socket identity and save
+backup failures. The completed live proof remains ordinary Timber x1; broader
+item behavior and the app-driven live path still need hardware confirmation.
+
+Integration verification (23 October 2026): the Rust workspace passed, followed
+by nine focused spawn/backup/process tests, all five Mac native test programs,
+50 frontend unit tests and 16 Item Picker/setup browser tests. Removing the poll
+identity guard made the new lost-reply race regression fail; restoring it passed.
+The packaged native app opened and loaded all 6,816 items. Its real launch command
+refused the already-running diagnostic game, and its grant button stayed disabled
+while disconnected. The final app passes strict deep code-signature verification
+with a local ad-hoc identity; the DMG checksum verifies. Developer ID signing and
+notarization have not been performed. The app-driven live connection check is
+pending normal exit of the read-only diagnostic game; no second grant is authorized.

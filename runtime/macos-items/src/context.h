@@ -7,10 +7,10 @@ struct Observation { bool actor_matches{}, holder_matches{}; };
 struct LocalActorObservation {
     std::uintptr_t manager_vtable{}, user_vtable{}, actor_vtable{};
     std::uint32_t client_key{}, server_key{};
-    bool keys_match{};
+    bool selection_valid{}, keys_match{};
 };
 
-// Diagnostic candidate only: native client selection semantics still need calibration.
+// Only numeric identity leaves this snapshot; no engine pointer is retained.
 template<class Read>
 LocalActorObservation inspect_local_actor(std::uintptr_t server_actor, std::intptr_t slide, Read read) {
     LocalActorObservation result;
@@ -26,11 +26,13 @@ LocalActorObservation inspect_local_actor(std::uintptr_t server_actor, std::intp
         || !field(user, 0x220, actor) || !field(actor, 0, result.actor_vtable)
         || result.actor_vtable != 0x10833cd88ULL+slide || !field(actor, 0x100, key)) return result;
     result.client_key = static_cast<std::uint32_t>(key);
-    if (!field(server_actor, 0x100, key)) return result;
-    result.server_key = static_cast<std::uint32_t>(key);
     if (!field(user, 0x220, check) || check != actor
         || !field(manager, 0x100, check) || check != user
+        || !field(root, 0x10, check) || check != manager
         || !read(0x108a6a938ULL+slide, check) || check != root) return result;
+    result.selection_valid = result.client_key != 0;
+    if (!field(server_actor, 0x100, key)) return result;
+    result.server_key = static_cast<std::uint32_t>(key);
     result.keys_match = result.client_key && result.client_key == result.server_key;
     return result;
 }

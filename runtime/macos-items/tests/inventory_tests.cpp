@@ -41,6 +41,10 @@ int main() {
     assert(count(42).valid && count(42).quantity == 90);
     assert(count_items(0x1000, 42, read, 0).quantity == 5);
     assert(count_items(0x1000, 42, read, 1).quantity == 85);
+    memory[0x2008] = 0;
+    assert(count(42).valid && count(42).quantity == 5);
+    assert(count_items(0x1000, 42, read, 1).valid && count_items(0x1000, 42, read, 1).quantity == 0);
+    memory[0x2008] = 0x5000;
     memory.erase(0x4008);
     assert(!count(42).valid);
     assert(!count_items(UINTPTR_MAX, 42, read).valid);

@@ -48,6 +48,7 @@ export const api = {
   mountSearch:(session:number,text:string,regex:boolean)=>call<number[]>('mount_search',{session,text,regex}),
   mountIcon:(session:number,key:number)=>call<ItemIcon>('mount_icon',{session,key}),
   mountRegister:(session:number,request:MountRequest)=>call<MountReceipt>('mount_register',{session,request}),
+  spawnLaunch:(session:number)=>call<{pid:number;backup_path:string}>('spawn_launch',{session}),
   spawnStatus:(session:number,request:SpawnRequest|null=null)=>call<SpawnSnapshot>('spawn_status',{session,request}),
   spawnGrant:(session:number,request:SpawnRequest)=>call<SpawnSnapshot>('spawn_grant',{session,request}),
   spawnCancel:(session:number,request:SpawnRequest)=>call<SpawnSnapshot>('spawn_cancel',{session,request}),

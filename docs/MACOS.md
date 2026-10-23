@@ -10,6 +10,10 @@ Apple Silicon `.app` and `.dmg` on macOS 15 or later.
   `Contents/Resources/packages` directory.
 - Save-directory discovery under `~/Library/Application Support/Pearl Abyss/CD/save`.
 - Item browser, search, descriptions, icons, and crafting planner.
+- Experimental native item spawning on the pinned Steam executable: launch from
+  Item picker with a hash-verified save backup, then submit an explicit request.
+  Receipts verify the inventory delta and prevent automatic retries.
+  See [native inventory work](MACOS_ITEMS.md) for limits and live verification.
 - Settings and local caches; installed apps use
   `~/Library/Application Support/CrimsonWorkbench`.
 
@@ -23,15 +27,14 @@ The Mac schema has its own cache identity. Future game updates may be rejected.
 ## Unsupported
 
 Game-file application/restoration, save edits, runtime marketplace modules,
-Live Items, Extra Sockets, teleport, photo controls, and live world controls.
+Extra Sockets, teleport, photo controls, and live world controls.
 The existing process and executable guards continue to reject these operations
 on macOS. Some upstream controls remain visible but cannot perform these actions.
 Mod previews and exports are development tools; they have not been validated for
 application to the Mac game. Normal catalog use does not change the game bundle,
-signature, installed mods, or saves. A separate development diagnostic has now
-spawned one user-authorized Timber through the native transaction and verified
-save/reload persistence, with saves backed up first. That diagnostic is not yet
-integrated into the distributed app; see [native inventory work](MACOS_ITEMS.md).
+signature, installed mods, or saves. Explicit inventory grants can be autosaved
+by the game. The first one-Timber experiment passed independent UI confirmation
+and save/reload verification; other item types have not been verified live.
 
 ## Build
 
