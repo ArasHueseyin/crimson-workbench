@@ -152,6 +152,7 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
         17 => {
             "This item's native creation data is outside the supported limits. Nothing was added."
         }
+        18 => "This mount is already registered in the loaded stable.",
         _ => return Err(error("Unknown live module error.")),
     };
     Ok(Snapshot {
@@ -172,6 +173,7 @@ fn decode_exchange(
     operation: u16,
 ) -> Result<Snapshot> {
     if operation != 2
+        && operation != 5
         && let Some(r) = request
     {
         let status = decode(bytes, pid, None)?;
@@ -182,6 +184,13 @@ fn decode_exchange(
     decode(bytes, pid, request)
 }
 pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> Result<Snapshot> {
+    #[cfg(not(target_os = "macos"))]
+    if operation == 5 || operation == 6 {
+        return Err(error("Live mounts are available only on native macOS."));
+    }
+    if operation == 5 && request.is_none_or(|r| r.key == 0 || r.quantity != 1) {
+        return Err(error("A live mount request must select exactly one mount."));
+    }
     if operation == 2 {
         let r = request.ok_or_else(|| error("Request missing."))?;
         if r.key == 0 || r.quantity == 0 || r.quantity > 10000 {
@@ -228,6 +237,24 @@ pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> 
         let _ = (game, wire);
         Err(error("The live spawner requires Windows."))
     }
+}
+pub fn mount_exchange(
+    game: &Path,
+    operation: u16,
+    request: Option<&GrantRequest>,
+) -> Result<Snapshot> {
+    let mut result = exchange(game, operation, request)?;
+    result.message = match result.state {
+        "ready" => "Live mount module connected.",
+        "starting" => "Load a save and move your character briefly to connect.",
+        "queued" => "Mount request queued. Return to the game briefly.",
+        "executing" => "The game is registering the mount.",
+        "applied" => "One additional mount was confirmed in the loaded stable. Save normally now.",
+        "uncertain" => "Mount result is uncertain. Check the stable, save, and restart the game. This request will not be retried.",
+        "expired" => "The request expired before execution. No mount was registered.",
+        _ => return Ok(result),
+    }.into();
+    Ok(result)
 }
 #[cfg(target_os = "macos")]
 pub(crate) mod macos;

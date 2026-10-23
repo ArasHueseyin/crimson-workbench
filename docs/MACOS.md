@@ -90,7 +90,22 @@ operation finishes. Both save files are backed up, hash checked, and journaled.
 Retrying the same request cannot add another animal. macOS locks coordinate
 Workbench writers but do not prevent Steam launches or Steam Cloud writes.
 
-The contributor confirmed offline registration works in game. Temporary-copy
-tests also covered backups, duplicate rejection, recovery, and twelve base-entry
-variants. That does not establish summoning/riding behavior for every variant.
-Live mount injection is not part of this contribution.
+Keep the game closed until registration finishes. macOS file locks serialize
+Workbench writers; they do not stop Steam from launching the game or prevent
+Steam Cloud from writing. Changed save generations are rejected rather than
+overwritten. Backups are recorded in the registration receipt. Base-entry mounts
+still require in-game summoning and riding verification.
+
+
+## Live mounts
+
+Select a mount in the Mounts screen, then use “Register selected mount live”
+once the live module is connected. If needed, save and close the game first,
+then use “Launch game with live mounts”; this creates a verified save backup.
+Load a save and move briefly to establish the active character.
+
+The action adds one previously unowned mount through the native stable
+transaction. Existing ownership is checked in the loaded character's stable.
+Save normally afterward. The raptor has been confirmed in game; other species
+and variants remain unverified. See MACOS_ITEMS.md for the pinned build and
+recovery limits.

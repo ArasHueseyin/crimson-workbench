@@ -1,5 +1,5 @@
 #pragma once
-#include "../../live-items/src/protocol.h"
+#include "protocol.h"
 #include <cerrno>
 #include <chrono>
 #include <cstdio>

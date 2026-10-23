@@ -1,11 +1,11 @@
 import {expect,test,type Page} from '@playwright/test';
-async function fixture(page:Page,running=false,lost=false,wrongSave=false,portrait=false,example=false,exotic=false,readOnly=false) {
-  await page.addInitScript(({running,lost,wrongSave,portrait,example,exotic,readOnly})=>{
+async function fixture(page:Page,running=false,lost=false,wrongSave=false,portrait=false,example=false,exotic=false,readOnly=false,liveMount=false) {
+  await page.addInitScript(({running,lost,wrongSave,portrait,example,exotic,readOnly,liveMount})=>{
     const root=window as unknown as {isTauri:boolean;__TAURI_INTERNALS__:unknown;mountCalls:{command:string;args:Record<string,unknown>}[]};
     root.isTauri=true;root.mountCalls=[];let owned=false,first=true;
     root.__TAURI_INTERNALS__={invoke:async(command:string,args:Record<string,unknown>={})=>{
       if(command==='bootstrap')return {project:'C:/Test',discovery:{installations:[{path:'C:/Synthetic'}],configured_game:'C:/Synthetic'},languages:[{language:'ger'}]};
-      if(command==='open_catalog')return {session:1,game_path:'C:/Synthetic',info:{item_count:0,types:[],categories:[],tiers:[],stats:[],groups:[],index:{}}};
+      if(command==='open_catalog')return {session:1,game_path:'C:/Synthetic',read_only:liveMount,info:{item_count:0,types:[],categories:[],tiers:[],stats:[],groups:[],index:{}}};
       if(command==='search_items')return {items:[],total:0,offset:0};
       if(command==='mount_icon')return {data_url:portrait&&args.key===30108?'data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><circle cx="128" cy="128" r="90" fill="#987654"/></svg>'):null,source:null,reason:portrait?null:'Kein Animal portrait.',caption:example?'Beispielbild derselben Tierart. Farbe dieser Variante kann abweichen.':null};
       if(command==='mount_search'){
@@ -16,6 +16,14 @@ async function fixture(page:Page,running=false,lost=false,wrongSave=false,portra
         const selected=String(args.save??(wrongSave?'22202/slot1':'123/slot2')),old=selected==='22202/slot1';
         return {registration_available:!readOnly,mounts:[{key:exotic?1000265:30108,name:exotic?'Rotfederraptor':'Schwarzbär',internal:exotic?'Riding_CarmaBirdsaurus_1':'Animal_Black_Bear',family:exotic?'Dinosaurs':'Bears',vehicle:exotic?16986:16979,owned:old?0:owned?1:0,supported:!old&&!owned,registration:exotic?'base':'same_family',description:'Reittier für den Stall.',reason:owned?'Bereits registriert.':exotic?'Basiseintrag ohne Tierart-Vorlage möglich.':'Passende Stallvorlage vorhanden.'},{key:31378,name:'Rokade',internal:'Riding_Rokade',family:'Horses',vehicle:16960,owned:old?0:1,supported:false,description:'Ein Pferd.',reason:'Bereits registriert.'}],saves:[{id:'123/slot2',label:'Slot 2',modified:1700000000},{id:'123/slot1',label:'Slot 1',modified:1600000000},...(wrongSave?[{id:'22202/slot1',label:'Anderes Konto · Slot 1',modified:1500000000}]:[])],selected_save:selected,save_sha256:'a'.repeat(64),lobby_sha256:'b'.repeat(64),game_running:running,message:running?'Save and fully close the game before adding a mount.':'Register in stable.'};
       }
+      if(command==='mount_live_status'||command==='mount_live_grant'){
+        const request=args.request as Record<string,unknown>|null;
+        if(command==='mount_live_grant'){
+          root.mountCalls.push({command,args}); owned=true;
+          if(lost&&first){first=false;throw {message:'Live reply interrupted.'};}
+        }
+        return {state:request?'applied':'ready',pid:14,epoch:7,id:request?.id??'',key:request?.key??0,quantity:request?.quantity??0,message:request?'One additional mount confirmed in the loaded stable.':'Live mount module connected.'};
+      }
       if(command==='mount_register'){
         root.mountCalls.push({command,args});owned=true;
         if(lost&&first){first=false;throw {message:'Antwort unterbrochen.'};}
@@ -23,7 +31,7 @@ async function fixture(page:Page,running=false,lost=false,wrongSave=false,portra
       }
       throw {message:`Unexpected command ${command}`};
     }};
-  },{running,lost,wrongSave,portrait,example,exotic,readOnly});
+  },{running,lost,wrongSave,portrait,example,exotic,readOnly,liveMount});
   await page.goto('/');await expect(page.locator('.workbench')).toHaveAttribute('data-ready','true');
   await page.getByRole('button',{name:'Mounts',exact:true}).click();await expect(page.locator('.mount-row')).toHaveCount(2);
 }
@@ -123,4 +131,24 @@ test('read-only mount catalog never offers registration or template recovery',as
   await expect(page.locator('.picker-detail')).not.toContainText('Values and riding equipment are copied');
   await expect(page.locator('.mount-status')).not.toContainText('no suitable stable template');
   await expect(page.locator('.page-heading')).toContainText('inspect ownership');
+});
+
+test('native live mounts send one request for the selected catalog key while game is running',async({page})=>{
+  await fixture(page,true,false,false,false,false,false,false,true);
+  await page.locator('.mount-row').filter({hasText:'Schwarzbär'}).click();
+  const button=page.getByRole('button',{name:'Register selected mount live',exact:true});
+  await expect(button).toBeEnabled();
+  await button.dblclick();
+  await expect(page.getByRole('region',{name:'Live mount registration'})).toContainText('additional mount confirmed');
+  const calls=await page.evaluate(()=>(window as unknown as {mountCalls:{command:string;args:{request:{key:number;quantity:number;pid:number;epoch:number}}}[]}).mountCalls);
+  expect(calls).toHaveLength(1);
+  expect(calls[0].command).toBe('mount_live_grant');
+  expect(calls[0].args.request).toMatchObject({key:30108,quantity:1,pid:14,epoch:7});
+});
+test('live mount lost reply queries its saved ID without resubmitting the grant',async({page})=>{
+  await fixture(page,true,true,false,false,false,false,false,true);
+  await page.locator('.mount-row').filter({hasText:'Schwarzbär'}).click();
+  await page.getByRole('button',{name:'Register selected mount live',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Live mount registration'})).toContainText('additional mount confirmed');
+  expect(await page.evaluate(()=>(window as unknown as {mountCalls:unknown[]}).mountCalls.length)).toBe(1);
 });

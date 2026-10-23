@@ -1,5 +1,6 @@
 #include "context.h"
 #include "execute.h"
+#include "mount.h"
 #include "transport.h"
 #include <CommonCrypto/CommonDigest.h>
 #include <mach/mach.h>
@@ -58,6 +59,31 @@ std::uint32_t hook(void* task, void* context) {
         if (!request) return result;
         Execution outcome{State::uncertain, Error::native_fault};
         try {
+            if (request->operation == Operation::mount_grant) {
+                std::uintptr_t actor{}, component{}, manager{};
+                if (request->quantity != 1 || !read_word(reinterpret_cast<std::uintptr_t>(context),actor)
+                    || !read_word(actor+0x108,component) || !read_word(component+0x110,manager)) {
+                    outcome = {State::rejected,Error::context};
+                } else {
+                    auto grant_mount = [](std::uintptr_t owner,std::uint16_t type) {
+                        using Grant = std::uint32_t(*)(void*,std::uint16_t,std::uint16_t,bool);
+                        const auto code = reinterpret_cast<Grant>(0x100bcc1f0ULL+image_slide)(
+                            reinterpret_cast<void*>(owner),type,0xffff,false);
+                        std::fprintf(stderr,"CW_MAC_MOUNTS: native grant type=%u result=%u.\n",type,code);
+                        return code;
+                    };
+                    auto recheck_mount = [&] {
+                        std::uint32_t current{};
+                        std::uintptr_t current_actor{}, current_component{}, current_manager{};
+                        return verified_holder(task,context,current)==holder && current==key
+                            && read_word(reinterpret_cast<std::uintptr_t>(context),current_actor) && current_actor==actor
+                            && read_word(actor+0x108,current_component) && current_component==component
+                            && read_word(component+0x110,current_manager) && current_manager==manager;
+                    };
+                    outcome=execute_mount(grant_mount,recheck_mount,actor,manager,
+                        request->key,image_slide,read_word);
+                }
+            } else {
             const ItemBindings bindings{
                 reinterpret_cast<decltype(ItemBindings::construct)>(0x10199c500ULL+image_slide),
                 reinterpret_cast<decltype(ItemBindings::initialize)>(0x101c87774ULL+image_slide),
@@ -72,6 +98,7 @@ std::uint32_t hook(void* task, void* context) {
                 return verified_holder(task, context, current) == holder && current == key;
             };
             outcome = execute_item(bindings, grant, recheck, holder, request->key, request->quantity, image_slide, read_word);
+            }
         } catch (...) { /* The receipt stays uncertain after any native exception. */ }
         queue->finish(*request, outcome.state, outcome.error);
         std::fprintf(stderr, "CW_MAC_ITEMS: key=%u quantity=%u state=%u error=%u; no automatic retry.\n",

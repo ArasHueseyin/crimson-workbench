@@ -9,8 +9,8 @@ function restore(key: string): SpawnRequest | null {
   } catch { /* A malformed local record never creates a request. */ }
   return null;
 }
-export function useItemSpawner(session: number, game: string) {
-  const storageKey = `crimson-live-item-request-v1:${game.toLowerCase()}`;
+export function useItemSpawner(session: number, game: string, kind: 'item' | 'mount' = 'item') {
+  const storageKey = `crimson-live-${kind}-request-v1:${game.toLowerCase()}`;
   const [pending, setPending] = useState<SpawnRequest | null>(() => restore(storageKey));
   const [runtime, setRuntime] = useState<SpawnSnapshot | null>(null);
   const [result, setResult] = useState<SpawnSnapshot | null>(null);
@@ -31,7 +31,7 @@ export function useItemSpawner(session: number, game: string) {
       if (polling || latch.current) return; polling = true;
       const request = current.current;
       try {
-        const value = await api.spawnStatus(session, request);
+        const value = await (kind === 'mount' ? api.mountLiveStatus : api.spawnStatus)(session, request);
         if (!alive || token !== generation.current || current.current !== request) return;
         if (request) terminal(value); else { setRuntime(value); if (!lastResult.current) setMessage(value.message); }
       } catch (e) {
@@ -40,7 +40,7 @@ export function useItemSpawner(session: number, game: string) {
     }
     void poll(); const timer = window.setInterval(() => void poll(), 2000);
     return () => { alive = false; active.current = false; window.clearInterval(timer); };
-  }, [session, storageKey]);
+  }, [session, storageKey, kind]);
   async function launch() {
     if (latch.current || current.current) return;
     latch.current = true; const token = generation.current; setLaunching(true);
@@ -59,7 +59,7 @@ export function useItemSpawner(session: number, game: string) {
     try {
       // Record before sending, so a window reload can query the same ID.
       localStorage.setItem(storageKey, JSON.stringify(request)); current.current = request; setPending(request);
-      const value = await api.spawnGrant(session, request); if (active.current && token === generation.current) terminal(value);
+      const value = await (kind === 'mount' ? api.mountLiveGrant : api.spawnGrant)(session, request); if (active.current && token === generation.current) terminal(value);
     } catch (e) {
       if (active.current && token === generation.current) setMessage(`${asError(e).message}${current.current ? ' Checking the result using the same request ID.' : ''}`);
     } finally { latch.current = false; if (active.current) setSending(false); }

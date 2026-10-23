@@ -50,6 +50,8 @@ export const api = {
   mountRegister:(session:number,request:MountRequest)=>call<MountReceipt>('mount_register',{session,request}),
   spawnLaunch:(session:number)=>call<{pid:number;backup_path:string}>('spawn_launch',{session}),
   spawnStatus:(session:number,request:SpawnRequest|null=null)=>call<SpawnSnapshot>('spawn_status',{session,request}),
+  mountLiveStatus:(session:number,request:SpawnRequest|null=null)=>call<SpawnSnapshot>('mount_live_status',{session,request}),
+  mountLiveGrant:(session:number,request:SpawnRequest)=>call<SpawnSnapshot>('mount_live_grant',{session,request}),
   spawnGrant:(session:number,request:SpawnRequest)=>call<SpawnSnapshot>('spawn_grant',{session,request}),
   spawnCancel:(session:number,request:SpawnRequest)=>call<SpawnSnapshot>('spawn_cancel',{session,request}),
   advancedSkill:(session:number,key:number)=>call<AdvancedSkill>('advanced_skill',{session,key}),

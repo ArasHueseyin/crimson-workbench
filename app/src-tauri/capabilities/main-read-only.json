@@ -69,6 +69,8 @@
     "allow-mount-icon",
     "allow-knowledge-snapshot",
     "allow-mount-register",
+    "allow-mount-live-grant",
+    "allow-mount-live-status",
     "allow-skill-unlock-preview",
     "allow-skill-unlock-apply",
     "allow-foreign-preview",

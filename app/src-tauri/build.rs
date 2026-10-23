@@ -3,7 +3,7 @@ fn main() {
         for path in [
             "../../runtime/macos-items/src",
             "../../runtime/macos-items/Makefile",
-            "../../runtime/live-items/src/protocol.h",
+            "../../runtime/macos-items/src/protocol.h",
         ] {
             println!("cargo:rerun-if-changed={path}");
         }
@@ -50,6 +50,8 @@ fn main() {
         "mount_icon",
         "knowledge_snapshot",
         "mount_register",
+        "mount_live_grant",
+        "mount_live_status",
         "skill_unlock_preview",
         "skill_unlock_apply",
         "foreign_preview",

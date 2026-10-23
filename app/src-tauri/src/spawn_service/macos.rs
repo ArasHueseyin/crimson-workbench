@@ -349,13 +349,25 @@ pub fn launch(game: &Path, resources: &Path, data: &Path) -> Result<Launch> {
     if !game_pids(game)?.is_empty() {
         return Err(error("The game started during backup. Launch cancelled."));
     }
+    // Keep loaded code stable if the app is rebuilt or updated during gameplay.
+    let module_hash =
+        cd_core::fingerprint::hash_file(&library).map_err(|e| error(e.to_string()))?;
+    let launch_library = backup_path.join("libCrimsonItems.dylib");
+    fs::copy(&library, &launch_library).map_err(|e| error(e.to_string()))?;
+    if cd_core::fingerprint::hash_file(&launch_library).map_err(|e| error(e.to_string()))?
+        != module_hash
+    {
+        return Err(error(
+            "The per-launch live module copy could not be verified.",
+        ));
+    }
     let log = fs::OpenOptions::new()
         .create_new(true)
         .write(true)
         .open(backup_path.join("runtime.log"))
         .map_err(|e| error(e.to_string()))?;
     let mut child = std::process::Command::new(executable)
-        .env("DYLD_INSERT_LIBRARIES", library)
+        .env("DYLD_INSERT_LIBRARIES", launch_library)
         .env("SteamAppId", "3321460")
         .env("SteamGameId", "3321460")
         .env_remove("CW_MAC_ITEMS_TEST_ONCE")

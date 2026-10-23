@@ -542,6 +542,8 @@ pub fn run() {
             mount_icon,
             knowledge_snapshot,
             mount_register,
+            mount_live_grant,
+            mount_live_status,
             contribution_preview,
             contribution_apply,
             map_fog_preview,
@@ -975,4 +977,42 @@ async fn foreign_revoke(
 ) -> Result<cd_core::apply::live::foreign::Receipt> {
     let state = Arc::clone(&state);
     blocking(move || state.foreign_revoke(session, &approval_id)).await
+}
+
+#[tauri::command]
+async fn mount_live_status(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: Option<spawn_service::GrantRequest>,
+) -> Result<spawn_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| Ok(s.game_root().to_owned()))?;
+        spawn_service::mount_exchange(
+            &game,
+            if request.is_some() { 3 } else { 6 },
+            request.as_ref(),
+        )
+    })
+    .await
+}
+#[tauri::command]
+async fn mount_live_grant(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: spawn_service::GrantRequest,
+) -> Result<spawn_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| {
+            if !s.mounts()?.iter().any(|m| m.key == request.key) {
+                return Err(cd_core::Error::Invalid(
+                    "Select a mount from the verified catalog.".into(),
+                ));
+            }
+            Ok(s.game_root().to_owned())
+        })?;
+        spawn_service::mount_exchange(&game, 5, Some(&request))
+    })
+    .await
 }
