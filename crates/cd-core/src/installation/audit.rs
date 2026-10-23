@@ -388,7 +388,19 @@ fn handle_path(file: &File, _path: &Path) -> Result<PathBuf> {
         file.as_raw_fd()
     ))?)
 }
-#[cfg(not(any(windows, target_os = "linux")))]
+#[cfg(target_os = "macos")]
+fn handle_path(file: &File, _path: &Path) -> Result<PathBuf> {
+    use std::os::{fd::AsRawFd, unix::ffi::OsStrExt};
+    let mut buffer = vec![0u8; libc::PATH_MAX as usize];
+    // F_GETPATH resolves the open descriptor, preserving the raced-path check.
+    if unsafe { libc::fcntl(file.as_raw_fd(), libc::F_GETPATH, buffer.as_mut_ptr()) } == -1 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let path = std::ffi::CStr::from_bytes_until_nul(&buffer)
+        .map_err(|_| bad("Unterminated content handle path"))?;
+    Ok(PathBuf::from(std::ffi::OsStr::from_bytes(path.to_bytes())))
+}
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 fn handle_path(_file: &File, _path: &Path) -> Result<PathBuf> {
     Err(bad("Content handle verification unsupported on this platform").into())
 }

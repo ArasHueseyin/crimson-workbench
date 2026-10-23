@@ -12,7 +12,7 @@ constexpr std::uint16_t wire_version=2;
 constexpr std::uint64_t context_fresh_ms=5000;
 enum class Operation : std::uint16_t { status=1, grant=2, receipt=3, cancel=4 };
 enum class State : std::uint16_t { offline, ready, queued, executing, applied, rejected, uncertain, expired, cancelled, starting };
-enum class Error : std::uint32_t { none, protocol, invalid_request, busy, unknown_request, unavailable, unsupported_item, quantity_limit, context, native_fault, native_error, inventory_mismatch, history_full, definition_mismatch, socket_limit, conversion_mismatch, special_storage };
+enum class Error : std::uint32_t { none, protocol, invalid_request, busy, unknown_request, unavailable, unsupported_item, quantity_limit, context, native_fault, native_error, inventory_mismatch, history_full, definition_mismatch, socket_limit, conversion_mismatch, special_storage, unsupported_value };
 #pragma pack(push,1)
 struct Request {
     std::uint32_t magic{wire_magic}; std::uint16_t version{wire_version}; Operation operation{Operation::status};

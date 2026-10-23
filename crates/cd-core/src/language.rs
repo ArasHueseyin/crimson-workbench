@@ -31,6 +31,11 @@ pub fn resolve(game: &Path, preference: &str) -> ItemLanguage {
 }
 
 fn steam_language(game: &Path) -> Option<&'static str> {
+    let bundle = crate::discovery::mac_bundle(game);
+    let game = match &bundle {
+        Some(bundle) => bundle.parent()?,
+        None => game,
+    };
     let common = game.parent()?;
     let steamapps = common.parent()?;
     if !common.file_name()?.eq_ignore_ascii_case("common")
@@ -98,6 +103,15 @@ mod tests {
         let apps = root.path().join("steamapps");
         let game = apps.join("common/Crimson Desert");
         fs::create_dir_all(&game).unwrap();
+        let bundle = game.join("CrimsonDesert_Steam.app");
+        let packages = bundle.join("Contents/Resources/packages");
+        fs::create_dir_all(&packages).unwrap();
+        fs::create_dir_all(bundle.join("Contents/MacOS")).unwrap();
+        fs::write(
+            bundle.join("Contents/MacOS/CrimsonDesert_Steam"),
+            b"fixture",
+        )
+        .unwrap();
         let manifest = apps.join(format!("appmanifest_{STEAM_APP_ID}.acf"));
         for (steam, code) in [
             ("german", "ger"),
@@ -116,6 +130,7 @@ mod tests {
                 }
             );
             assert_eq!(resolve(&game, "jpn").language, "jpn");
+            assert_eq!(resolve(&packages, "auto"), resolve(&game, "auto"));
             assert_eq!(fs::read_to_string(&manifest).unwrap(), text);
         }
     }

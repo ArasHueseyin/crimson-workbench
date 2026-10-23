@@ -99,6 +99,54 @@ pub struct Fingerprint {
 }
 
 impl Fingerprint {
+    /// Mac catalog identity is based on exact table bytes, never a Windows EXE.
+    pub(crate) fn inspect_mac(game: &Path) -> io::Result<Self> {
+        let mut files = Vec::new();
+        for path in ["meta/0.papgt", "0008/0.pamt"] {
+            let (bytes, sha256) = hash_file(&game.join(path))?;
+            files.push(FileHash {
+                path: path.into(),
+                bytes,
+                sha256,
+            });
+        }
+        Ok(Self {
+            format_version: 1,
+            exe_version: None,
+            schema_id: None,
+            metadata_matches: false,
+            read_schema_supported: false,
+            certified_vanilla: false,
+            digest: String::new(),
+            files,
+            tables: Vec::new(),
+            diagnostics: vec!["Native macOS: exact table hashes permit read-only catalog access; game and save modifications remain unsupported.".into()],
+        })
+    }
+
+    pub(crate) fn complete_mac(&mut self, tables: Vec<TableHash>) -> io::Result<()> {
+        let expected = known_for_version("1.0.0.2976").expect("compiled Mac reading reference");
+        let matches = |r: &TableHash| {
+            tables.iter().any(|t| {
+                t.group == r.group
+                    && t.directory == r.directory
+                    && t.name == r.name
+                    && t.size == r.size
+                    && t.sha256 == r.sha256
+            })
+        };
+        if !expected.tables.iter().all(matches) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Mac catalog tables do not match the verified reading schema",
+            ));
+        }
+        self.complete(tables)?;
+        self.read_schema_supported = true;
+        self.schema_id = Some("macos-read-only-steam-25477059-gamedata-2.3-v2".into());
+        Ok(())
+    }
+
     /// Diagnostic only: no table is semantically parsed during this operation.
     pub fn inspect(game: &Path) -> io::Result<Self> {
         Self::inspect_registry(game, None)
@@ -259,6 +307,33 @@ pub fn diff(before: &Fingerprint, after: &Fingerprint) -> Vec<HashDifference> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn mac_read_schema_requires_every_exact_table_and_never_certifies_windows_metadata() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(root.path().join("meta")).unwrap();
+        std::fs::create_dir_all(root.path().join("0008")).unwrap();
+        std::fs::write(root.path().join("meta/0.papgt"), b"fixture").unwrap();
+        std::fs::write(root.path().join("0008/0.pamt"), b"fixture").unwrap();
+        let expected = known_builds().last().unwrap().tables.clone();
+        for invalid in [Vec::new(), expected[1..].to_vec(), {
+            let mut changed = expected.clone();
+            changed[0].sha256 = "0".repeat(64);
+            changed
+        }] {
+            let mut probe = Fingerprint::inspect_mac(root.path()).unwrap();
+            assert!(probe.complete_mac(invalid).is_err());
+            assert!(!probe.read_schema_supported);
+            assert!(probe.schema_id.is_none());
+        }
+        let mut probe = Fingerprint::inspect_mac(root.path()).unwrap();
+        probe.complete_mac(expected).unwrap();
+        assert!(probe.read_schema_supported);
+        assert!(!probe.metadata_matches);
+        assert!(!probe.certified_vanilla);
+        assert!(probe.exe_version.is_none());
+        assert!(probe.schema_id.unwrap().starts_with("macos-read-only-"));
+        assert!(known_for_game(root.path()).is_err());
+    }
     #[test]
     fn manifest_contains_actual_table_pairs() {
         for b in known_builds() {

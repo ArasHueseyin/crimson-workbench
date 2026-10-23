@@ -1,4 +1,18 @@
 fn main() {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        for path in [
+            "../../runtime/macos-items/src",
+            "../../runtime/macos-items/Makefile",
+            "../../runtime/macos-items/src/protocol.h",
+        ] {
+            println!("cargo:rerun-if-changed={path}");
+        }
+        let status = std::process::Command::new("make")
+            .args(["-C", "../../runtime/macos-items", "all"])
+            .status()
+            .expect("Mac item module build could not start");
+        assert!(status.success(), "Mac item module build failed");
+    }
     let manifest = tauri_build::AppManifest::new().commands(&[
         "bootstrap",
         "marketplace_mod_status",
@@ -21,6 +35,7 @@ fn main() {
         "extra_socket_candidates",
         "extra_socket_add",
         "live_status",
+        "spawn_launch",
         "spawn_status",
         "spawn_grant",
         "spawn_cancel",
@@ -35,6 +50,8 @@ fn main() {
         "mount_icon",
         "knowledge_snapshot",
         "mount_register",
+        "mount_live_grant",
+        "mount_live_status",
         "skill_unlock_preview",
         "skill_unlock_apply",
         "foreign_preview",

@@ -99,43 +99,56 @@ pub struct GameData {
 
 impl GameData {
     pub fn open(game: &Path, language: &str) -> Result<Self> {
-        let original = match crate::apply::original_registry(game) {
-            Ok(original) => original,
-            Err(ownership_error) => {
-                // Manual overlays can be outside the file transaction journal.
-                // A checked original registry still permits a BASE catalog read.
-                // The write path keeps using original_registry and rejects them.
-                let known = fingerprint::known_for_game(game)?;
-                let expected = known
-                    .files
-                    .iter()
-                    .find(|f| f.path == "meta/0.papgt")
-                    .ok_or_else(|| Error::Invalid("Known registry missing".into()))?;
-                let backup = game.join(".workbench/baseline.papgt");
-                let bytes = match std::fs::read(backup) {
-                    Ok(bytes) => bytes,
-                    Err(_) => return Err(ownership_error),
-                };
-                if bytes.len() as u64 != expected.bytes
-                    || fingerprint::hash_bytes(&bytes) != expected.sha256
-                {
-                    return Err(ownership_error);
+        let native_mac = crate::discovery::mac_bundle(game).is_some();
+        let original = if native_mac {
+            None
+        } else {
+            match crate::apply::original_registry(game) {
+                Ok(original) => original,
+                Err(ownership_error) => {
+                    // Manual overlays can be outside the file transaction journal.
+                    // A checked original registry still permits a BASE catalog read.
+                    // The write path keeps using original_registry and rejects them.
+                    let known = fingerprint::known_for_game(game)?;
+                    let expected = known
+                        .files
+                        .iter()
+                        .find(|f| f.path == "meta/0.papgt")
+                        .ok_or_else(|| Error::Invalid("Known registry missing".into()))?;
+                    let backup = game.join(".workbench/baseline.papgt");
+                    let bytes = match std::fs::read(backup) {
+                        Ok(bytes) => bytes,
+                        Err(_) => return Err(ownership_error),
+                    };
+                    if bytes.len() as u64 != expected.bytes
+                        || fingerprint::hash_bytes(&bytes) != expected.sha256
+                    {
+                        return Err(ownership_error);
+                    }
+                    Some(bytes)
                 }
-                Some(bytes)
             }
         };
-        let mut fingerprint = Fingerprint::inspect_registry(game, original.as_deref())?;
-        if !fingerprint.metadata_matches {
+        let mut fingerprint = if native_mac {
+            Fingerprint::inspect_mac(game)?
+        } else {
+            Fingerprint::inspect_registry(game, original.as_deref())?
+        };
+        if !native_mac && !fingerprint.metadata_matches {
             return Err(Error::UnsupportedBuild(fingerprint.diagnostics.join("; ")));
         }
         // Bind tables to the version whose full metadata was just verified.
         // Reading the EXE version again could select a different build if a
         // game update lands between fingerprinting and table extraction.
-        let expected = fingerprint
-            .exe_version
-            .as_deref()
-            .and_then(fingerprint::known_for_version)
-            .ok_or_else(|| Error::UnsupportedBuild("Verified build identity missing".into()))?;
+        let expected = if native_mac {
+            fingerprint::known_for_version("1.0.0.2976").expect("compiled Mac reading reference")
+        } else {
+            fingerprint
+                .exe_version
+                .as_deref()
+                .and_then(fingerprint::known_for_version)
+                .ok_or_else(|| Error::UnsupportedBuild("Verified build identity missing".into()))?
+        };
         let archive = match original {
             Some(bytes) => Archive::with_registry(game, bytes)?,
             None => Archive::open(game)?,
@@ -173,7 +186,11 @@ impl GameData {
             size: reference.size,
             sha256: reference.sha256,
         });
-        fingerprint.complete(table_hashes)?;
+        if native_mac {
+            fingerprint.complete_mac(table_hashes)?;
+        } else {
+            fingerprint.complete(table_hashes)?;
+        }
         for schema in TABLE_SCHEMAS {
             IndexedTable::parse(
                 *schema,
