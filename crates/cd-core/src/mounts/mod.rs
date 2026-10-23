@@ -111,6 +111,7 @@ pub fn catalog(data: &GameData) -> Result<Vec<Mount>> {
 }
 #[derive(Serialize)]
 pub struct Snapshot {
+    pub registration_available: bool,
     pub mounts: Vec<Mount>,
     pub saves: Vec<SaveChoice>,
     pub selected_save: Option<String>,
@@ -164,8 +165,9 @@ pub fn snapshot(mut mounts: Vec<Mount>, root: &Path, selected: Option<&str>) -> 
         ),
         None => saves.first(),
     };
-    let running = crate::apply::guard::game_running()?;
+    let running = files::game_running()?;
     let mut out = Snapshot {
+        registration_available: cfg!(any(windows, target_os = "macos")),
         mounts: Vec::new(),
         saves: Vec::new(),
         selected_save: choice.map(|c| c.id.clone()),

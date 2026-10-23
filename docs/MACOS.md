@@ -14,6 +14,7 @@ Apple Silicon `.app` and `.dmg` on macOS 15 or later.
   Item picker with a hash-verified save backup, then submit an explicit request.
   Receipts verify the inventory delta and prevent automatic retries.
   See [native inventory work](MACOS_ITEMS.md) for limits and live verification.
+- Offline mount registration in a selected save, with backups and request recovery.
 - Settings and local caches; installed apps use
   `~/Library/Application Support/CrimsonWorkbench`.
 
@@ -26,7 +27,7 @@ The Mac schema has its own cache identity. Future game updates may be rejected.
 
 ## Unsupported
 
-Game-file application/restoration, save edits, runtime marketplace modules,
+Game-file application/restoration, save edits other than mount registration, runtime marketplace modules,
 Extra Sockets, teleport, photo controls, and live world controls.
 The existing process and executable guards continue to reject these operations
 on macOS. Some upstream controls remain visible but cannot perform these actions.
@@ -80,3 +81,16 @@ cargo run --locked -p cd-core --example inspect_mac_compatibility -- \
 
 The original live tests requiring private Windows fixtures remain ignored by
 default. Their status is separate from the Mac integration test above.
+
+
+## Mount registration
+
+Save and close the game before registering a mount, and keep it closed until the
+operation finishes. Both save files are backed up, hash checked, and journaled.
+Retrying the same request cannot add another animal. macOS locks coordinate
+Workbench writers but do not prevent Steam launches or Steam Cloud writes.
+
+The contributor confirmed offline registration works in game. Temporary-copy
+tests also covered backups, duplicate rejection, recovery, and twelve base-entry
+variants. That does not establish summoning/riding behavior for every variant.
+Live mount injection is not part of this contribution.

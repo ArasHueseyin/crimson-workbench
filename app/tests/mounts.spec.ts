@@ -1,6 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
-async function fixture(page:Page,running=false,lost=false,wrongSave=false,portrait=false,example=false,exotic=false) {
-  await page.addInitScript(({running,lost,wrongSave,portrait,example,exotic})=>{
+async function fixture(page:Page,running=false,lost=false,wrongSave=false,portrait=false,example=false,exotic=false,readOnly=false) {
+  await page.addInitScript(({running,lost,wrongSave,portrait,example,exotic,readOnly})=>{
     const root=window as unknown as {isTauri:boolean;__TAURI_INTERNALS__:unknown;mountCalls:{command:string;args:Record<string,unknown>}[]};
     root.isTauri=true;root.mountCalls=[];let owned=false,first=true;
     root.__TAURI_INTERNALS__={invoke:async(command:string,args:Record<string,unknown>={})=>{
@@ -14,7 +14,7 @@ async function fixture(page:Page,running=false,lost=false,wrongSave=false,portra
       }
       if(command==='mount_catalog'){
         const selected=String(args.save??(wrongSave?'22202/slot1':'123/slot2')),old=selected==='22202/slot1';
-        return {mounts:[{key:exotic?1000265:30108,name:exotic?'Rotfederraptor':'Schwarzbär',internal:exotic?'Riding_CarmaBirdsaurus_1':'Animal_Black_Bear',family:exotic?'Dinosaurs':'Bears',vehicle:exotic?16986:16979,owned:old?0:owned?1:0,supported:!old&&!owned,registration:exotic?'base':'same_family',description:'Reittier für den Stall.',reason:owned?'Bereits registriert.':exotic?'Basiseintrag ohne Tierart-Vorlage möglich.':'Passende Stallvorlage vorhanden.'},{key:31378,name:'Rokade',internal:'Riding_Rokade',family:'Horses',vehicle:16960,owned:old?0:1,supported:false,description:'Ein Pferd.',reason:'Bereits registriert.'}],saves:[{id:'123/slot2',label:'Slot 2',modified:1700000000},{id:'123/slot1',label:'Slot 1',modified:1600000000},...(wrongSave?[{id:'22202/slot1',label:'Anderes Konto · Slot 1',modified:1500000000}]:[])],selected_save:selected,save_sha256:'a'.repeat(64),lobby_sha256:'b'.repeat(64),game_running:running,message:running?'Save and fully close the game before adding a mount.':'Register in stable.'};
+        return {registration_available:!readOnly,mounts:[{key:exotic?1000265:30108,name:exotic?'Rotfederraptor':'Schwarzbär',internal:exotic?'Riding_CarmaBirdsaurus_1':'Animal_Black_Bear',family:exotic?'Dinosaurs':'Bears',vehicle:exotic?16986:16979,owned:old?0:owned?1:0,supported:!old&&!owned,registration:exotic?'base':'same_family',description:'Reittier für den Stall.',reason:owned?'Bereits registriert.':exotic?'Basiseintrag ohne Tierart-Vorlage möglich.':'Passende Stallvorlage vorhanden.'},{key:31378,name:'Rokade',internal:'Riding_Rokade',family:'Horses',vehicle:16960,owned:old?0:1,supported:false,description:'Ein Pferd.',reason:'Bereits registriert.'}],saves:[{id:'123/slot2',label:'Slot 2',modified:1700000000},{id:'123/slot1',label:'Slot 1',modified:1600000000},...(wrongSave?[{id:'22202/slot1',label:'Anderes Konto · Slot 1',modified:1500000000}]:[])],selected_save:selected,save_sha256:'a'.repeat(64),lobby_sha256:'b'.repeat(64),game_running:running,message:running?'Save and fully close the game before adding a mount.':'Register in stable.'};
       }
       if(command==='mount_register'){
         root.mountCalls.push({command,args});owned=true;
@@ -23,7 +23,7 @@ async function fixture(page:Page,running=false,lost=false,wrongSave=false,portra
       }
       throw {message:`Unexpected command ${command}`};
     }};
-  },{running,lost,wrongSave,portrait,example,exotic});
+  },{running,lost,wrongSave,portrait,example,exotic,readOnly});
   await page.goto('/');await expect(page.locator('.workbench')).toHaveAttribute('data-ready','true');
   await page.getByRole('button',{name:'Mounts',exact:true}).click();await expect(page.locator('.mount-row')).toHaveCount(2);
 }
@@ -114,4 +114,13 @@ test('exotic mount base entry is selectable and distinguishes copied stats from 
   const calls=await page.evaluate(()=>(window as unknown as {mountCalls:{args:{request:{key:number}}}[]}).mountCalls);
   expect(calls).toHaveLength(1);expect(calls[0].args.request.key).toBe(1000265);
   await page.screenshot({path:'../.local/mount-family-investigation-20261004/base-picker.png'});
+});
+
+test('read-only mount catalog never offers registration or template recovery',async({page})=>{
+  await fixture(page,false,false,false,false,false,false,true);
+  await page.locator('.mount-row').filter({hasText:'Schwarzbär'}).click();
+  await expect(page.getByRole('button',{name:'Register in stable',exact:true})).toBeDisabled();
+  await expect(page.locator('.picker-detail')).not.toContainText('Values and riding equipment are copied');
+  await expect(page.locator('.mount-status')).not.toContainText('no suitable stable template');
+  await expect(page.locator('.page-heading')).toContainText('inspect ownership');
 });
