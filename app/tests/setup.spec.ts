@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-async function setup(page: Page, damaged = false) {
-  await page.addInitScript(({ damaged }) => {
+async function setup(page: Page, damaged = false, readOnly = false) {
+  await page.addInitScript(({ damaged, readOnly }) => {
     const root = window as unknown as { isTauri: boolean; __TAURI_INTERNALS__: unknown; setupOpened?: Record<string, unknown> };
     root.isTauri = true;
     const defaults = { version: 1, game_dir: null, save_dir: null, language: 'auto' };
@@ -21,12 +21,12 @@ async function setup(page: Page, damaged = false) {
       if (command === 'open_catalog') {
         root.setupOpened = args;
         const language = args.language === 'auto' ? 'ger' : args.language;
-        return { session: 1, game_path: args.game, item_language: { language, source: args.language === 'auto' ? 'steam' : 'manual' }, info: { item_count: 0, types: [], categories: [], tiers: [], stats: [], groups: [], exe_version: '1.0.0.2976', index: { path: 'C:/Users/Friend/AppData/Local/CrimsonWorkbench/.local/index/items.sqlite', language, fingerprint: 'synthetic' } } };
+        return { session: 1, read_only: readOnly, game_path: args.game, item_language: { language, source: args.language === 'auto' ? 'steam' : 'manual' }, info: { item_count: 0, types: [], categories: [], tiers: [], stats: [], groups: [], exe_version: '1.0.0.2976', index: { path: 'C:/Users/Friend/AppData/Local/CrimsonWorkbench/.local/index/items.sqlite', language, fingerprint: 'synthetic' } } };
       }
       if (command === 'search_items') return { items: [], total: 0, offset: 0 };
       throw new Error(`Unexpected command: ${command}`);
     } };
-  }, { damaged });
+  }, { damaged, readOnly });
   await page.goto('/');
 }
 
@@ -73,4 +73,13 @@ test('damaged settings can be replaced from first-run UI', async ({ page }) => {
   await page.getByRole('button', { name: 'Save & connect', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Settings saved');
   await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+ test('Mac catalog explains read-only limits after connection', async ({ page }) => {
+  await setup(page, false, true);
+  await page.getByLabel('Installation folder', { exact: true }).fill('/Games/CrimsonDesert_Steam.app');
+  await page.getByRole('button', { name: 'Save & connect', exact: true }).click();
+  await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByText('Mac preview · Read only.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Browse items and plan crafting.', { exact: false })).toBeVisible();
 });

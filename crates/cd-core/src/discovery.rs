@@ -36,6 +36,9 @@ pub struct Installation {
 }
 impl Installation {
     pub fn executable(&self) -> PathBuf {
+        if let Some(bundle) = mac_bundle(&self.path) {
+            return bundle.join("Contents/MacOS/CrimsonDesert_Steam");
+        }
         self.path.join("bin64").join("CrimsonDesert.exe")
     }
 }
@@ -99,7 +102,13 @@ impl DiscoveryOptions {
                 options.xbox_roots.push(path.join("WindowsApps"));
             }
         }
-        #[cfg(not(windows))]
+        #[cfg(target_os = "macos")]
+        if let Some(home) = env_path("HOME") {
+            let support = home.join("Library/Application Support");
+            options.steam_roots.push(support.join("Steam"));
+            options.local_app_data = Some(support);
+        }
+        #[cfg(not(any(windows, target_os = "macos")))]
         if let Some(home) = env_path("HOME") {
             options
                 .steam_roots
@@ -145,7 +154,7 @@ pub fn discover_with(options: &DiscoveryOptions) -> io::Result<Vec<Installation>
             io::Error::new(
                 io::ErrorKind::NotFound,
                 format!(
-                    "configured game directory has no bin64/CrimsonDesert.exe and meta/0.papgt: {}",
+                    "configured game directory has no Crimson Desert executable and meta/0.papgt (Windows installation or native Mac app bundle): {}",
                     path.display()
                 ),
             )
@@ -303,11 +312,28 @@ fn path_key(path: &Path) -> String {
     }
 }
 fn game_root(path: &Path) -> Option<PathBuf> {
-    [path.to_path_buf(), path.join("Content")]
-        .into_iter()
-        .find(|root| {
-            root.join("bin64/CrimsonDesert.exe").is_file() && root.join("meta/0.papgt").is_file()
-        })
+    [
+        path.to_path_buf(),
+        path.join("Content"),
+        path.join("CrimsonDesert_Steam.app/Contents/Resources/packages"),
+        path.join("Contents/Resources/packages"),
+    ]
+    .into_iter()
+    .find(|root| {
+        (root.join("bin64/CrimsonDesert.exe").is_file() || mac_bundle(root).is_some())
+            && root.join("meta/0.papgt").is_file()
+    })
+}
+/// The native Mac archive directory is nested inside the signed game bundle.
+pub(crate) fn mac_bundle(packages: &Path) -> Option<PathBuf> {
+    if !packages.ends_with("CrimsonDesert_Steam.app/Contents/Resources/packages") {
+        return None;
+    }
+    let bundle = packages.ancestors().nth(3)?;
+    bundle
+        .join("Contents/MacOS/CrimsonDesert_Steam")
+        .is_file()
+        .then(|| bundle.to_path_buf())
 }
 fn safe_relative(value: &str) -> bool {
     !value.is_empty()
@@ -783,6 +809,45 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].build_id.as_deref(), Some("25381195"));
         assert_eq!(results[0].platform, Platform::Steam);
+    }
+    #[test]
+    fn finds_native_mac_packages_from_steam_bundle_and_explicit_paths() {
+        let f = Fixture::new();
+        let title = "steam/steamapps/common/Crimson Desert";
+        let bundle = format!("{title}/CrimsonDesert_Steam.app");
+        let packages = format!("{bundle}/Contents/Resources/packages");
+        f.file(
+            &format!("{bundle}/Contents/MacOS/CrimsonDesert_Steam"),
+            b"fixture",
+        );
+        f.file(&format!("{packages}/meta/0.papgt"), b"fixture");
+        f.file("steam/steamapps/appmanifest_3321460.acf", b"\"AppState\" { \"appid\" \"3321460\" \"installdir\" \"Crimson Desert\" \"buildid\" \"25477059\" }");
+        for explicit in [title, &bundle, &packages] {
+            let results = discover_with(&DiscoveryOptions {
+                explicit_game_dir: Some(f.0.join(explicit)),
+                steam_roots: vec![f.0.join("steam")],
+                ..Default::default()
+            })
+            .unwrap();
+            assert_eq!(results.len(), 1);
+            assert_eq!(results[0].path, f.0.join(&packages).canonicalize().unwrap());
+            assert_eq!(results[0].platform, Platform::Steam);
+            assert_eq!(
+                results[0].executable(),
+                f.0.join(&bundle)
+                    .join("Contents/MacOS/CrimsonDesert_Steam")
+                    .canonicalize()
+                    .unwrap()
+            );
+        }
+        fs::remove_file(f.0.join(&bundle).join("Contents/MacOS/CrimsonDesert_Steam")).unwrap();
+        assert!(
+            discover_with(&DiscoveryOptions {
+                explicit_game_dir: Some(f.0.join(&packages)),
+                ..Default::default()
+            })
+            .is_err()
+        );
     }
     #[test]
     fn reads_epic_and_xbox_metadata_without_host_environment() {

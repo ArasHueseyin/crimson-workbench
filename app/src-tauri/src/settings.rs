@@ -76,7 +76,7 @@ pub fn validate(project: &Path, mut preferences: Preferences) -> Result<Preferen
     preferences.save_dir = directory(preferences.save_dir, "Save folder")?;
     if let Some(game) = &preferences.game_dir {
         let found = cd_core::discovery::discover_with(&DiscoveryOptions { explicit_game_dir: Some(game.clone()), ..Default::default() })
-            .map_err(|_| problem("Not a Crimson Desert installation folder: bin64/CrimsonDesert.exe and meta/0.papgt are missing. For Game Pass, the parent installation folder is also accepted."))?;
+            .map_err(|_| problem("Not a Crimson Desert installation folder. Select the Steam game folder, the native CrimsonDesert_Steam.app bundle, or the Windows installation. Both the executable and archive metadata must exist."))?;
         preferences.game_dir = found.first().map(|i| i.path.clone());
     }
     let roots = preferences

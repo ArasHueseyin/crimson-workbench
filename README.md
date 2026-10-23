@@ -1,5 +1,9 @@
 # Crimson Workbench
 
+**macOS port preview:** native Apple Silicon packaging, Steam discovery, verified
+item browsing and crafting are available in this branch. Game/save writes and
+Windows runtime modules remain unsupported. See [macOS usage and build notes](docs/MACOS.md).
+
 [![Windows and Linux checks](https://github.com/ArasHueseyin/crimson-workbench/actions/workflows/core.yml/badge.svg?branch=master)](https://github.com/ArasHueseyin/crimson-workbench/actions/workflows/core.yml)
 
 Free, open-source Windows tools for your local Crimson Desert installation. Search and add items, manage mounts and equipment, plan crafting, and install mods from one app.
