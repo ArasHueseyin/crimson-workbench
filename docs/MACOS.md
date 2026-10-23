@@ -27,8 +27,11 @@ Live Items, Extra Sockets, teleport, photo controls, and live world controls.
 The existing process and executable guards continue to reject these operations
 on macOS. Some upstream controls remain visible but cannot perform these actions.
 Mod previews and exports are development tools; they have not been validated for
-application to the Mac game. No game bundle, signature, installed mods, or save
-files are changed while building or testing this port.
+application to the Mac game. Normal catalog use does not change the game bundle,
+signature, installed mods, or saves. A separate development diagnostic has now
+spawned one user-authorized Timber through the native transaction and verified
+save/reload persistence, with saves backed up first. That diagnostic is not yet
+integrated into the distributed app; see [native inventory work](MACOS_ITEMS.md).
 
 ## Build
 
