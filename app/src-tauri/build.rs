@@ -16,6 +16,7 @@ fn main() {
     let manifest = tauri_build::AppManifest::new().commands(&[
         "bootstrap",
         "marketplace_mod_status",
+        "installed_mods",
         "marketplace_game_running",
         "marketplace_mod_change",
         "marketplace_runtime_setting",

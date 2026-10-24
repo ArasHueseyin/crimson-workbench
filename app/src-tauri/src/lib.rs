@@ -37,6 +37,19 @@ async fn marketplace_game_running(state: State<'_, SharedService>, session: u64)
     .await
 }
 #[tauri::command]
+async fn installed_mods(
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<cd_core::mods::installed::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        state.with_session(session, |s| {
+            cd_core::mods::installed::inspect(s.game_root())
+        })
+    })
+    .await
+}
+#[tauri::command]
 async fn marketplace_mod_status(
     app: tauri::AppHandle,
     state: State<'_, SharedService>,
@@ -515,6 +528,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             bootstrap,
             marketplace_mod_status,
+            installed_mods,
             marketplace_game_running,
             marketplace_mod_change,
             marketplace_runtime_setting,

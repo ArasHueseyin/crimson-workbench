@@ -17,6 +17,7 @@ function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   return invoke<T>(command, args);
 }
 export const api = {
+  installedMods:(session:number)=>call<import('./mod-types').InstalledModSnapshot>('installed_mods',{session}),
   marketplaceRuntimeSetting:(session:number,id:import('./marketplace-types').RuntimeOptionId,value:number|null=null)=>call<import('./marketplace-types').RuntimeOptionSettings>('marketplace_runtime_setting',{session,id,value}),
   worldStatus:(session:number)=>call<import('./world-types').WorldSnapshot>('world_status',{session}),
   worldChange:(session:number,request:import('./world-types').WorldRequest)=>call<import('./world-types').WorldSnapshot>('world_change',{session,request}),

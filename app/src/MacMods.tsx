@@ -4,6 +4,7 @@ import {api,asError} from './api';
 import {marketplaceMods} from './Marketplace';
 import {runtimeMods} from './MarketplaceRuntime';
 import {useCatalog} from './store';
+import type {InstalledModSnapshot} from './mod-types';
 import type {SpawnSnapshot} from './spawn-types';
 import type {Catalog} from './types';
 import './mac-mods.css';
@@ -19,13 +20,17 @@ type Status={snapshot:SpawnSnapshot|null;error:string};
 export function MacMods({catalog}:{catalog:Catalog}) {
   const setView=useCatalog(s=>s.setView);
   const [status,setStatus]=useState<Status[]>([]),[busy,setBusy]=useState(true);
+  const [registry,setRegistry]=useState<{data:InstalledModSnapshot|null;error:string}>({data:null,error:''});
   const [reload,setReload]=useState(0),[query,setQuery]=useState('');
   useEffect(()=>{
-    let active=true;setBusy(true);setStatus([]);
-    Promise.allSettled(capabilities.map(c=>c.read(catalog.session))).then(results=>{
+    let active=true;setBusy(true);setStatus([]);setRegistry({data:null,error:''});
+    Promise.all([
+      Promise.allSettled(capabilities.map(c=>c.read(catalog.session))),
+      api.installedMods(catalog.session).then(data=>({data,error:''})).catch(e=>({data:null,error:asError(e).message})),
+    ]).then(([results,installed])=>{
       if(!active)return;
       setStatus(results.map(r=>r.status==='fulfilled'?{snapshot:r.value,error:''}:{snapshot:null,error:asError(r.reason).message}));
-      setBusy(false);
+      setRegistry(installed);setBusy(false);
     });
     return()=>{active=false};
   },[catalog.session,reload]);
@@ -33,13 +38,16 @@ export function MacMods({catalog}:{catalog:Catalog}) {
   return <div className="mods-page mac-mods">
     <div className="page-heading"><div><div className="eyebrow">NATIVE MACOS</div><h1>Mac mods<span>.</span></h1><p>Your current Workbench module and tools available for this Mac installation.</p></div><button className="secondary" disabled={busy} onClick={()=>setReload(n=>n+1)}>{busy?<LoaderCircle size={16} className="spin"/>:<RefreshCw size={16}/>}Refresh mod status</button></div>
     <section className="mac-mod-section" aria-label="Current mods" aria-busy={busy}>
-      <h2>Current mods</h2><p>Items and mounts share the Workbench live module, loaded when you launch from either tool. This checks its connection to the running game; it does not scan third-party mods or confirm a permanent installation.</p>
+      <h2>Current mods</h2><p>Items and mounts share the Workbench live module. Its running connection is checked separately from third-party mods recorded by CDMods.</p>
       <ul className="mac-mod-status">{capabilities.map((c,i)=>{
         const value=status[i],snapshot=value?.snapshot;
         const label=busy?'Checking …':value?.error?'Could not check':snapshot?.state==='ready'?'Ready':snapshot&&snapshot.pid>0&&snapshot.state!=='offline'?'Connected · not ready':'Not connected';
         return <li key={c.view}><div><strong>{c.name}</strong><span className={`mac-mod-state ${label==='Ready'?'ready':''}`}>{label}</span></div><p>{value?.error||snapshot?.message||'Checking the native module …'}</p></li>;
       })}</ul>
       <p className="muted">Not connected means the live module was not detected. The game may be closed or running without Workbench. Open a tool for launch instructions.</p>
+      <h3>Third-party mods · CDMods</h3>
+      {busy?<p role="status">Reading CDMods registry …</p>:registry.error?<p role="alert">{registry.error}</p>:!registry.data?.registry_found?<p>No CDMods registry found for this installation. Mods from other managers are not scanned.</p>:registry.data.mods.length?<ul className="mac-mod-status" aria-label="CDMods registry entries">{registry.data.mods.map(m=><li key={m.id}><div><strong>{m.name}</strong><span className={`mac-mod-state ${m.applied?'ready':''}`}>{m.applied?'Applied · CDMods':m.enabled?'Enabled · not applied':'Disabled'}</span></div><p>{[m.version&&`Version ${m.version}`,m.author].filter(Boolean).join(' · ')}</p>{m.applied&&!m.enabled&&<p>Disabled in the manager; its previous application is still recorded.</p>}</li>)}</ul>:<p>The CDMods registry contains no mod entries.</p>}
+      <p>Registry status does not verify the current in-game effect. Manage these mods in CDMods; Workbench only reads their status.</p>
     </section>
     <section className="mac-mod-section" aria-label="Available on macOS"><h2>Available on macOS</h2>
       <ul className="mac-tool-list">
@@ -48,9 +56,9 @@ export function MacMods({catalog}:{catalog:Catalog}) {
         <li><ShieldCheck size={22}/><div><h3>Offline mount registration</h3><p>Register a mount in a selected save with automatic backups. Save and fully close the game first.</p></div><button className="secondary" onClick={()=>setView('mounts')}>Choose saved stable</button></li>
       </ul>
     </section>
-    <section className="mac-mod-section" aria-label="Unavailable on macOS"><h2>Unavailable on macOS</h2><p>These Windows features have not been ported to the native Mac game. Their presence in the catalog does not mean they are installed or compatible.</p>
+    <section className="mac-mod-section" aria-label="Unavailable on macOS"><h2>Workbench features unavailable on macOS</h2><p>These bundled Workbench features have not been ported. Separately installed Mac mods can provide similar effects; see Current mods above.</p>
       <label className="input-wrap"><Search size={18}/><input type="search" aria-label="Search Mac mods" placeholder="Search unavailable mods …" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-      <ul className="mac-unavailable">{shown.map(name=><li key={name}><span>{name}</span><small>Mac port unavailable</small></li>)}</ul>
+      <ul className="mac-unavailable">{shown.map(name=><li key={name}><span>{name}</span><small>Workbench Mac port unavailable</small></li>)}</ul>
       {!shown.length&&<p role="status">No unavailable mods match this search.</p>}
     </section>
   </div>;

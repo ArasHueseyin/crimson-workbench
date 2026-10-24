@@ -121,4 +121,7 @@ Both mod sections show the Mac overview: current item/mount module connection,
 available Mac tools, and searchable features whose Mac ports are unavailable.
 Refresh mod status checks the running module without launching the game or
 submitting grants. A connection is separate from a permanent installation;
-third-party mods are not scanned.
+Third-party mods recorded in CDMods/cdumm.db are listed from a read-only registry
+query, including enabled and applied flags. This reports the manager’s records,
+not verified game-file contents or a live gameplay effect. Workbench does not
+change these mods. Other mod managers are not scanned.

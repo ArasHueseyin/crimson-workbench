@@ -21,3 +21,6 @@ export interface ModInfo { advanced?:AdvancedInfo; vendors:ModChoice[];dropsets:
 export interface ModChange { module:string;table:string;key:number;name:string;field:string;before:string;after:string }
 export interface ModPreview { request:ModRequest;fingerprint:string;plan_id:string;changes:ModChange[];files:{path:string;action:string;before_sha256:string|null;after_sha256:string;bytes:number}[];warnings:string[];gates:{game_running:boolean|null;can_apply:boolean;reasons:string[]};credits:string }
 export interface ModRehearsal { directory:string;plan_id:string;cycles:number;registry_restored:boolean;archive_files_untouched:boolean;scope:string;reapply_passed:boolean;recovery_passed:boolean;launch_guard_held:boolean;protected_source_files:number;update_refusal_passed:boolean;transitions:{name:string;files:{path:string;action:string;before_sha256:string|null;after_sha256:string|null}[]}[] }
+
+export interface InstalledMod {id:number;name:string;version:string|null;author:string|null;enabled:boolean;applied:boolean}
+export interface InstalledModSnapshot {registry_found:boolean;mods:InstalledMod[]}

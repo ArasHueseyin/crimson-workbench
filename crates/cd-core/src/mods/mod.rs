@@ -2,6 +2,7 @@
 //! Unsupported semantics are errors, never silently approximated.
 pub mod advanced;
 mod chance;
+pub mod installed;
 pub mod marketplace;
 mod store;
 use crate::{
