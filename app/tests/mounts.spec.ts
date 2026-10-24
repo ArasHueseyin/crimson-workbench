@@ -152,3 +152,17 @@ test('live mount lost reply queries its saved ID without resubmitting the grant'
   await expect(page.getByRole('region',{name:'Live mount registration'})).toContainText('additional mount confirmed');
   expect(await page.evaluate(()=>(window as unknown as {mountCalls:unknown[]}).mountCalls.length)).toBe(1);
 });
+
+test('saved stable names remain visible independently of catalog filters and follow the selected save',async({page})=>{
+  await fixture(page,false,false,true);
+  const stable=page.getByRole('region',{name:'Your stable'});
+  await expect(stable).toContainText('No registered mounts found in this save');
+  await page.getByRole('button',{name:'Select newest save'}).click();
+  await expect(stable).toContainText('Rokade');
+  await page.getByLabel('Search mounts').fill('Schwarzbär');
+  await stable.getByRole('button',{name:'Rokade',exact:false}).click();
+  await expect(page.locator('.picker-detail')).toContainText('Ein Pferd.');
+  await page.getByLabel('Save for mounts').selectOption('22202/slot1');
+  await expect(stable).not.toContainText('Rokade');
+  expect(await page.evaluate(()=>(window as unknown as {mountCalls:unknown[]}).mountCalls.length)).toBe(0);
+});

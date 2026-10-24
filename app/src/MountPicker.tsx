@@ -37,7 +37,8 @@ export function MountPicker({catalog}:{catalog:Catalog}) {
   },[data,text,family,available,regex,matchKeys]);
   const readOnly=data?.registration_available===false;
   const availableCount=data?.mounts.filter(m=>m.supported).length??0;
-  const ownedCount=data?.mounts.filter(m=>m.owned>0).length??0;
+  const ownedMounts=data?.mounts.filter(m=>m.owned>0)??[];
+  const ownedCount=ownedMounts.length;
   const familyCount=(f:string)=>data?.mounts.filter(m=>m.family===f&&m.supported).length??0;
   const mount=data?.mounts.find(m=>m.key===selected);
   async function add(checkPending=false) {
@@ -53,10 +54,18 @@ export function MountPicker({catalog}:{catalog:Catalog}) {
     } catch(e){setError(asError(e).message);}
     finally{latch.current=false;setGiving(false);}
   }
-  return <section className="item-picker">
+  return <section className="item-picker mount-picker">
     <div className="page-heading"><div><div className="eyebrow">CHOOSE MOUNTS</div><h1>Mounts<span>.</span></h1><p>{readOnly?'Browse mounts and inspect ownership in your saved stable.':'Search animals and register them permanently in your stable.'}</p></div><PawPrint size={28}/></div>
     <div className="mount-save-bar"><SaveSelector saves={data?.saves??[]} value={data?.selected_save??null} disabled={busy||giving} ariaLabel="Save for mounts" onChange={value=>void refresh(value)}/><button className="secondary" disabled={busy||giving} onClick={()=>void refresh(data?.selected_save??null)}><RefreshCw size={15}/>Reload</button></div>
-    <div className="mount-status" role="status"><p>{data?.message??'Reading mounts and saves …'}</p>{data&&!busy&&<><small>{availableCount} available to add · {ownedCount} species already registered · {data.mounts.length-availableCount-ownedCount} currently unsupported</small>{!readOnly&&data.mounts.some(m=>m.registration==='base')&&<p>Base entries allow additional species without a matching stable template. Summoning and riding these variants still require in-game testing.</p>}{!readOnly&&availableCount===0&&<p>This save contains no suitable stable template. Check the slot and account above.{data.saves[0]&&data.selected_save!==data.saves[0].id&&<button className="secondary" disabled={giving} onClick={()=>void refresh(data.saves[0].id)}>Select newest save</button>}</p>}</>}</div>
+    <div className="mount-status" role="status"><p>{data?.message??'Reading mounts and saves …'}</p>{data&&!busy&&<><small>{availableCount} available to add · {ownedCount} species already registered · {data.mounts.filter(m=>!m.supported&&!m.owned).length} currently unsupported</small>{!readOnly&&data.mounts.some(m=>m.registration==='base')&&<p>Base entries allow additional species without a matching stable template. Summoning and riding these variants still require in-game testing.</p>}{!readOnly&&availableCount===0&&<p>This save contains no suitable stable template. Check the slot and account above.{data.saves[0]&&data.selected_save!==data.saves[0].id&&<button className="secondary" disabled={giving} onClick={()=>void refresh(data.saves[0].id)}>Select newest save</button>}</p>}</>}</div>
+    <section className="saved-stable" aria-label="Your stable" aria-busy={busy}>
+      <h2>Your stable</h2>
+      <p>Registered species in the selected saved slot. Save in game, then reload here to include recent live registrations.</p>
+      {busy?<p role="status">Reading saved stable …</p>:error?<p>Stable could not be refreshed. Reload to check ownership.</p>:!data?.selected_save?<p>Select a save to see your mounts.</p>:<>
+        <small>Saved stable: {data.saves.find(s=>s.id===data.selected_save)?.label??data.selected_save}</small>
+        {ownedMounts.length?<ul className="saved-stable-list">{ownedMounts.map(m=><li key={m.key}><button className={`stable-mount ${selected===m.key?'selected':''}`} aria-pressed={selected===m.key} onClick={()=>setSelected(m.key)}><MountImage session={catalog.session} mountKey={m.key} label={plainText(m.name)}/><span><strong>{plainText(m.name)}</strong><small>{m.family} · {m.owned}× registered</small></span></button></li>)}</ul>:<p>No registered mounts found in this save.</p>}
+      </>}
+    </section>
     {pending&&<div className="mount-pending"><p>A request is still pending. Check the result using that same request before adding another animal.</p><button className="secondary" disabled={busy||giving||!data||readOnly||data.game_running} onClick={()=>void add(true)}>Check / continue request</button><button className="secondary" disabled={giving} onClick={()=>{localStorage.removeItem(storage);setPending(null);setError('');}}>Discard request</button><small>If the result is unclear, reload and check the stable first.</small></div>}
     {error&&<p className="error-message" role="alert">{error}</p>}
     {receipt&&<div className="mount-success" role="status"><p>{receipt}</p><small>Backup: {backup}</small></div>}
