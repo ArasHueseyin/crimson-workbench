@@ -818,7 +818,7 @@ async fn teleport_change(
         let (game, version) = state.with_session(session, |s| {
             Ok((s.game_root().to_owned(), s.info().exe_version))
         })?;
-        if version.as_deref() != Some("1.0.0.2976") {
+        if !cfg!(target_os = "macos") && version.as_deref() != Some("1.0.0.2976") {
             return Err(AppError {
                 code: "teleport_controls",
                 message: "Teleport controls require game version 1.0.0.2976.".into(),

@@ -262,7 +262,9 @@ pub(crate) mod macos;
 pub(crate) fn running_game_pid(game: &Path) -> Result<u32> {
     match macos::game_pids(game)?.as_slice() {
         [pid] => Ok(*pid),
-        [] => Err(error("Start Crimson Desert with Workbench and load a save first.")),
+        [] => Err(error(
+            "Start Crimson Desert with Workbench and load a save first.",
+        )),
         _ => Err(error("More than one game process is running.")),
     }
 }

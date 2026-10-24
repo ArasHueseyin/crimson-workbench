@@ -3,7 +3,7 @@
 Status: development branch `feat/live-macos-world`. Native clock and weather
 controls, their Mac socket, Tauri connection and frontend panel are implemented.
 Both passed a bounded live trial on 24 October 2026; the user confirmed visible
-rain. Teleport remains under development. The installed app has not yet been
+rain. Saved-position teleport is implemented but awaits its first live trial. The installed app has not yet been
 replaced. Existing item/mount functionality is preserved; archive-mod work is
 preserved at `backup/macos-archive-ports-20261024` (`6a265cf`).
 
@@ -146,9 +146,41 @@ client/server witnesses agreed at rates 0 and 12. Final status had both controls
 available and neither frozen. Private evidence is in
 `.local/macos-world/weather-trial.log` and the launch's `runtime.log`.
 
-Remaining: establish teleport eligibility and arrival observation, connect its
-Mac transport/UI and validate the native transition. Do not label this a completed
-teleport port.
+## Saved-position teleport (awaiting live validation)
+
+The first Mac implementation reuses the existing 112-byte request / 14016-byte
+reply, UTF-8 name checks, 16 slots and pending-command UI. It accepts no frontend
+coordinates. Bookmarks are session-only; the Mac panel states that they disappear
+when the game closes. Persistent bookmarks and map-pin travel are not included.
+The Windows persistence and marker paths are unchanged.
+
+`teleport/native.h` acquires the pinned field lease and checks field/stage keys,
+component ownership and the native movement error bits. The eligibility function
+`0x100eaaff8` takes transform, int output and byte output; both outputs start at
+zero. It acquires/releases its own field lease and actor read lock. The separate
+actor guard constructor `0x1000a4bdc` returns 24 bytes in X8, including its native
+reference bookkeeping; `0x1000a4c68` releases it. Position and yaw getters run
+inside this guard, then it is released before Begin acquires its own lock.
+
+A move reacquires the field lease, checks the same field and character, idle
+transition state, positive borrow count and empty pending descriptor, then checks
+the current selected actor and deadline immediately before its single Begin
+call. The lease defers transition while the copied descriptor is checked. Its
+full destructor releases exactly once and allows native streaming to continue.
+A successful queue receipt is distinct from observing the player within 0.5 world
+units of the destination. No uncertain command is automatically resent.
+
+The `teleport-PID.sock` endpoint uses the same private directory, same-user and
+peer-PID checks as the existing connections. Fake native bindings cover owner,
+field, eligibility and final-authorisation rejection without invoking Begin,
+exact descriptor publication, lease/lock cleanup, replay suppression and arrival
+after a temporary loading observation. Rust verifies the complete 14016-byte
+socket transfer. Mac browser coverage checks the session limit, disabled markers
+and no mutation on panel open.
+
+Remaining: restart the game with this module, validate the native capture/guard
+ABI and run one explicit captured-position return trial. Do not distribute the
+teleport path as live-verified before that trial.
 
 Run focused checks with `make -C runtime/macos-items all test`, Rust app tests and
 Clippy, and the `mac-mods`/`world-controls` browser tests.

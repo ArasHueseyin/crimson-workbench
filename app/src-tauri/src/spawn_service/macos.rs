@@ -95,6 +95,9 @@ pub fn transact(pid: u32, request: &[u8; 40]) -> Result<[u8; 48]> {
 pub fn world_transact(pid: u32, request: &[u8; 96]) -> Result<[u8; 176]> {
     transact_at::<176>(&socket_path(pid, "world"), pid, request)
 }
+pub fn teleport_transact(pid: u32, request: &[u8; 112]) -> Result<[u8; 14016]> {
+    transact_at::<14016>(&socket_path(pid, "teleport"), pid, request)
+}
 fn transact_at<const N: usize>(path: &Path, pid: u32, request: &[u8]) -> Result<[u8; N]> {
     let directory = fs::symlink_metadata(
         path.parent()
@@ -213,7 +216,30 @@ mod tests {
             peer.write_all(&[9; 176]).unwrap();
             assert_eq!(peer.read(&mut [0]).unwrap(), 0);
         });
-        assert_eq!(transact_at::<176>(&path, std::process::id(), &[7; 96]).unwrap(), [9; 176]);
+        assert_eq!(
+            transact_at::<176>(&path, std::process::id(), &[7; 96]).unwrap(),
+            [9; 176]
+        );
+        server.join().unwrap();
+    }
+    #[test]
+    fn teleport_socket_reads_full_reply_without_resending() {
+        let root = tempfile::tempdir().unwrap();
+        fs::set_permissions(root.path(), fs::Permissions::from_mode(0o700)).unwrap();
+        let path = root.path().join("teleport.sock");
+        let listener = UnixListener::bind(&path).unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut peer, _) = listener.accept().unwrap();
+            let mut request = [0; 112];
+            peer.read_exact(&mut request).unwrap();
+            assert_eq!(request, [7; 112]);
+            peer.write_all(&[9; 14016]).unwrap();
+            assert_eq!(peer.read(&mut [0]).unwrap(), 0);
+        });
+        assert_eq!(
+            transact_at::<14016>(&path, std::process::id(), &[7; 112]).unwrap(),
+            [9; 14016]
+        );
         server.join().unwrap();
     }
     #[test]
