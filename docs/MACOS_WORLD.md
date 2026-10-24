@@ -1,8 +1,10 @@
 # Native Mac world controls — implementation notes
 
-Status: development branch `feat/live-macos-world`. Teleport, time and weather
-writes and enable/disable controls are **not implemented or shipped yet**.
-Existing item/mount functionality and the installed application are unchanged.
+Status: development branch `feat/live-macos-world`. Clock commands, owned freeze/
+resume, a Mac world socket, the Tauri connection and the existing frontend panel
+are implemented in source. Native clock publication still needs a live check; no
+clock mutation has been issued. Weather and teleport writes are not implemented.
+The installed application and current item/mount functionality are unchanged.
 Archive-mod work is preserved at `backup/macos-archive-ports-20261024` (`6a265cf`).
 
 ## Supported executable
@@ -30,15 +32,16 @@ Actor `+0x108` -> components `+0x1a0` -> transform (vtable `0x107e33228`, owner
 Field world ID `+0x220` matches user `+0x100`; field definition `+0x4b8`, definition
 index `+4` matches transform `+0x28`. Field paused flag is `+0x21c`.
 
-## Read layer staged for the next launch
+## Read layer and native clock calibration
 
 `CW_MAC_WORLD_OBSERVE=1` enables at most 24 samples, one per second, exclusively
 after the existing local server-task checks. Without the flag no world probe runs.
 Callbacks serialize diagnostic reads without blocking another callback.
 
-Native read functions below are statically traced and compiled, with fake-binding
-tests for ownership, invalid values and exactly-once release. Their returned values
-still need confirmation in a loaded world with the new module:
+Native reads below were confirmed on a loaded save in the next launch. The field
+lease returned the expected field and transform owner, displayed time advanced and
+player position was finite. A loading stage returned hour 24 and was rejected.
+Ownership, invalid values and exactly-once release also have fake-binding tests.
 
 | Function | VA / ABI |
 | --- | --- |
@@ -52,11 +55,20 @@ Lease vtable is `0x107e74b68`; field pointer is `+8`, valid byte `+0x10`,
 transform owner `+0x28`. Do not separately call transform release and the full
 destructor: that would release twice. Native virtual slots differ from Windows.
 
-Weather result is manager `+0x60` interface minus `0x28`; primary resource vtable
-`0x1081ca110`. Resource `+0x40/+0x48` are constant/atmosphere interfaces. Their
+Weather result is manager `+0x60` interface minus `0x28`; primary **WeatherConstantGroup** vtable
+`0x1081ca3c0` (not the base WeatherResource vtable `0x1081ca110`). Resource `+0x40/+0x48` are constant/atmosphere interfaces. Their
 primaries are interface minus `0x28`, vtables `0x1081ca690/0x1081c9e40`; each
-primary `+0x10` must point to the resource. The new read layer validates all of
-these and finite scalar values before reporting ready.
+primary `+0x10` must point to the group. The group constructor is `0x102e9ab70`;
+`0x100d9cbb8` assigns child parents. The manager registration calls
+`0x102e76f34/50` only add observers through `0x100d9a9b4`; they do not change
+parentage. The first reader used the base resource type; a later correction also
+misread observer registration as parent assignment. Both are corrected in source,
+but the corrected full weather output still needs a loaded-world capture.
+
+Raw native clock `{50,18,11,56,232,weekday=1,reserved=140,rate=12,anchor=53830}`
+at native time 98767 produced exactly the captured getter value
+`50 / 18:20:55.476 / rate=12 / anchor=98767`. This case now exercises the reused
+pure clock arithmetic in a regression test. The reserved byte is native padding.
 
 ## Traced mutation paths; not called yet
 
@@ -82,10 +94,36 @@ these and finite scalar values before reporting ready.
   argument; not a no-argument eligibility check). Character definition accessor
   `0x100ec5264` is components `+0x20` -> `+0x30`; yaw is `0x100ec7a9c`.
 
-Remaining: confirm native reads on restart, establish teleport eligibility and
-arrival observation, add bounded queues/receipts and Mac socket endpoints, connect
-existing frontend controls, and validate publication and disable/restore. Restore
-must be conditional on still owning the same field/manager and unchanged owned
-values. No automatic resend after native uncertainty.
+## Clock command path staged for the next launch
 
-Run the focused checks with `make -C runtime/macos-items all test`.
+`world/time_control.h` keeps pointer-free requests and receipts under a mutex.
+It accepts only a fresh selected identity, current session/generation, increasing
+request ID and a bounded deadline. Publication runs only from the verified server
+actor callback. Each request is consumed before its single publication attempt.
+A world change cancels queued commands; uncertain publication latches time only,
+without disabling item/mount grants.
+
+`world/time_native.h` reacquires the field lease, rechecks ownership, unchanged raw
+clock and the loaded FieldInfo fixed-time flag, then calls the narrow publisher.
+Both the global and transform clock must match before the native ACK sender runs.
+A published receipt means server readback and ACK invocation; it still requires an
+in-game witness. No command is retried after a failed/uncertain response.
+
+Freeze captures the current rate; Resume time restores it at the frozen displayed
+time with a fresh anchor. Resume changes only an exactly matching owned freeze.
+Freeze ownership is process-local; persistence across saving/restarting while
+frozen has not been checked. Resume before closing the game during development.
+
+The `/tmp/crimson-workbench-UID/world-PID.sock` endpoint uses the same private
+0700 directory, 0600 socket, same-UID server check and bounded transfers as items.
+The Rust client verifies UID and peer PID before sending exactly one 96-byte
+request and reading one 176-byte reply. The Mac dialog reuses the existing live
+controls and pending-request history; weather remains unavailable.
+
+Remaining: run the live clock freeze/resume check and corrected weather capture;
+finish weather ownership/restoration and producer integration; establish teleport
+eligibility/arrival observation; connect teleport UI and validate its native path.
+Do not distribute this staged build as a completed time/weather/teleport port.
+
+Run focused checks with `make -C runtime/macos-items all test`, Rust app tests and
+Clippy, and the `mac-mods`/`world-controls` browser tests.

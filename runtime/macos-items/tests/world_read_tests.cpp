@@ -14,6 +14,17 @@ MacPosition position_read(void* p){assert(p==reinterpret_cast<void*>(0x1000));re
 std::uint64_t now(){return 79400;}
 }
 int main(){
+    using namespace crimson::marketplace::world_controls;
+    // Captured raw clock and native getter on the pinned Mac build, same native anchor.
+    const MacFieldTime captured{50,18,11,56,232,1,140,12,53830};
+    const auto calculated=at_native_time(captured,98767);
+    assert(calculated&&calculated->day==50&&calculated->hour==18&&calculated->minute==20
+        &&calculated->second==55&&calculated->millisecond==476&&calculated->rate==12&&calculated->anchor==98767);
+    const auto frozen=freeze_time(*calculated,98767);
+    assert(frozen&&frozen->rate==0);
+    const auto resumed=resume_time(*frozen,12,200000);
+    assert(resumed&&resumed->hour==18&&resumed->minute==20&&resumed->second==55&&resumed->rate==12);
+    assert(!choose_time(captured,{24,0,0,0},98767));
     WorldProbe context;context.context=true;context.transform=0x3000;context.field=0x4000;
     WorldReadBindings bindings{acquire,release,time_read,position_read,now,0x7000};
     auto observed=read_native_world(context,0x1000,bindings);

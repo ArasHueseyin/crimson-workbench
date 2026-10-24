@@ -83,16 +83,19 @@ pub(super) fn process_exited(pid: u32) -> Result<bool> {
     // Signal zero tests existence without sending a signal; ESRCH proves termination.
     Ok(unsafe { kill(pid, 0) } != 0 && std::io::Error::last_os_error().raw_os_error() == Some(3))
 }
-fn socket_path(pid: u32) -> PathBuf {
+fn socket_path(pid: u32, kind: &str) -> PathBuf {
     PathBuf::from(format!(
-        "/tmp/crimson-workbench-{}/items-{pid}.sock",
+        "/tmp/crimson-workbench-{}/{kind}-{pid}.sock",
         unsafe { geteuid() }
     ))
 }
 pub fn transact(pid: u32, request: &[u8; 40]) -> Result<[u8; 48]> {
-    transact_at(&socket_path(pid), pid, request)
+    transact_at::<48>(&socket_path(pid, "items"), pid, request)
 }
-fn transact_at(path: &Path, pid: u32, request: &[u8; 40]) -> Result<[u8; 48]> {
+pub fn world_transact(pid: u32, request: &[u8; 96]) -> Result<[u8; 176]> {
+    transact_at::<176>(&socket_path(pid, "world"), pid, request)
+}
+fn transact_at<const N: usize>(path: &Path, pid: u32, request: &[u8]) -> Result<[u8; N]> {
     let directory = fs::symlink_metadata(
         path.parent()
             .ok_or_else(|| error("Invalid connection path."))?,
@@ -138,11 +141,11 @@ fn transact_at(path: &Path, pid: u32, request: &[u8; 40]) -> Result<[u8; 48]> {
             "Could not verify the connection to the game process.",
         ));
     }
-    // A timeout never resends a grant; the caller queries the original request ID.
+    // A timeout never resends a command; the caller queries the original request ID.
     stream
         .write_all(request)
         .map_err(|e| error(e.to_string()))?;
-    let mut reply = [0; 48];
+    let mut reply = [0; N];
     stream
         .read_exact(&mut reply)
         .map_err(|e| error(e.to_string()))?;
@@ -197,6 +200,23 @@ mod tests {
         assert!(!root.path().join("linked/workbench-backup.json").exists());
     }
     #[test]
+    fn world_socket_uses_full_protocol_without_resending() {
+        let root = tempfile::tempdir().unwrap();
+        fs::set_permissions(root.path(), fs::Permissions::from_mode(0o700)).unwrap();
+        let path = root.path().join("world.sock");
+        let listener = UnixListener::bind(&path).unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut peer, _) = listener.accept().unwrap();
+            let mut request = [0; 96];
+            peer.read_exact(&mut request).unwrap();
+            assert_eq!(request, [7; 96]);
+            peer.write_all(&[9; 176]).unwrap();
+            assert_eq!(peer.read(&mut [0]).unwrap(), 0);
+        });
+        assert_eq!(transact_at::<176>(&path, std::process::id(), &[7; 96]).unwrap(), [9; 176]);
+        server.join().unwrap();
+    }
+    #[test]
     fn socket_exchange_checks_peer_and_transmits_one_request() {
         let root = tempfile::tempdir().unwrap();
         fs::set_permissions(root.path(), fs::Permissions::from_mode(0o700)).unwrap();
@@ -210,7 +230,7 @@ mod tests {
             peer.write_all(&[9; 48]).unwrap();
         });
         assert_eq!(
-            transact_at(&path, std::process::id(), &[7; 40]).unwrap(),
+            transact_at::<48>(&path, std::process::id(), &[7; 40]).unwrap(),
             [9; 48]
         );
         server.join().unwrap();
@@ -226,7 +246,7 @@ mod tests {
             let mut byte = [0];
             assert_eq!(peer.read(&mut byte).unwrap(), 0);
         });
-        assert!(transact_at(&path, std::process::id() + 1, &[7; 40]).is_err());
+        assert!(transact_at::<48>(&path, std::process::id() + 1, &[7; 40]).is_err());
         server.join().unwrap();
     }
 }

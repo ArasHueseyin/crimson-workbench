@@ -52,16 +52,16 @@ void serve_peer(int peer, crimson::live_items::Queue& queue, Selection selection
     transfer_all(peer, &reply, sizeof(reply), true);
 }
 
-// Queue and selection callback live for the game process; no engine pointer enters this thread.
-template<class Selection>
-bool start_transport(crimson::live_items::Queue* queue, Selection selection) {
+// The handler owns pointer-free queues only; no engine pointer enters this thread.
+template<class Serve>
+bool start_socket_transport(const char* name, Serve serve) {
     char directory[80], path[104];
     std::snprintf(directory, sizeof(directory), "/tmp/crimson-workbench-%u", geteuid());
     if (mkdir(directory, 0700) != 0 && errno != EEXIST) return false;
     struct stat info{};
     if (lstat(directory, &info) != 0 || !S_ISDIR(info.st_mode)
         || info.st_uid != geteuid() || (info.st_mode & 0777) != 0700) return false;
-    std::snprintf(path, sizeof(path), "%s/items-%d.sock", directory, getpid());
+    std::snprintf(path, sizeof(path), "%s/%s-%d.sock", directory, name, getpid());
     if (lstat(path, &info) == 0) {
         if (!S_ISSOCK(info.st_mode) || info.st_uid != geteuid() || unlink(path) != 0) return false;
     } else if (errno != ENOENT) return false;
@@ -79,13 +79,13 @@ bool start_transport(crimson::live_items::Queue* queue, Selection selection) {
         return false;
     }
     try {
-        std::thread([listener, queue, selection, socket_path = std::string(path)] {
+        std::thread([listener, serve, socket_path = std::string(path)] {
             try {
                 while (true) {
                     const int peer = accept(listener, nullptr, nullptr);
                     if (peer < 0) { if (errno == EINTR) continue; break; }
                     fcntl(peer, F_SETFD, FD_CLOEXEC);
-                    try { serve_peer(peer, *queue, selection); }
+                    try { serve(peer); }
                     catch (...) { close(peer); throw; }
                     close(peer);
                 }
@@ -95,5 +95,9 @@ bool start_transport(crimson::live_items::Queue* queue, Selection selection) {
         }).detach();
     } catch (...) { close(listener); unlink(path); return false; }
     return true;
+}
+template<class Selection>
+bool start_transport(crimson::live_items::Queue* queue,Selection selection) {
+    return start_socket_transport("items",[queue,selection](int peer){serve_peer(peer,*queue,selection);});
 }
 }

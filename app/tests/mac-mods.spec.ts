@@ -13,6 +13,7 @@ async function fixture(page:Page,state='ready',registry='applied') {
         return {registry_found:registry!=='missing',mods:registry==='missing'?[]:[{id:5,name:'Infinite Stamina Steam Mac Byte Patch',version:'1.0.1',author:'Local custom mod',enabled:true,applied:true},{id:6,name:'Pending mod',version:null,author:null,enabled:true,applied:false},{id:7,name:'Disabled mod',version:null,author:null,enabled:false,applied:false}]};
       }
       if(command==='search_items')return {items:[],total:0,offset:0};
+      if(command==='world_status')return {pid:42,state:'ready',id:'0',session:'7',generation:'1',monotonic_ms:'100',reason:0,flags:1,identity:12,world:34,stage:0,clock_reason:0,weather_reason:0,time:{day:50,hour:18,minute:20,second:0,millisecond:0,weekday:1,rate:12,anchor:'100'},weather:{precipitation:0,cloudiness:0,humidity:0,wind_speed:0,height_fog:0,phase:0},time_receipt:'0',weather_receipt:'0',time_result:'unavailable',time_result_reason:0,weather_result:'unavailable',weather_result_reason:0};
       if(command==='spawn_status'||command==='mount_live_status'){
         if(state==='error')throw {message:'Synthetic connection failure'};
         return {state,pid:state==='offline'?0:42,epoch:7,id:'',key:0,quantity:0,message:state==='offline'?'No live module connected.':'Verified native module connected.'};
@@ -48,6 +49,21 @@ test('Mac mods show connected capabilities and platform availability in both mod
   expect(calls).not.toContain('mod_info');
   expect(calls).not.toContain('marketplace_mod_status');
   expect(calls.some(c=>c.includes('grant')||c.includes('launch'))).toBe(false);
+});
+
+test('Mac clock opens existing live controls without sending a mutation',async({page})=>{
+  await fixture(page);
+  await page.getByRole('button',{name:'Open clock controls',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Mac live time'});
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Current 18:20 · Day 50');
+  await expect(dialog.getByRole('button',{name:'Freeze time',exact:true})).toBeEnabled();
+  await expect(dialog.getByRole('button',{name:'Apply weather',exact:true})).toBeDisabled();
+  await dialog.getByRole('button',{name:'Close',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Open clock controls',exact:true})).toBeFocused();
+  const calls=await page.evaluate(()=>(window as unknown as {calls:string[]}).calls);
+  expect(calls).toContain('world_status');
+  expect(calls).not.toContain('world_change');
 });
 
 for(const state of ['offline','error'])test(`Mac module ${state} is not shown as ready or installed`,async({page})=>{

@@ -258,6 +258,14 @@ pub fn mount_exchange(
 }
 #[cfg(target_os = "macos")]
 pub(crate) mod macos;
+#[cfg(target_os = "macos")]
+pub(crate) fn running_game_pid(game: &Path) -> Result<u32> {
+    match macos::game_pids(game)?.as_slice() {
+        [pid] => Ok(*pid),
+        [] => Err(error("Start Crimson Desert with Workbench and load a save first.")),
+        _ => Err(error("More than one game process is running.")),
+    }
+}
 #[cfg(windows)]
 pub(crate) fn running_game_pid(game: &Path) -> Result<u32> {
     windows::game_pid(game)

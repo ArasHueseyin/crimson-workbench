@@ -2,6 +2,8 @@
 #include "world_probe.h"
 #include "world_read.h"
 #include "weather_read.h"
+#include "world/time_native.h"
+#include "world/time_transport.h"
 #include "execute.h"
 #include "mount.h"
 #include "transport.h"
@@ -24,6 +26,7 @@ Dispatch original{};
 std::uintptr_t actor_vtable{};
 std::intptr_t image_slide{};
 Queue* queue{};
+TimeControl* time_control{};
 std::atomic<bool> enabled{};
 
 bool read_word(std::uintptr_t address, std::uintptr_t& value) {
@@ -50,6 +53,43 @@ std::uintptr_t verified_holder(void* task, void* context, std::uint32_t& key) {
     return holder;
 }
 
+WorldReadBindings world_read_bindings() {
+    return {
+        reinterpret_cast<decltype(WorldReadBindings::acquire)>(0x100863b14ULL+image_slide),
+        reinterpret_cast<decltype(WorldReadBindings::release)>(0x100e79bf4ULL+image_slide),
+        reinterpret_cast<decltype(WorldReadBindings::time)>(0x100e94448ULL+image_slide),
+        reinterpret_cast<decltype(WorldReadBindings::position)>(0x100ec7748ULL+image_slide),
+        reinterpret_cast<decltype(WorldReadBindings::now)>(0x100e350e0ULL+image_slide),
+        0x107e74b68ULL+image_slide};
+}
+
+void observe_time(void* task,void* context,std::uintptr_t holder,std::uint32_t key) {
+    if(!time_control)return;
+    const auto now=now_ms();
+    if(!time_control->needs_observation(now))return;
+    std::uintptr_t actor{};
+    if(!read_word(reinterpret_cast<std::uintptr_t>(context),actor))return;
+    const auto view=inspect_world_probe(actor,image_slide,read_word);
+    const auto fixed=time_stage_fixed(view.stage,image_slide,read_word);
+    const auto bindings=world_read_bindings();
+    const auto native=read_native_world(view,actor,bindings);
+    std::optional<TimeContext> frame;
+    const auto raw=read_time_value(0x108a6ab00ULL+image_slide,read_word);
+    if(native.ready&&fixed&&!*fixed&&raw)frame=TimeContext{key,view.world,view.stage,*raw,native.time,native.native_now};
+    time_control->observe(frame,now,[&](const TimeContext& current,const MacFieldTime& value){
+        std::uint32_t selected{};
+        if(verified_holder(task,context,selected)!=holder||selected!=key)return TimePublication::rejected;
+        const TimeWriteBindings write{bindings,
+            reinterpret_cast<decltype(TimeWriteBindings::publish)>(0x100eaba18ULL+image_slide),
+            reinterpret_cast<decltype(TimeWriteBindings::send)>(0x10099ed7cULL+image_slide),
+            0x107e4f878ULL+image_slide,image_slide};
+        const auto result=publish_native_time(view,actor,current.raw,value,write,read_word);
+        std::fprintf(stderr,"CW_MAC_TIME: publication=%u day=%u time=%u:%u rate=%u; no automatic retry.\n",
+            static_cast<unsigned>(result),value.day,value.hour,value.minute,value.rate);
+        return result;
+    });
+}
+
 void observe_world(std::uintptr_t context,std::uint32_t key) {
     static const bool world_probe = [] {const auto flag=std::getenv("CW_MAC_WORLD_OBSERVE");return flag&&std::strcmp(flag,"1")==0;}();
     if(!world_probe)return;
@@ -62,13 +102,7 @@ void observe_world(std::uintptr_t context,std::uint32_t key) {
         world_observed=now_ms();++world_samples;
         std::uintptr_t actor{};read_word(context,actor);
         const auto view=inspect_world_probe(actor,image_slide,read_word);
-        const WorldReadBindings bindings{
-            reinterpret_cast<decltype(WorldReadBindings::acquire)>(0x100863b14ULL+image_slide),
-            reinterpret_cast<decltype(WorldReadBindings::release)>(0x100e79bf4ULL+image_slide),
-            reinterpret_cast<decltype(WorldReadBindings::time)>(0x100e94448ULL+image_slide),
-            reinterpret_cast<decltype(WorldReadBindings::position)>(0x100ec7748ULL+image_slide),
-            reinterpret_cast<decltype(WorldReadBindings::now)>(0x100e350e0ULL+image_slide),
-            0x107e74b68ULL+image_slide};
+        const auto bindings=world_read_bindings();
         const auto native=read_native_world(view,actor,bindings);
         const auto weather=read_weather(view,image_slide,read_word);
         std::fprintf(stderr,"CW_MAC_WORLD_PROBE: context=%u clock=%u identity=%u world=%u stage=%u phase=%u paused=%u transform=%llx field=%llx time=%llx/%llx/%llx/%llx weather=%u manager=%llx parent_offset=%x child_offset=%x.\n",
@@ -81,8 +115,8 @@ void observe_world(std::uintptr_t context,std::uint32_t key) {
             native.ready,native.time.day,native.time.hour,native.time.minute,native.time.second,native.time.millisecond,native.time.rate,
             static_cast<unsigned long long>(native.time.anchor),static_cast<unsigned long long>(native.native_now),
             native.position.x,native.position.y,native.position.z);
-        std::fprintf(stderr,"CW_MAC_WEATHER_READ: ready=%u manual=%u precipitation=%f cloudiness=%f humidity=%f wind=%f fog=%f cloud=%f aerosol=%f phase=%f.\n",
-            weather.ready,weather.manual,weather.precipitation,weather.cloudiness,weather.humidity,weather.wind,weather.fog,weather.cloud,weather.aerosol,weather.phase);
+        std::fprintf(stderr,"CW_MAC_WEATHER_READ: ready=%u reason=%u manual=%u precipitation=%f cloudiness=%f humidity=%f wind=%f fog=%f cloud=%f aerosol=%f phase=%f.\n",
+            weather.ready,weather.reason,weather.manual,weather.precipitation,weather.cloudiness,weather.humidity,weather.wind,weather.fog,weather.cloud,weather.aerosol,weather.phase);
         std::fflush(stderr);
     }
 }
@@ -94,6 +128,8 @@ std::uint32_t hook(void* task, void* context) {
         std::uint32_t key{};
         const auto holder = verified_holder(task, context, key);
         if (!holder) return result;
+        try { observe_time(task,context,holder,key); }
+        catch (...) { if(time_control)time_control->fault(); }
         observe_world(reinterpret_cast<std::uintptr_t>(context),key);
         queue->observe(now_ms(), key);
         const auto request = queue->take(now_ms(), key);
@@ -219,6 +255,7 @@ __attribute__((constructor)) void initialize() {
     epoch = (epoch & ((1ULL<<53)-1)) | 1;
     queue = new (std::nothrow) Queue(static_cast<std::uint32_t>(getpid()), epoch);
     if (!queue) return;
+    time_control=new (std::nothrow) TimeControl(epoch);
     const auto page = reinterpret_cast<std::uintptr_t>(slot) & ~(static_cast<std::uintptr_t>(vm_page_size)-1);
     mach_vm_address_t region = page;
     mach_vm_size_t region_size{};
@@ -254,5 +291,9 @@ __attribute__((constructor)) void initialize() {
         return;
     }
     std::fputs("CW_MAC_ITEMS: exact Mac build verified; waiting for explicit app requests.\n", stderr);
+    if(time_control&&!start_time_transport(time_control,[]{
+        const auto local=inspect_local_actor(0,image_slide,read_word);
+        return local.selection_valid?local.client_key:0;
+    }))std::fputs("CW_MAC_TIME: local connection unavailable; time commands disabled.\n",stderr);
 }
 }

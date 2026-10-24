@@ -1,16 +1,12 @@
 #pragma once
 #include "world_probe.h"
+#include "world/field_time.h"
 #include <array>
 #include <cmath>
 #include <cstddef>
 
 namespace crimson::mac_items {
-struct MacFieldTime {
-    std::uint32_t day{},hour{},minute{},second{},millisecond{};
-    std::uint8_t weekday{},reserved{};
-    std::uint16_t rate{};
-    std::uint64_t anchor{};
-};
+using MacFieldTime = crimson::marketplace::world_controls::FieldTime;
 struct MacFieldLease {
     std::uintptr_t vtable{},field{};
     std::uint8_t valid{},kind{};
