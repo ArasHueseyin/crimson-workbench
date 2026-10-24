@@ -1,4 +1,7 @@
 #include "context.h"
+#include "world_probe.h"
+#include "world_read.h"
+#include "weather_read.h"
 #include "execute.h"
 #include "mount.h"
 #include "transport.h"
@@ -47,6 +50,43 @@ std::uintptr_t verified_holder(void* task, void* context, std::uint32_t& key) {
     return holder;
 }
 
+void observe_world(std::uintptr_t context,std::uint32_t key) {
+    static const bool world_probe = [] {const auto flag=std::getenv("CW_MAC_WORLD_OBSERVE");return flag&&std::strcmp(flag,"1")==0;}();
+    if(!world_probe)return;
+    static std::mutex mutex;
+    std::unique_lock lock(mutex,std::try_to_lock);
+    if(!lock.owns_lock())return;
+    static std::uint64_t world_observed{};
+    static unsigned world_samples{};
+    if(world_samples<24&&now_ms()-world_observed>=1000) {
+        world_observed=now_ms();++world_samples;
+        std::uintptr_t actor{};read_word(context,actor);
+        const auto view=inspect_world_probe(actor,image_slide,read_word);
+        const WorldReadBindings bindings{
+            reinterpret_cast<decltype(WorldReadBindings::acquire)>(0x100863b14ULL+image_slide),
+            reinterpret_cast<decltype(WorldReadBindings::release)>(0x100e79bf4ULL+image_slide),
+            reinterpret_cast<decltype(WorldReadBindings::time)>(0x100e94448ULL+image_slide),
+            reinterpret_cast<decltype(WorldReadBindings::position)>(0x100ec7748ULL+image_slide),
+            reinterpret_cast<decltype(WorldReadBindings::now)>(0x100e350e0ULL+image_slide),
+            0x107e74b68ULL+image_slide};
+        const auto native=read_native_world(view,actor,bindings);
+        const auto weather=read_weather(view,image_slide,read_word);
+        std::fprintf(stderr,"CW_MAC_WORLD_PROBE: context=%u clock=%u identity=%u world=%u stage=%u phase=%u paused=%u transform=%llx field=%llx time=%llx/%llx/%llx/%llx weather=%u manager=%llx parent_offset=%x child_offset=%x.\n",
+            view.context,view.clock_read,key,view.world,view.stage,view.transition,view.field_paused,
+            static_cast<unsigned long long>(view.transform),static_cast<unsigned long long>(view.field),
+            static_cast<unsigned long long>(view.clock[0]),static_cast<unsigned long long>(view.clock[1]),
+            static_cast<unsigned long long>(view.clock[2]),static_cast<unsigned long long>(view.clock[3]),
+            view.weather_read,static_cast<unsigned long long>(view.weather),view.weather_parent_offset,view.weather_child_offset);
+        std::fprintf(stderr,"CW_MAC_WORLD_READ: ready=%u day=%u time=%02u:%02u:%02u.%03u rate=%u anchor=%llu now=%llu position=%.3f/%.3f/%.3f.\n",
+            native.ready,native.time.day,native.time.hour,native.time.minute,native.time.second,native.time.millisecond,native.time.rate,
+            static_cast<unsigned long long>(native.time.anchor),static_cast<unsigned long long>(native.native_now),
+            native.position.x,native.position.y,native.position.z);
+        std::fprintf(stderr,"CW_MAC_WEATHER_READ: ready=%u manual=%u precipitation=%f cloudiness=%f humidity=%f wind=%f fog=%f cloud=%f aerosol=%f phase=%f.\n",
+            weather.ready,weather.manual,weather.precipitation,weather.cloudiness,weather.humidity,weather.wind,weather.fog,weather.cloud,weather.aerosol,weather.phase);
+        std::fflush(stderr);
+    }
+}
+
 std::uint32_t hook(void* task, void* context) {
     const auto result = original(task, context);
     if (result != 0 || !enabled.load(std::memory_order_acquire)) return result;
@@ -54,6 +94,7 @@ std::uint32_t hook(void* task, void* context) {
         std::uint32_t key{};
         const auto holder = verified_holder(task, context, key);
         if (!holder) return result;
+        observe_world(reinterpret_cast<std::uintptr_t>(context),key);
         queue->observe(now_ms(), key);
         const auto request = queue->take(now_ms(), key);
         if (!request) return result;
