@@ -109,3 +109,16 @@ transaction. Existing ownership is checked in the loaded character's stable.
 Save normally afterward. The raptor has been confirmed in game; other species
 and variants remain unverified. See MACOS_ITEMS.md for the pinned build and
 recovery limits.
+
+## Stable and mod overview
+
+The Mounts screen lists registered species by name, portrait and quantity under
+Your stable. Ownership comes from the selected saved slot. Save in game and
+reload the list after a live registration to read the saved ownership. Search
+filters do not hide this stable summary.
+
+Both mod sections show the Mac overview: current item/mount module connection,
+available Mac tools, and searchable features whose Mac ports are unavailable.
+Refresh mod status checks the running module without launching the game or
+submitting grants. A connection is separate from a permanent installation;
+third-party mods are not scanned.

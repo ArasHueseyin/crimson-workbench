@@ -21,7 +21,7 @@ import './mods.css';
 import './marketplace.css';
 import './marketplace-browse.css';
 
-const mods=[
+export const marketplaceMods=[
  {id:'larger_lion',title:'Larger lion',tag:'APPEARANCE',icon:Footprints,description:'Make the shared lion model 30% larger. Includes the circus lion and other characters using this model; lionesses keep their original size.',detail:'Model scale: 0.90 → 1.17'},
  {id:'faster_mounts',title:'Faster mounts',tag:'MOVEMENT',icon:Gauge,description:'Ride the circus lion and Rokade with a 30% higher movement speed stat. Covers all five Rokade stages.',detail:'Movement speed stat: ×1.30'},
  {id:'no_mount_stamina',title:'No mount stamina cost',tag:'STAMINA',icon:Zap,description:'Remove stamina consumption and increase stamina regeneration for the circus lion and Rokade. Player stamina stays unchanged.',detail:'Mount stamina cost: 0 · regeneration boosted'},
@@ -32,6 +32,7 @@ const mods=[
  {id:'free_crafting_currency',title:'No Clockwork Insect crafting fee',tag:'CRAFTING',icon:Package,description:'Remove the 300 Clockwork Insects charged by the Kuku drone backpack recipe. Blueprint requirements and results stay unchanged. Material costs are controlled separately.',detail:'Currency component · combine with Free crafting materials'},
  {id:'larger_rokade',title:'Larger Rokade',tag:'APPEARANCE',icon:Footprints,description:'Make Rokade 30% larger with a dedicated appearance. Other horses keep their original size. Combine with Faster mounts for the requested speed setting.',detail:'Rokade only · model scale: 1.13 → 1.469'},
 ] as const;
+const mods=marketplaceMods;
 
 const extraModText={
  knowledge:'Unlock journal knowledge people places creatures recipes quest information missing entries levels save action',

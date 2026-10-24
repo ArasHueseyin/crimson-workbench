@@ -84,8 +84,8 @@ test('damaged settings can be replaced from first-run UI', async ({ page }) => {
   await page.getByLabel('Installation folder', { exact: true }).fill('/Games/CrimsonDesert_Steam.app');
   await page.getByRole('button', { name: 'Save & connect', exact: true }).click();
   await expect(page.locator('.workbench')).toHaveAttribute('data-ready', 'true');
-  await expect(page.getByText('Mac preview · Experimental item spawning.', { exact: true })).toBeVisible();
-  await expect(page.locator('.source-assurance[role=status]')).toContainText('Game file edits and other runtime mods remain unavailable.');
+  await expect(page.getByText('Mac preview · Live items & mounts.', { exact: true })).toBeVisible();
+  await expect(page.locator('.source-assurance[role=status]')).toContainText('See the mod section for Mac availability and connection status.');
   await page.getByRole('button', {name:'Item picker',exact:true}).click();
   const launch = page.getByRole('button', {name:'Launch game with item spawning'});
   await expect(launch).toBeEnabled();
