@@ -178,9 +178,16 @@ after a temporary loading observation. Rust verifies the complete 14016-byte
 socket transfer. Mac browser coverage checks the session limit, disabled markers
 and no mutation on panel open.
 
-Remaining: restart the game with this module, validate the native capture/guard
-ABI and run one explicit captured-position return trial. Do not distribute the
-teleport path as live-verified before that trial.
+The first loaded-world launch reached the native capture path, but its current
+eligibility gate then returned bitmask 52 (`0x34`) and cleared availability.
+No bookmark capture or Begin call was issued. The meaning of these permission
+bits needs further tracing; do not remove the gate or treat the bitmask as proof
+that the whole teleport path is calibrated. The app bundle includes this guarded,
+unverified path alongside the verified clock and weather controls.
+
+Remaining: resolve the movement eligibility bits, validate capture on a stable
+loaded world and run one explicit captured-position return trial. Teleport is not
+live-verified.
 
 Run focused checks with `make -C runtime/macos-items all test`, Rust app tests and
 Clippy, and the `mac-mods`/`world-controls` browser tests.
