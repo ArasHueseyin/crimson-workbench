@@ -1,9 +1,9 @@
-#include "../src/world/time_control.h"
+#include "../src/world/world_control.h"
 #include <cassert>
 using namespace crimson::mac_items;
 using namespace crimson::marketplace::world_controls;
 int main(){
-    TimeControl control(123);
+    WorldControl control(123);
     TimeContext frame{7,8,0,{50,18,0,0,0,1,0,12,1000},{50,18,0,0,0,1,0,12,1000},1000};
     unsigned writes{};
     auto publish=[&](const TimeContext&,const FieldTime& value){++writes;frame.raw=value;frame.time=value;return TimePublication::published;};
@@ -43,7 +43,7 @@ int main(){
     request.id=6;
     assert(control.handle(request,110,7).code==ControlCode::rejected);
 
-    TimeControl foreign(456);foreign.observe(frame,200,publish);
+    WorldControl foreign(456);foreign.observe(frame,200,publish);
     request={};request.id=1;request.session=456;request.generation=1;request.not_after_ms=1000;
     request.operation=ControlOperation::freeze_time;request.enabled=1;
     assert(foreign.handle(request,200,7).code==ControlCode::queued);
@@ -52,7 +52,7 @@ int main(){
     assert(foreign.handle(request,202,7).code==ControlCode::queued);
     foreign.observe(frame,203,publish);
     assert(writes==4&&foreign.handle({},203,7).time_result_reason==ControlReason::foreign_change);
-    TimeControl faulted(789);faulted.observe(frame,300,publish);
+    WorldControl faulted(789);faulted.observe(frame,300,publish);
     faulted.fault();assert(faulted.handle({},300,7).code==ControlCode::fault_latched);
     assert(!faulted.needs_observation(1000));
 }

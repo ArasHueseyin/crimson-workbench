@@ -11,7 +11,7 @@ import {Dialog} from './Dialog';
 import {MarketplaceWorldControls} from './MarketplaceWorldControls';
 import './mac-mods.css';
 
-const unavailable=[...marketplaceMods.map(m=>m.title),...runtimeMods.map(m=>m.id==='world_controls'?'Live weather controls':m.title),
+const unavailable=[...marketplaceMods.map(m=>m.title),...runtimeMods.filter(m=>m.id!=='world_controls').map(m=>m.title),
   'Unlock journal knowledge','Skill unlocks','Item stack limits','Reveal world map',
   'Contribution points','Native weapon effects','Shop stock','Daily shop refresh',
   'Drop quantities','Drop chances','Trust'];
@@ -55,7 +55,7 @@ export function MacMods({catalog}:{catalog:Catalog}) {
       <ul className="mac-tool-list">
         <li><Box size={22}/><div><h3>Live item spawning</h3><p>Add selected items while playing. Requires the verified game build and a loaded character.</p></div><button className="secondary" onClick={()=>setView('spawn')}>Open Item picker</button></li>
         <li><PawPrint size={22}/><div><h3>Live mount registration</h3><p>Register one previously unowned mount while playing. Save normally afterwards.</p></div><button className="secondary" onClick={()=>setView('mounts')}>Open Mounts</button></li>
-        <li><Clock3 size={22}/><div><h3>Live time controls</h3><p>Set or advance game time. Freeze the clock and resume its previous speed while playing.</p></div><button className="secondary" onClick={()=>setClockOpen(true)}>Open clock controls</button></li>
+        <li><Clock3 size={22}/><div><h3>Live time & weather</h3><p>Set game time and weather while playing. Resume time and Reset weather disable their Workbench overrides.</p></div><button className="secondary" onClick={()=>setClockOpen(true)}>Open live controls</button></li>
         <li><ShieldCheck size={22}/><div><h3>Offline mount registration</h3><p>Register a mount in a selected save with automatic backups. Save and fully close the game first.</p></div><button className="secondary" onClick={()=>setView('mounts')}>Choose saved stable</button></li>
       </ul>
     </section>
@@ -64,10 +64,10 @@ export function MacMods({catalog}:{catalog:Catalog}) {
       <ul className="mac-unavailable">{shown.map(name=><li key={name}><span>{name}</span><small>Workbench Mac port unavailable</small></li>)}</ul>
       {!shown.length&&<p role="status">No unavailable mods match this search.</p>}
     </section>
-    {clockOpen&&<Dialog title="Mac live time" eyebrow="LIVE CLOCK CONTROLS" onClose={()=>setClockOpen(false)}>
+    {clockOpen&&<Dialog title="Mac live time & weather" eyebrow="LIVE WORLD CONTROLS" onClose={()=>setClockOpen(false)}>
       <p>Launch the game through Workbench’s Item picker and load a save. Resume time disables a Workbench freeze. Closing this panel keeps the clock setting active.</p>
-      <p>Weather and teleport controls are still being ported.</p>
-      <MarketplaceWorldControls session={catalog.session} enabled={true}/>
+      <p>Weather controls require the game’s automatic weather mode. Teleport is still being ported.</p>
+      <MarketplaceWorldControls session={catalog.session} enabled={true} platform="macos"/>
     </Dialog>}
   </div>;
 }

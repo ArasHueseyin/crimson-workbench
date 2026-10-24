@@ -1,11 +1,11 @@
 # Native Mac world controls — implementation notes
 
-Status: development branch `feat/live-macos-world`. Clock commands, owned freeze/
-resume, a Mac world socket, the Tauri connection and the existing frontend panel
-are implemented in source. Native clock publication still needs a live check; no
-clock mutation has been issued. Weather and teleport writes are not implemented.
-The installed application and current item/mount functionality are unchanged.
-Archive-mod work is preserved at `backup/macos-archive-ports-20261024` (`6a265cf`).
+Status: development branch `feat/live-macos-world`. Native clock and weather
+controls, their Mac socket, Tauri connection and frontend panel are implemented.
+Both passed a bounded live trial on 24 October 2026; the user confirmed visible
+rain. Teleport remains under development. The installed app has not yet been
+replaced. Existing item/mount functionality is preserved; archive-mod work is
+preserved at `backup/macos-archive-ports-20261024` (`6a265cf`).
 
 ## Supported executable
 
@@ -63,14 +63,14 @@ primary `+0x10` must point to the group. The group constructor is `0x102e9ab70`;
 `0x102e76f34/50` only add observers through `0x100d9a9b4`; they do not change
 parentage. The first reader used the base resource type; a later correction also
 misread observer registration as parent assignment. Both are corrected in source,
-but the corrected full weather output still needs a loaded-world capture.
+and the corrected output has been confirmed on a loaded save.
 
 Raw native clock `{50,18,11,56,232,weekday=1,reserved=140,rate=12,anchor=53830}`
 at native time 98767 produced exactly the captured getter value
 `50 / 18:20:55.476 / rate=12 / anchor=98767`. This case now exercises the reused
 pure clock arithmetic in a regression test. The reserved byte is native padding.
 
-## Traced mutation paths; not called yet
+## Pinned native mutation paths
 
 - Narrow authoritative clock publication: `0x100eaba18(transform, FieldTime*)`.
   CommonField setter is `0x100e94744`. Native nearby-target constructor
@@ -78,7 +78,7 @@ pure clock arithmetic in a regression test. The reserved byte is native padding.
   Avoid whole set-time request `0x10086ed4c`: it also invokes progression and
   optional position/field changes. Server raw clock is `0x108a6ab00`, client is
   `0x108a6aae0`. FieldTime layout matches the existing Windows value type;
-  nonlinear day/night arithmetic still needs runtime comparison on Mac.
+  nonlinear day/night arithmetic matches the captured Mac getter case above.
 - Weather producer job `0x10361ea0c`, vtable slot `0x108288ac8`, primary job
   vtable `0x108288ab0`. It obtains world from job `+0x90`, passes float delta from
   `+0xa0` to manager update `0x102dd0aa8`. Update calls `0x102dcc254`; manual flag
@@ -94,9 +94,9 @@ pure clock arithmetic in a regression test. The reserved byte is native padding.
   argument; not a no-argument eligibility check). Character definition accessor
   `0x100ec5264` is components `+0x20` -> `+0x30`; yaw is `0x100ec7a9c`.
 
-## Clock command path staged for the next launch
+## Clock command path
 
-`world/time_control.h` keeps pointer-free requests and receipts under a mutex.
+`world/world_control.h` keeps pointer-free requests and receipts under a mutex.
 It accepts only a fresh selected identity, current session/generation, increasing
 request ID and a bounded deadline. Publication runs only from the verified server
 actor callback. Each request is consumed before its single publication attempt.
@@ -106,8 +106,8 @@ without disabling item/mount grants.
 `world/time_native.h` reacquires the field lease, rechecks ownership, unchanged raw
 clock and the loaded FieldInfo fixed-time flag, then calls the narrow publisher.
 Both the global and transform clock must match before the native ACK sender runs.
-A published receipt means server readback and ACK invocation; it still requires an
-in-game witness. No command is retried after a failed/uncertain response.
+A published receipt means server readback and ACK invocation. The live trial also
+confirmed matching client/server clock fields and rate after freeze and resume. No command is retried after a failed/uncertain response.
 
 Freeze captures the current rate; Resume time restores it at the frozen displayed
 time with a fresh anchor. Resume changes only an exactly matching owned freeze.
@@ -118,12 +118,37 @@ The `/tmp/crimson-workbench-UID/world-PID.sock` endpoint uses the same private
 0700 directory, 0600 socket, same-UID server check and bounded transfers as items.
 The Rust client verifies UID and peer PID before sending exactly one 96-byte
 request and reading one 176-byte reply. The Mac dialog reuses the existing live
-controls and pending-request history; weather remains unavailable.
+controls and pending-request history for both time and weather.
 
-Remaining: run the live clock freeze/resume check and corrected weather capture;
-finish weather ownership/restoration and producer integration; establish teleport
-eligibility/arrival observation; connect teleport UI and validate its native path.
-Do not distribute this staged build as a completed time/weather/teleport port.
+## Weather ownership and live verification
+
+`world/weather_control.h` runs before the ordinary weather producer through the
+verified non-executable vtable data slot. The original job signals downstream
+consumers before returning, so writes must precede it. Receipts are confirmed on
+the next producer callback, including derived rain/snow outputs. The original
+job is always called, and its return value is preserved.
+
+The module acquires an automatic manager only, refuses foreign manual overrides,
+and relinquishes ownership after foreign changes. Requests share the clock's
+session, generation, replay counter and bounded deadlines. Reset toggles native
+automatic mode and waits for ordinary production. World changes request release
+on the original manager; no retained pointer is dereferenced on a new manager.
+Uncertain publication latches weather without resending the command.
+
+Mac weather freeze holds the chosen scalar settings and precipitation type.
+Climate calculations and animations continue. The frontend states this limit.
+
+The live trial froze time at day 50, 22:55:22.056, applied light rain
+(precipitation .15, cloudiness .8, humidity .5, wind 4), and observed the ordinary
+producer retain it. The user confirmed rain appeared. Reset restored automatic
+weather while the clock remained frozen; resume then restored rate 12. Native
+client/server witnesses agreed at rates 0 and 12. Final status had both controls
+available and neither frozen. Private evidence is in
+`.local/macos-world/weather-trial.log` and the launch's `runtime.log`.
+
+Remaining: establish teleport eligibility and arrival observation, connect its
+Mac transport/UI and validate the native transition. Do not label this a completed
+teleport port.
 
 Run focused checks with `make -C runtime/macos-items all test`, Rust app tests and
 Clippy, and the `mac-mods`/`world-controls` browser tests.

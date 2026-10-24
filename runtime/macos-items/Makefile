@@ -9,7 +9,7 @@ all: $(BUILD)/libCrimsonItems.dylib
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(BUILD)/libCrimsonItems.dylib: src/probe.cpp src/mount.h src/context.h src/world_probe.h src/world_read.h src/weather_read.h $(WORLD_HEADERS) src/inventory.h src/prepare.h src/execute.h src/transport.h src/protocol.h | $(BUILD)
+$(BUILD)/libCrimsonItems.dylib: src/probe.cpp src/data_hook.h src/mount.h src/context.h src/world_probe.h src/world_read.h src/weather_read.h $(WORLD_HEADERS) src/inventory.h src/prepare.h src/execute.h src/transport.h src/protocol.h | $(BUILD)
 	$(CXX) $(CXXFLAGS) -dynamiclib -arch arm64 src/probe.cpp -o $@
 
 $(BUILD)/context-tests: tests/context_tests.cpp src/context.h | $(BUILD)
@@ -30,7 +30,7 @@ $(BUILD)/execute-tests: tests/execute_tests.cpp src/execute.h src/prepare.h src/
 $(BUILD)/mount-tests: tests/mount_tests.cpp src/mount.h src/execute.h src/protocol.h | $(BUILD)
 	$(CXX) $(CXXFLAGS) tests/mount_tests.cpp -o $@
 
-test: $(BUILD)/mount-tests $(BUILD)/context-tests $(BUILD)/inventory-tests $(BUILD)/prepare-tests $(BUILD)/transport-tests $(BUILD)/execute-tests $(BUILD)/world-probe-tests $(BUILD)/world-read-tests $(BUILD)/weather-read-tests $(BUILD)/time-control-tests $(BUILD)/time-native-tests $(BUILD)/time-transport-tests
+test: $(BUILD)/mount-tests $(BUILD)/context-tests $(BUILD)/inventory-tests $(BUILD)/prepare-tests $(BUILD)/transport-tests $(BUILD)/execute-tests $(BUILD)/world-probe-tests $(BUILD)/world-read-tests $(BUILD)/weather-read-tests $(BUILD)/time-control-tests $(BUILD)/time-native-tests $(BUILD)/time-transport-tests $(BUILD)/weather-control-tests $(BUILD)/data-hook-tests $(BUILD)/weather-native-tests
 	$(BUILD)/mount-tests
 	$(BUILD)/context-tests
 	$(BUILD)/inventory-tests
@@ -43,6 +43,9 @@ test: $(BUILD)/mount-tests $(BUILD)/context-tests $(BUILD)/inventory-tests $(BUI
 	$(BUILD)/time-control-tests
 	$(BUILD)/time-native-tests
 	$(BUILD)/time-transport-tests
+	$(BUILD)/weather-control-tests
+	$(BUILD)/data-hook-tests
+	$(BUILD)/weather-native-tests
 
 $(BUILD)/world-probe-tests: tests/world_probe_tests.cpp src/world_probe.h | $(BUILD)
 	$(CXX) $(CXXFLAGS) tests/world_probe_tests.cpp -o $@
@@ -56,7 +59,7 @@ $(BUILD)/world-read-tests: tests/world_read_tests.cpp src/world_read.h src/world
 $(BUILD)/weather-read-tests: tests/weather_read_tests.cpp src/weather_read.h src/world_probe.h | $(BUILD)
 	$(CXX) $(CXXFLAGS) tests/weather_read_tests.cpp -o $@
 
-$(BUILD)/time-control-tests: tests/time_control_tests.cpp src/world/time_control.h $(WORLD_HEADERS) | $(BUILD)
+$(BUILD)/time-control-tests: tests/time_control_tests.cpp src/world/world_control.h $(WORLD_HEADERS) | $(BUILD)
 	$(CXX) $(CXXFLAGS) tests/time_control_tests.cpp -o $@
 
 $(BUILD)/time-native-tests: tests/time_native_tests.cpp src/world_read.h src/world_probe.h $(WORLD_HEADERS) | $(BUILD)
@@ -64,3 +67,12 @@ $(BUILD)/time-native-tests: tests/time_native_tests.cpp src/world_read.h src/wor
 
 $(BUILD)/time-transport-tests: tests/time_transport_tests.cpp src/transport.h src/protocol.h $(WORLD_HEADERS) | $(BUILD)
 	$(CXX) $(CXXFLAGS) tests/time_transport_tests.cpp -o $@
+
+$(BUILD)/weather-control-tests: tests/weather_control_tests.cpp $(WORLD_HEADERS) src/weather_read.h src/world_probe.h | $(BUILD)
+	$(CXX) $(CXXFLAGS) tests/weather_control_tests.cpp -o $@
+
+$(BUILD)/data-hook-tests: tests/data_hook_tests.cpp src/data_hook.h | $(BUILD)
+	$(CXX) $(CXXFLAGS) tests/data_hook_tests.cpp -o $@
+
+$(BUILD)/weather-native-tests: tests/weather_native_tests.cpp $(WORLD_HEADERS) src/weather_read.h src/world_probe.h | $(BUILD)
+	$(CXX) $(CXXFLAGS) tests/weather_native_tests.cpp -o $@

@@ -16,7 +16,7 @@ const weatherFields=[
 ] as const;
 
 /** Live controls only. Installation/removal is owned by the parent runtime card. */
-export function MarketplaceWorldControls({session,enabled}:{session:number;enabled:boolean}) {
+export function MarketplaceWorldControls({session,enabled,platform='windows'}:{session:number;enabled:boolean;platform?:'windows'|'macos'}) {
  const [snapshot,setSnapshot]=useState<WorldSnapshot|null>(null),[time,setTime]=useState('12:00'),[weather,setWeather]=useState<WeatherChoice>(emptyWeather);
  const [advanceHours,setAdvanceHours]=useState('1');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[historyError,setHistoryError]=useState('');
@@ -88,12 +88,12 @@ export function MarketplaceWorldControls({session,enabled}:{session:number;enabl
   </fieldset>
   <fieldset disabled={locked||!weatherAvailable}>
    <legend><CloudSun size={15}/> Weather</legend>
-   <div className="world-current">{weatherAvailable?(weatherFrozen?'Weather frozen':'Live weather connected'):'Weather controls are waiting for the active world.'}</div>
+   <div className="world-current">{weatherAvailable?(weatherFrozen?'Weather frozen':'Live weather connected'):platform==='macos'&&snapshot?.weather_reason?worldReason(snapshot.weather_reason):'Weather controls are waiting for the active world.'}</div>
    <label>Precipitation<select aria-label="Precipitation type" value={weather.phase} onChange={e=>setWeatherValue('phase',Number(e.target.value))}><option value={0}>Rain</option><option value={1}>Snow</option></select></label>
    {weatherFields.map(field=><div className="world-slider" key={field.key}><label htmlFor={`live-weather-${field.key}`}>{field.label}</label><output htmlFor={`live-weather-${field.key}`}>{field.percent?`${Math.round(weather[field.key]*100)}%`:weather[field.key].toFixed(field.decimals)}</output><input id={`live-weather-${field.key}`} type="range" min={field.min} max={field.max} step={field.step} value={weather[field.key]} onChange={e=>setWeatherValue(field.key,Number(e.target.value))}/></div>)}
    <div className="mod-actions"><button className="secondary" disabled={!validWeather(weather)} onClick={()=>void change({operation:'choose_weather',weather})}>Apply weather</button><button className="secondary" onClick={()=>void change({operation:'freeze_weather',enabled:!weatherFrozen})}>{weatherFrozen?'Unfreeze weather':'Freeze weather'}</button></div>
    <button className="secondary" title="Disable the Workbench weather override and restore the previous game weather control. Your time setting is kept." onClick={()=>void change({operation:'release_weather'})}>Reset weather</button>
-   <span className="market-hint">Applied weather stays selected. Freeze also holds its climate values; wind and particle animations can still move. Reset weather disables this weather override and restores the previous game weather control. Your time setting is kept.</span>
+   <span className="market-hint">{platform==='macos'?'Applied weather stays selected. Freeze holds weather settings; climate calculations and animations can continue. Reset weather disables this override and resumes automatic weather. Your time setting is kept.':'Applied weather stays selected. Freeze also holds its climate values; wind and particle animations can still move. Reset weather disables this weather override and restores the previous game weather control. Your time setting is kept.'}</span>
   </fieldset>
   <div className="world-feedback">
    <button className="secondary" disabled={!enabled||busy} onClick={()=>void refresh()}>{busy?<LoaderCircle size={14} className="spin"/>:<RefreshCw size={14}/>} Check live status</button>

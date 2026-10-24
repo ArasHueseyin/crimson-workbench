@@ -13,6 +13,22 @@ struct WorldProbe {
     bool context{}, clock_read{}, weather_read{};
 };
 template<class Read>
+WorldProbe inspect_active_weather(std::intptr_t slide,Read read) {
+    WorldProbe out;
+    auto field=[&](std::uintptr_t object,std::uintptr_t offset,std::uintptr_t& value) {
+        return object&&object<=std::numeric_limits<std::uintptr_t>::max()-offset&&read(object+offset,value);
+    };
+    std::uintptr_t service{},parent{},candidate{},manager{},type{},back{};
+    // Captured on the pinned Mac build: service -> +40 -> +08 -> active world.
+    if(read(0x108ce55f0ULL+slide,service)&&field(service,0x40,parent)
+        &&field(parent,8,candidate)&&field(candidate,0xf68,manager)&&field(manager,0,type)
+        &&type==0x1081c3b98ULL+slide&&field(manager,0xd0,back)&&back==candidate) {
+        out.weather=manager;out.weather_world=candidate;out.weather_parent_offset=0x40;
+        out.weather_child_offset=8;out.weather_read=true;
+    }
+    return out;
+}
+template<class Read>
 WorldProbe inspect_world_probe(std::uintptr_t actor, std::intptr_t slide, Read read) {
     WorldProbe out;
     auto field=[&](std::uintptr_t object,std::uintptr_t offset,std::uintptr_t& value) {
@@ -37,14 +53,10 @@ WorldProbe inspect_world_probe(std::uintptr_t actor, std::intptr_t slide, Read r
         if(!read(0x108a6ab00ULL+slide+8*i,value))out.clock_read=false;
         out.clock[i]=value;
     }
-    std::uintptr_t service{},parent{},candidate{},manager{},type{},back{};
-    // Captured on the pinned Mac build: service -> +40 -> +08 -> active world.
-    if(read(0x108ce55f0ULL+slide,service)&&field(service,0x40,parent)
-        &&field(parent,8,candidate)&&field(candidate,0xf68,manager)&&field(manager,0,type)
-        &&type==0x1081c3b98ULL+slide&&field(manager,0xd0,back)&&back==candidate) {
-        out.weather=manager;out.weather_world=candidate;out.weather_parent_offset=0x40;
-        out.weather_child_offset=8;out.weather_read=true;
-    }
+    const auto weather=inspect_active_weather(slide,read);
+    out.weather=weather.weather;out.weather_world=weather.weather_world;
+    out.weather_parent_offset=weather.weather_parent_offset;out.weather_child_offset=weather.weather_child_offset;
+    out.weather_read=weather.weather_read;
     return out;
 }
 }

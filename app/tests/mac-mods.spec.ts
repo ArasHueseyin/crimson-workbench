@@ -51,16 +51,16 @@ test('Mac mods show connected capabilities and platform availability in both mod
   expect(calls.some(c=>c.includes('grant')||c.includes('launch'))).toBe(false);
 });
 
-test('Mac clock opens existing live controls without sending a mutation',async({page})=>{
+test('Mac world panel opens existing live controls without sending a mutation',async({page})=>{
   await fixture(page);
-  await page.getByRole('button',{name:'Open clock controls',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Mac live time'});
+  await page.getByRole('button',{name:'Open live controls',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Mac live time & weather'});
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText('Current 18:20 · Day 50');
   await expect(dialog.getByRole('button',{name:'Freeze time',exact:true})).toBeEnabled();
   await expect(dialog.getByRole('button',{name:'Apply weather',exact:true})).toBeDisabled();
   await dialog.getByRole('button',{name:'Close',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Open clock controls',exact:true})).toBeFocused();
+  await expect(page.getByRole('button',{name:'Open live controls',exact:true})).toBeFocused();
   const calls=await page.evaluate(()=>(window as unknown as {calls:string[]}).calls);
   expect(calls).toContain('world_status');
   expect(calls).not.toContain('world_change');
