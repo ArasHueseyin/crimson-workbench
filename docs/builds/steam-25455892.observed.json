@@ -9,6 +9,7 @@
   "scope": "38 observed EXE/metadata files plus all 28 core table fingerprints; all 61 used tables/localizations compared; 14 indexed table pairs roundtripped. No vanilla provenance or runtime admission.",
   "read_schema_supported": true,
   "runtime_supported": false,
+  "optional_files": ["0037/0.pamt"],
   "files": [
     {
       "path": "0000/0.pamt",
