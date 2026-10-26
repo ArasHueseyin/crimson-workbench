@@ -206,11 +206,18 @@ fn compare(report: &audit::Report, inventory: &Inventory) -> Result<()> {
 fn matches_read_schema(report: &audit::Report) -> bool {
     crate::fingerprint::known_builds().iter().any(|known| {
         report.build_id == known.steam_buildid
-            && known.files.iter().all(|k| {
-                report.files.iter().any(|f| {
-                    f.path == k.path && f.sha256 == k.sha256 && f.bytes == k.bytes.to_string()
+            && known
+                .files
+                .iter()
+                .all(|k| match report.files.iter().find(|f| f.path == k.path) {
+                    Some(file) => file.sha256 == k.sha256 && file.bytes == k.bytes.to_string(),
+                    None => {
+                        known.is_optional_file(&k.path)
+                            && k.path.strip_suffix("0.pamt").is_some_and(|group| {
+                                !report.files.iter().any(|f| f.path.starts_with(group))
+                            })
+                    }
                 })
-            })
     })
 }
 fn preview_of(manifest: &Manifest, report: &audit::Report) -> Result<Preview> {

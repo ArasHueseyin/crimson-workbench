@@ -28,8 +28,39 @@ fn schema_evidence_requires_one_complete_build_and_its_identity() {
             })
             .collect();
         assert!(matches_read_schema(&report));
+        for optional in &known.optional_files {
+            let mut other_language = report.clone();
+            other_language.files.retain(|file| &file.path != optional);
+            assert!(matches_read_schema(&other_language));
+            let mut partial = other_language.clone();
+            let mut leftover = report
+                .files
+                .iter()
+                .find(|file| &file.path == optional)
+                .unwrap()
+                .clone();
+            leftover.path = optional.replace("0.pamt", "0.paz");
+            partial.files.push(leftover);
+            assert!(!matches_read_schema(&partial));
+            for wrong_size in [false, true] {
+                let mut modified = report.clone();
+                let file = modified
+                    .files
+                    .iter_mut()
+                    .find(|file| &file.path == optional)
+                    .unwrap();
+                if wrong_size {
+                    file.bytes = "1".into();
+                } else {
+                    file.sha256 = "0".repeat(64);
+                }
+                assert!(!matches_read_schema(&modified));
+            }
+            other_language.files.retain(|file| file.path != REGISTRY);
+            assert!(!matches_read_schema(&other_language));
+        }
         let mut incomplete = report.clone();
-        incomplete.files.pop();
+        incomplete.files.retain(|file| file.path != "meta/0.paver");
         assert!(!matches_read_schema(&incomplete));
         let mut wrong_size = report.clone();
         wrong_size.files[0].bytes = "1".into();
