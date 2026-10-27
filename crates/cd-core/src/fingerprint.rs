@@ -36,10 +36,17 @@ pub(crate) struct KnownBuild {
     pub steam_buildid: String,
     pub exe_version: String,
     pub files: Vec<FileHash>,
+    /// Observed files in optional groups, as marked by the original PAPGT.
+    #[serde(default)]
+    pub optional_files: Vec<String>,
     pub tables: Vec<TableHash>,
 }
 
 impl KnownBuild {
+    pub(crate) fn is_optional_file(&self, path: &str) -> bool {
+        self.optional_files.iter().any(|optional| optional == path)
+    }
+
     pub(crate) fn schema_id(&self) -> &'static str {
         match self.exe_version.as_str() {
             "1.0.0.2944" => SCHEMA_ID,
@@ -169,30 +176,7 @@ impl Fingerprint {
                 exe_version
             ));
         }
-        let mut files = Vec::new();
-        for reference in &expected.files {
-            let path = root.join(&reference.path);
-            let digest = if reference.path == "meta/0.papgt" {
-                original
-                    .map(|b| Ok((b.len() as u64, hash_bytes(b))))
-                    .unwrap_or_else(|| hash_file(&path))
-            } else {
-                hash_file(&path)
-            };
-            match digest {
-                Ok((bytes, sha256)) => {
-                    if bytes != reference.bytes || sha256 != reference.sha256 {
-                        diagnostics.push(format!("Unknown or changed file: {}", reference.path));
-                    }
-                    files.push(FileHash {
-                        path: reference.path.clone(),
-                        bytes,
-                        sha256,
-                    });
-                }
-                Err(e) => diagnostics.push(format!("Cannot read {}: {e}", reference.path)),
-            }
-        }
+        let mut files = inspect_files(&root, expected, original, &mut diagnostics);
         files.sort_by(|a, b| a.path.cmp(&b.path));
         let digest = hash_bytes(&serde_json::to_vec(&(exe_version.clone(), &files))?);
         let supported = diagnostics.is_empty();
@@ -237,6 +221,48 @@ impl Fingerprint {
         };
         Ok(())
     }
+}
+
+fn inspect_files(
+    root: &Path,
+    expected: &KnownBuild,
+    original: Option<&[u8]>,
+    diagnostics: &mut Vec<String>,
+) -> Vec<FileHash> {
+    let mut files = Vec::new();
+    for reference in &expected.files {
+        let path = root.join(&reference.path);
+        let digest = if reference.path == "meta/0.papgt" {
+            original
+                .map(|b| Ok((b.len() as u64, hash_bytes(b))))
+                .unwrap_or_else(|| hash_file(&path))
+        } else {
+            hash_file(&path)
+        };
+        match digest {
+            Ok((bytes, sha256)) => {
+                if bytes != reference.bytes || sha256 != reference.sha256 {
+                    diagnostics.push(format!("Unknown or changed file: {}", reference.path));
+                }
+                files.push(FileHash {
+                    path: reference.path.clone(),
+                    bytes,
+                    sha256,
+                });
+            }
+            Err(e)
+                if e.kind() == io::ErrorKind::NotFound
+                    && expected.is_optional_file(&reference.path)
+                    // Only an absent optional group is valid. An installed group
+                    // with missing metadata, a broken link or an IO error is not.
+                    && path.parent().is_some_and(|group| {
+                        std::fs::symlink_metadata(group)
+                            .is_err_and(|e| e.kind() == io::ErrorKind::NotFound)
+                    }) => {}
+            Err(e) => diagnostics.push(format!("Cannot read {}: {e}", reference.path)),
+        }
+    }
+    files
 }
 
 pub fn hash_bytes(bytes: &[u8]) -> String {
@@ -307,6 +333,156 @@ pub fn diff(before: &Fingerprint, after: &Fingerprint) -> Vec<HashDifference> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+
+    fn metadata_fixture(root: &Path) -> KnownBuild {
+        let mut files = Vec::new();
+        for (path, bytes) in [
+            (
+                "bin64/CrimsonDesert.exe",
+                b"synthetic executable".as_slice(),
+            ),
+            ("meta/0.papgt", b"synthetic registry".as_slice()),
+            ("0008/0.pamt", b"required tables".as_slice()),
+            ("0037/0.pamt", b"optional language".as_slice()),
+        ] {
+            files.push(FileHash {
+                path: path.into(),
+                bytes: bytes.len() as u64,
+                sha256: hash_bytes(bytes),
+            });
+            if path != "0037/0.pamt" {
+                let file = root.join(path);
+                fs::create_dir_all(file.parent().unwrap()).unwrap();
+                fs::write(file, bytes).unwrap();
+            }
+        }
+        KnownBuild {
+            steam_buildid: "25477059".into(),
+            exe_version: "1.0.0.2976".into(),
+            files,
+            optional_files: vec!["0037/0.pamt".into()],
+            tables: vec![],
+        }
+    }
+
+    #[test]
+    fn absent_optional_language_group_does_not_block_other_language_installations() {
+        let temp = tempfile::tempdir().unwrap();
+        let expected = metadata_fixture(temp.path());
+        fs::create_dir(temp.path().join("0039")).unwrap();
+        fs::write(temp.path().join("0039/0.pamt"), b"other language").unwrap();
+        let mut diagnostics = Vec::new();
+        let files = inspect_files(temp.path(), &expected, None, &mut diagnostics);
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
+        assert_eq!(files, expected.files[..3]);
+        assert!(!temp.path().join("0037").exists());
+        assert_eq!(
+            fs::read(temp.path().join("0039/0.pamt")).unwrap(),
+            b"other language"
+        );
+
+        // Without the optional designation this is the reported v0.10.0 failure.
+        let mut previous = expected;
+        previous.optional_files.clear();
+        inspect_files(temp.path(), &previous, None, &mut diagnostics);
+        assert_eq!(diagnostics.len(), 1);
+        assert!(diagnostics[0].starts_with("Cannot read 0037/0.pamt:"));
+    }
+
+    #[test]
+    fn installed_optional_metadata_still_requires_its_exact_hash_and_size() {
+        let temp = tempfile::tempdir().unwrap();
+        let expected = metadata_fixture(temp.path());
+        fs::create_dir(temp.path().join("0037")).unwrap();
+        let path = temp.path().join("0037/0.pamt");
+        fs::write(&path, b"optional language").unwrap();
+        let mut diagnostics = Vec::new();
+        assert_eq!(
+            inspect_files(temp.path(), &expected, None, &mut diagnostics),
+            expected.files
+        );
+        assert!(diagnostics.is_empty());
+        for changed in [b"Optional language".as_slice(), b"truncated".as_slice()] {
+            fs::write(&path, changed).unwrap();
+            diagnostics.clear();
+            inspect_files(temp.path(), &expected, None, &mut diagnostics);
+            assert_eq!(diagnostics, ["Unknown or changed file: 0037/0.pamt"]);
+        }
+    }
+
+    #[test]
+    fn optional_group_with_missing_or_unreadable_metadata_is_rejected() {
+        let temp = tempfile::tempdir().unwrap();
+        let expected = metadata_fixture(temp.path());
+        fs::create_dir(temp.path().join("0037")).unwrap();
+        fs::write(temp.path().join("0037/0.paz"), b"partial installation").unwrap();
+        for directory_instead_of_file in [false, true] {
+            if directory_instead_of_file {
+                fs::create_dir(temp.path().join("0037/0.pamt")).unwrap();
+            }
+            let mut diagnostics = Vec::new();
+            inspect_files(temp.path(), &expected, None, &mut diagnostics);
+            assert_eq!(diagnostics.len(), 1);
+            assert!(diagnostics[0].starts_with("Cannot read 0037/0.pamt:"));
+        }
+    }
+
+    #[test]
+    fn missing_or_changed_required_files_remain_rejected_without_optional_group() {
+        for path in ["bin64/CrimsonDesert.exe", "meta/0.papgt", "0008/0.pamt"] {
+            let temp = tempfile::tempdir().unwrap();
+            let expected = metadata_fixture(temp.path());
+            fs::remove_file(temp.path().join(path)).unwrap();
+            let mut diagnostics = Vec::new();
+            inspect_files(temp.path(), &expected, None, &mut diagnostics);
+            assert_eq!(diagnostics.len(), 1);
+            assert!(diagnostics[0].starts_with(&format!("Cannot read {path}:")));
+            fs::write(temp.path().join(path), b"modified").unwrap();
+            diagnostics.clear();
+            inspect_files(temp.path(), &expected, None, &mut diagnostics);
+            assert_eq!(diagnostics, [format!("Unknown or changed file: {path}")]);
+        }
+    }
+
+    #[test]
+    fn original_registry_is_still_verified_for_installations_with_overlays() {
+        let temp = tempfile::tempdir().unwrap();
+        let expected = metadata_fixture(temp.path());
+        fs::write(
+            temp.path().join("meta/0.papgt"),
+            b"managed overlay registry",
+        )
+        .unwrap();
+        let mut diagnostics = Vec::new();
+        inspect_files(
+            temp.path(),
+            &expected,
+            Some(b"synthetic registry"),
+            &mut diagnostics,
+        );
+        assert!(diagnostics.is_empty());
+        inspect_files(
+            temp.path(),
+            &expected,
+            Some(b"wrong original"),
+            &mut diagnostics,
+        );
+        assert_eq!(diagnostics, ["Unknown or changed file: meta/0.papgt"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn broken_optional_group_link_is_not_treated_as_an_absent_group() {
+        let temp = tempfile::tempdir().unwrap();
+        let expected = metadata_fixture(temp.path());
+        std::os::unix::fs::symlink("missing", temp.path().join("0037")).unwrap();
+        let mut diagnostics = Vec::new();
+        inspect_files(temp.path(), &expected, None, &mut diagnostics);
+        assert_eq!(diagnostics.len(), 1);
+        assert!(diagnostics[0].starts_with("Cannot read 0037/0.pamt:"));
+    }
+
     #[test]
     fn mac_read_schema_requires_every_exact_table_and_never_certifies_windows_metadata() {
         let root = tempfile::tempdir().unwrap();
@@ -337,6 +513,17 @@ mod tests {
     #[test]
     fn manifest_contains_actual_table_pairs() {
         for b in known_builds() {
+            for optional in &b.optional_files {
+                assert!(optional.ends_with("/0.pamt"));
+                assert!(b.files.iter().any(|file| &file.path == optional));
+                let group = optional.strip_suffix("/0.pamt").unwrap();
+                assert!(!b.tables.iter().any(|table| table.group == group));
+                assert!(
+                    !crate::supported_languages()
+                        .iter()
+                        .any(|locale| locale.group == group)
+                );
+            }
             assert_eq!(b.tables.len(), 28);
             for body in b
                 .tables

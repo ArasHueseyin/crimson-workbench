@@ -1,11 +1,12 @@
 # Support for game builds
 
-Status: 22.09.2026, Workbench v0.5.9.
+Status: 26.10.2026, Workbench v0.10.1.
 
 |Steam-Build|EXE-Version|reading schema|Stages|Quests|
 |---|---|---|---:|---:|
 |25381195|1.0.0.2944|`steam-25381195-gamedata-2.3-v2`|52,080|1,097|
 |25455892|1.0.0.2949|`steam-25455892-gamedata-2.3-v2`|52,082|1,098|
+|25477059|1.0.0.2976|`steam-25477059-gamedata-2.3-v2`|Not recorded here|Not recorded here|
 
 Support includes data reading, mod planning and samples on project copies. It is not a vanilla approval of the installation, no proof of the effect in the game and no release of the native repair functions for the new build.
 
@@ -32,9 +33,13 @@ The dataset comparison requires the hash-checked old stage/quest files in `.loca
 
 ## Selection and rejection
 
-The EXE version selects a known set of reference hashes. After that, all captured EXE/metadata files and the tables used must fit exactly this set. A suitable version string alone is not enough. tables are bound to the already verified identity; a later re-reading of the EXE version may not select another sentence.
+The EXE version selects a known set of reference hashes. Required EXE/metadata files and the tables used must fit exactly this set. A suitable version string alone is not enough. Tables are bound to the already verified identity; a later re-reading of the EXE version may not select another build.
 
-Search index and JSON outputs carry the actual schema ID used. Backup reports require build ID, file sizes, and hashes of a full known build. Mixed metadata of both builds, missing files and incorrect sizes are rejected. An old report is not declared the new B0 base. Further unknown EXE versions stop before opening a mod backup so that a game update is not reported as missing workspace rehearsal.
+The original registries for all three supported builds mark groups `0036`, `0037`, `0038`, `0039` and `0040` as optional. Only `0037/0.pamt`, assigned to German, was included in the observed reference files and incorrectly required by earlier releases. The other four groups were already allowed to be absent. This was checked against private original registry snapshots whose SHA-256 matches each checked-in build reference.
+
+From v0.10.1, the known-build observations record the optional status of `0037/0.pamt`: an installation with the entire group absent is accepted by the metadata and installation-baseline checks. Other language configurations can contain a different optional group, such as `0039`. A present `0037/0.pamt` still needs its exact known size and SHA-256; a partially installed group or an IO error is rejected. The EXE, original registry, required metadata, core tables and selected item localization retain their existing validation. This does not certify that an installation is vanilla or bypass the separate Steam content audit.
+
+Search index and JSON outputs carry the actual schema ID used. Backup reports require the build ID, file sizes and hashes of the required known-build files and any installed optional reference files. Mixed build metadata, missing required files and incorrect sizes are rejected. An old report is not declared the new B0 base. Further unknown EXE versions stop before opening a mod backup so that a game update is not reported as missing workspace rehearsal.
 
 The historic native repair host remains tied to EXE 1.0.0.2944 and refuses the new EXE. A separate registry/reference host is now tested for 1.0.0.2949: 30 scenarios and 263 native calls to private data. Further inventory/modification/event methods and the actual game connection remain open. [Separate native detection](../runtime/repair/REGISTRY_NATIVE_INTEGRATION.md).
 

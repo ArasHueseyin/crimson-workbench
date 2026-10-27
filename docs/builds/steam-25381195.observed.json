@@ -6,6 +6,7 @@
   "steam_buildid": "25381195",
   "exe_version": "1.0.0.2944",
   "reference_commit": "b1b687bec8e38097dcb3a6dd39e5e96128d4f9c0",
+  "optional_files": ["0037/0.pamt"],
   "files": [
     {
       "path": "bin64/CrimsonDesert.exe",

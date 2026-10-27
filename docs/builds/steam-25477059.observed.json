@@ -8,6 +8,7 @@
   "scope": "Exact installed executable and original registry; 38 metadata files, 28 core tables, all advanced/crafting/localization fingerprints independently checked. Read-only schema validation required; no runtime/write admission.",
   "read_schema_supported": true,
   "runtime_supported": false,
+  "optional_files": ["0037/0.pamt"],
   "files": [
     {
       "path": "0000/0.pamt",
