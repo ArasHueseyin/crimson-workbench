@@ -15,6 +15,9 @@ Apple Silicon `.app` and `.dmg` on macOS 15 or later.
   Receipts verify the inventory delta and prevent automatic retries.
   See [native inventory work](MACOS_ITEMS.md) for limits and live verification.
 - Offline mount registration in a selected save, with backups and request recovery.
+- Live mount registration for previously unowned species, with native receipts.
+- Native time and weather controls, including owned freeze/resume and automatic
+  weather reset. See [world-control verification](MACOS_WORLD.md) for limits.
 - Settings and local caches; installed apps use
   `~/Library/Application Support/CrimsonWorkbench`.
 
@@ -27,8 +30,9 @@ The Mac schema has its own cache identity. Future game updates may be rejected.
 
 ## Unsupported
 
-Game-file application/restoration, save edits other than mount registration, runtime marketplace modules,
-Extra Sockets, teleport, photo controls, and live world controls.
+Game-file application/restoration, save edits other than mount registration,
+Windows runtime marketplace modules, Extra Sockets, teleport and photo controls.
+The unfinished Mac teleport prototype is excluded from this integration.
 The existing process and executable guards continue to reject these operations
 on macOS. Some upstream controls remain visible but cannot perform these actions.
 Mod previews and exports are development tools; they have not been validated for
@@ -53,7 +57,17 @@ the upstream Windows installer configuration. Local builds are not Developer ID
 signed or notarized; public distribution requires those separate release steps.
 See [Tauri's macOS packaging documentation](https://tauri.app/distribute/macos-application-bundle/).
 
+The native module is rebuilt from source and its SHA-256 is embedded in the app.
+Launch rejects a missing or mismatched bundled module before creating a backup
+or starting the game. The configured save folder and discovered save folders are
+backed up; duplicate roots are copied once.
+
 ## Verification
+
+Core CI builds and tests Windows, Linux and Apple Silicon macOS. The Mac job runs
+native policy tests and the affected browser flows, builds the application bundle,
+and checks its signature and bundled module against the embedded build hash.
+These synthetic checks do not replace the contributor's in-game verification.
 
 ```sh
 cargo test --workspace --locked

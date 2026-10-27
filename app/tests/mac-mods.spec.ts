@@ -13,7 +13,6 @@ async function fixture(page:Page,state='ready',registry='applied') {
         return {registry_found:registry!=='missing',mods:registry==='missing'?[]:[{id:5,name:'Infinite Stamina Steam Mac Byte Patch',version:'1.0.1',author:'Local custom mod',enabled:true,applied:true},{id:6,name:'Pending mod',version:null,author:null,enabled:true,applied:false},{id:7,name:'Disabled mod',version:null,author:null,enabled:false,applied:false}]};
       }
       if(command==='search_items')return {items:[],total:0,offset:0};
-      if(command==='teleport_status')return {pid:42,state:'ready',id:'0',session:'7',epoch:'1',observed_ms:'100',reason:0,features:3,identity:12,world:34,native_reason:0,native_error:0,storage_status:0,bookmarks_revision:'0',current:{field_definition:1,stage:0,position:{x:10,y:20,z:30},yaw:.5},bookmarks:Array.from({length:16},()=>({occupied:false,name:'',position:null})),marker_status:1,markers_observed_ms:'0',markers:[]};
       if(command==='world_status')return {pid:42,state:'ready',id:'0',session:'7',generation:'1',monotonic_ms:'100',reason:0,flags:1,identity:12,world:34,stage:0,clock_reason:0,weather_reason:0,time:{day:50,hour:18,minute:20,second:0,millisecond:0,weekday:1,rate:12,anchor:'100'},weather:{precipitation:0,cloudiness:0,humidity:0,wind_speed:0,height_fog:0,phase:0},time_receipt:'0',weather_receipt:'0',time_result:'unavailable',time_result_reason:0,weather_result:'unavailable',weather_result_reason:0};
       if(command==='spawn_status'||command==='mount_live_status'){
         if(state==='error')throw {message:'Synthetic connection failure'};
@@ -67,6 +66,16 @@ test('Mac world panel opens existing live controls without sending a mutation',a
   expect(calls).not.toContain('world_change');
 });
 
+test('unfinished Mac teleport is unavailable and never opens a native connection',async({page})=>{
+  await fixture(page);
+  await expect(page.getByRole('region',{name:'Available on macOS',exact:true})).not.toContainText('Teleport');
+  await page.getByLabel('Search Mac mods').fill('teleport');
+  await expect(page.getByRole('region',{name:'Unavailable on macOS'})).toContainText('Teleport');
+  await expect(page.getByRole('button',{name:/Open.*teleport/i})).toHaveCount(0);
+  const calls=await page.evaluate(()=>(window as unknown as {calls:string[]}).calls);
+  expect(calls.some(c=>c.startsWith('teleport_'))).toBe(false);
+});
+
 for(const state of ['offline','error'])test(`Mac module ${state} is not shown as ready or installed`,async({page})=>{
   await fixture(page,state);
   const current=page.getByRole('region',{name:'Current mods'});
@@ -92,17 +101,4 @@ for(const registry of ['missing','error'])test(`CDMods ${registry} does not clai
   const current=page.getByRole('region',{name:'Current mods'});
   await expect(current).toContainText(registry==='error'?'CDMods registry unreadable':'No CDMods registry found');
   await expect(current.getByRole('list',{name:'CDMods registry entries'})).toHaveCount(0);
-});
-
-test('Mac teleport shows session-only storage and never sends a command on open',async({page})=>{
-  await fixture(page);
-  await page.getByRole('button',{name:'Open teleport',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Mac live teleport'});
-  await expect(dialog).toContainText('Saved positions last only for this game session on Mac');
-  await expect(dialog.getByLabel('Position name',{exact:true})).toBeEnabled();
-  await dialog.getByLabel('Position name',{exact:true}).fill('Camp');
-  await expect(dialog.getByRole('button',{name:'Save current position',exact:true})).toBeEnabled();
-  await expect(dialog.getByRole('button',{name:'Teleport to map marker',exact:true})).toBeDisabled();
-  const calls=await page.evaluate(()=>(window as unknown as {calls:string[]}).calls);
-  expect(calls).toContain('teleport_status');expect(calls).not.toContain('teleport_change');
 });

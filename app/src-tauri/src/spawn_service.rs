@@ -200,6 +200,14 @@ pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> 
     let wire = encode(operation, request)?;
     #[cfg(windows)]
     {
+        // Only a proven terminated process retires a persisted receipt. A
+        // disconnected pipe or an inaccessible process must keep the request.
+        if matches!(operation, 3 | 4)
+            && let Some(r) = request
+            && windows::process_exited(r.pid)?
+        {
+            return Ok(ended_session(r));
+        }
         let pid = windows::game_pid(game)?;
         if let Some(r) = request
             && r.pid != pid
@@ -282,7 +290,9 @@ mod windows {
         time::{Duration, Instant},
     };
     use windows_sys::Win32::{
-        Foundation::{CloseHandle, INVALID_HANDLE_VALUE},
+        Foundation::{
+            CloseHandle, ERROR_INVALID_PARAMETER, GetLastError, INVALID_HANDLE_VALUE, STILL_ACTIVE,
+        },
         System::{
             Diagnostics::ToolHelp::{
                 CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
@@ -290,10 +300,37 @@ mod windows {
             },
             Pipes::{GetNamedPipeServerProcessId, SetNamedPipeHandleState},
             Threading::{
-                OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
+                GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+                QueryFullProcessImageNameW,
             },
         },
     };
+    pub fn process_exited(pid: u32) -> Result<bool> {
+        if pid == 0 {
+            return Err(error("Invalid game process ID."));
+        }
+        unsafe {
+            let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+            if process.is_null() {
+                return if GetLastError() == ERROR_INVALID_PARAMETER {
+                    Ok(true)
+                } else {
+                    Err(error(
+                        "The original game process cannot be verified. Its request remains saved.",
+                    ))
+                };
+            }
+            let mut code = 0;
+            let checked = GetExitCodeProcess(process, &mut code);
+            CloseHandle(process);
+            if checked == 0 {
+                return Err(error(
+                    "Could not check whether the original game process ended.",
+                ));
+            }
+            Ok(code != STILL_ACTIVE as u32)
+        }
+    }
     pub fn game_pid(game: &Path) -> Result<u32> {
         unsafe {
             let expected = game
@@ -485,6 +522,30 @@ mod tests {
         assert!(receipt.message.contains("cannot execute again"));
         assert!(decode_exchange(&bytes, r.pid, Some(&r), 2).is_err());
         assert!(decode_exchange(&bytes, r.pid + 1, Some(&r), 3).is_err());
+    }
+    #[cfg(windows)]
+    #[test]
+    fn windows_recovery_after_process_exit_needs_no_running_game_and_never_regrants() {
+        use std::os::windows::process::CommandExt;
+        assert!(!windows::process_exited(std::process::id()).unwrap());
+        assert!(windows::process_exited(0).is_err());
+        let mut child = std::process::Command::new("cmd.exe")
+            .args(["/d", "/c", "exit", "0"])
+            .creation_flags(0x08000000)
+            .spawn()
+            .unwrap();
+        let mut r = request();
+        r.pid = child.id();
+        assert!(child.wait().unwrap().success());
+        let root = tempfile::tempdir().unwrap();
+        for operation in [3, 4] {
+            let receipt = exchange(root.path(), operation, Some(&r)).unwrap();
+            assert_eq!(receipt.state, "uncertain");
+            assert_eq!(receipt.id, r.id);
+            assert!(receipt.message.contains("cannot execute again"));
+        }
+        assert!(exchange(root.path(), 2, Some(&r)).is_err());
+        assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 0);
     }
     #[cfg(windows)]
     #[test]

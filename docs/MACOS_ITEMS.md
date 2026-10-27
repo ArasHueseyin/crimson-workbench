@@ -128,7 +128,8 @@ bytes are distributed.
 
 The production `libCrimsonItems.dylib` retires the one-off environment flag and
 accepts only explicit app requests. The Mac launcher requires the game to be
-closed, verifies the executable hash, copies discovered save folders into the
+closed, verifies the executable and build-pinned module hashes, copies the configured
+save folder and discovered save folders into the
 app's local data directory under `item-backups/`, verifies each copy against
 SHA-256 before and after copying, and records `workbench-backup.json`. A partial
 or failed backup prevents launch. Keep Steam open. No game bundle files or OS

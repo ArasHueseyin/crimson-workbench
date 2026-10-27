@@ -1,15 +1,15 @@
 use crate::service::{AppError, Result};
 use serde::{Deserialize, Serialize};
-#[cfg(any(windows, target_os = "macos", test))]
+#[cfg(any(windows, test))]
 use std::collections::HashSet;
 use std::path::Path;
 
 const MAGIC: u32 = 0x54505743;
 const PROTOCOL: u16 = 1;
-#[cfg(any(windows, target_os = "macos", test))]
+#[cfg(any(windows, test))]
 const REPLY_BYTES: usize = 14016;
 const SAVED_SLOTS: usize = 16;
-#[cfg(any(windows, target_os = "macos", test))]
+#[cfg(any(windows, test))]
 const MAX_MARKERS: usize = 520;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -29,10 +29,10 @@ impl MarkerSource {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(
-    not(any(windows, target_os = "macos", test)),
+    not(any(windows, test)),
     expect(
         dead_code,
-        reason = "Native marker layers are constructed by the native reply decoder."
+        reason = "Native marker layers are constructed only by the Windows reply decoder."
     )
 )]
 pub enum MarkerLayer {
@@ -131,7 +131,7 @@ impl ControlRequest {
             },
         }
     }
-    #[cfg(any(windows, target_os = "macos", test))]
+    #[cfg(any(windows, test))]
     pub fn pid(&self) -> u32 {
         self.context().pid
     }
@@ -263,7 +263,7 @@ fn encode(request: Option<&ControlRequest>) -> Result<[u8; 112]> {
     Ok(out)
 }
 
-#[cfg(any(windows, target_os = "macos", test))]
+#[cfg(any(windows, test))]
 fn decode_name(bytes: &[u8], occupied: bool) -> Result<String> {
     let end = bytes
         .iter()
@@ -279,7 +279,7 @@ fn decode_name(bytes: &[u8], occupied: bool) -> Result<String> {
     }
     Ok(name.to_owned())
 }
-#[cfg(any(windows, target_os = "macos", test))]
+#[cfg(any(windows, test))]
 fn decode_position(bytes: &[u8]) -> Result<Option<SavedPosition>> {
     let u16_at = |n| u16::from_le_bytes(bytes[n..n + 2].try_into().unwrap());
     let u32_at = |n| u32::from_le_bytes(bytes[n..n + 4].try_into().unwrap());
@@ -312,7 +312,7 @@ fn decode_position(bytes: &[u8]) -> Result<Option<SavedPosition>> {
         yaw: f32_at(20),
     }))
 }
-#[cfg(any(windows, target_os = "macos", test))]
+#[cfg(any(windows, test))]
 fn decode(bytes: &[u8; REPLY_BYTES], pid: u32) -> Result<Snapshot> {
     let u16_at = |n| u16::from_le_bytes(bytes[n..n + 2].try_into().unwrap());
     let u32_at = |n| u32::from_le_bytes(bytes[n..n + 4].try_into().unwrap());
@@ -455,23 +455,10 @@ pub fn exchange(game: &Path, request: Option<&ControlRequest>) -> Result<Snapsho
         )?;
         decode(&reply, pid)
     }
-    #[cfg(target_os = "macos")]
-    {
-        let pid = crate::spawn_service::running_game_pid(game)?;
-        if request.is_some_and(|r| r.pid() != pid) {
-            return Err(error(
-                "The game instance changed. Read teleport status before another change.",
-            ));
-        }
-        decode(
-            &crate::spawn_service::macos::teleport_transact(pid, &wire)?,
-            pid,
-        )
-    }
-    #[cfg(not(any(windows, target_os = "macos")))]
+    #[cfg(not(windows))]
     {
         let _ = (game, wire);
-        Err(error("Live teleport controls require Windows or macOS."))
+        Err(error("Live teleport controls require Windows."))
     }
 }
 

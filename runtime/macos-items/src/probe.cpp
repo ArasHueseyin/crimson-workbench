@@ -5,7 +5,6 @@
 #include "weather_read.h"
 #include "world/time_native.h"
 #include "world/world_transport.h"
-#include "teleport/transport.h"
 #include "execute.h"
 #include "mount.h"
 #include "transport.h"
@@ -31,7 +30,6 @@ std::uintptr_t actor_vtable{};
 std::intptr_t image_slide{};
 Queue* queue{};
 WorldControl* world_control{};
-TeleportControl* teleport_control{};
 std::atomic<bool> enabled{};
 
 bool read_word(std::uintptr_t address, std::uintptr_t& value) {
@@ -110,33 +108,6 @@ void observe_time(void* task,void* context,std::uintptr_t holder,std::uint32_t k
     }
 }
 
-void observe_teleport(void* task,void* context,std::uintptr_t holder,std::uint32_t key) {
-    if(!teleport_control)return;
-    static std::mutex mutex;
-    std::unique_lock lock(mutex,std::try_to_lock);if(!lock.owns_lock())return;
-    static std::uint64_t observed{};const auto now=now_ms();if(now-observed<100)return;observed=now;
-    std::uintptr_t actor{};if(!read_word(reinterpret_cast<std::uintptr_t>(context),actor))return;
-    const TeleportBindings bindings{world_read_bindings(),
-        reinterpret_cast<decltype(TeleportBindings::lock)>(0x1000a4bdcULL+image_slide),
-        reinterpret_cast<decltype(TeleportBindings::unlock)>(0x1000a4c68ULL+image_slide),
-        reinterpret_cast<decltype(TeleportBindings::yaw)>(0x100ec7a9cULL+image_slide),
-        reinterpret_cast<decltype(TeleportBindings::eligibility)>(0x100eaaff8ULL+image_slide),
-        reinterpret_cast<decltype(TeleportBindings::begin)>(0x10086018cULL+image_slide),image_slide};
-    TeleportFrame frame;const auto code=capture_teleport(actor,bindings,read_word,frame);
-    static bool reported{};
-    if(!reported&&code==TeleportNative::ready){reported=true;std::fprintf(stderr,
-        "CW_MAC_TELEPORT: field=%u stage=%u character=%u position=%.3f/%.3f/%.3f yaw=%f; waiting for explicit app requests.\n",
-        frame.current.field_definition,frame.current.stage,frame.character,frame.current.position.x,frame.current.position.y,frame.current.position.z,frame.current.yaw);}
-    teleport_control->observe(frame,code,key,now_ms(),[&](const teleport::SavedPosition& destination,std::int32_t& error,bool& attempted,std::uint64_t deadline){
-        std::uint32_t selected{};if(verified_holder(task,context,selected)!=holder||selected!=key)return TeleportNative::actor;
-        const auto result=begin_teleport(frame,destination,bindings,read_word,error,attempted,[&]{
-            std::uint32_t current{};return now_ms()<=deadline&&verified_holder(task,context,current)==holder&&current==key;
-        });
-        std::fprintf(stderr,"CW_MAC_TELEPORT: result=%u attempted=%u error=%d; no automatic retry.\n",static_cast<unsigned>(result),attempted,error);
-        return result;
-    });
-}
-
 void observe_world(std::uintptr_t context,std::uint32_t key) {
     static const bool world_probe = [] {const auto flag=std::getenv("CW_MAC_WORLD_OBSERVE");return flag&&std::strcmp(flag,"1")==0;}();
     if(!world_probe)return;
@@ -177,8 +148,6 @@ std::uint32_t hook(void* task, void* context) {
         if (!holder) return result;
         try { observe_time(task,context,holder,key); }
         catch (...) { if(world_control)world_control->fault(); }
-        try { observe_teleport(task,context,holder,key); }
-        catch (...) { if(teleport_control)teleport_control->fault(); }
         observe_world(reinterpret_cast<std::uintptr_t>(context),key);
         queue->observe(now_ms(), key);
         const auto request = queue->take(now_ms(), key);
@@ -328,7 +297,6 @@ __attribute__((constructor)) void initialize() {
     queue = new (std::nothrow) Queue(static_cast<std::uint32_t>(getpid()), epoch);
     if (!queue) return;
     world_control=new (std::nothrow) WorldControl(epoch);
-    teleport_control=new (std::nothrow) TeleportControl(epoch);
     if(!install_data_hook(reinterpret_cast<std::uintptr_t>(slot),target,reinterpret_cast<std::uintptr_t>(&hook))) {
         std::fputs("CW_MAC_ITEMS: dispatch hook could not be verified; no grants enabled.\n",stderr);
         return;
@@ -347,10 +315,6 @@ __attribute__((constructor)) void initialize() {
         const auto local=inspect_local_actor(0,image_slide,read_word);
         return local.selection_valid?local.client_key:0;
     }))std::fputs("CW_MAC_TIME: local connection unavailable; time commands disabled.\n",stderr);
-    if(teleport_control&&!start_teleport_transport(teleport_control,[]{
-        const auto local=inspect_local_actor(0,image_slide,read_word);
-        return local.selection_valid?local.client_key:0;
-    }))std::fputs("CW_MAC_TELEPORT: local connection unavailable; teleport commands disabled.\n",stderr);
     if(world_control) {
         original_weather_job=reinterpret_cast<WeatherJob>(0x10361ea0cULL+slide);
         if(install_data_hook(0x108288ac8ULL+slide,0x10361ea0cULL+slide,reinterpret_cast<std::uintptr_t>(&weather_hook)))

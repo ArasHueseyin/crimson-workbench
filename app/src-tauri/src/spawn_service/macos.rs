@@ -95,9 +95,6 @@ pub fn transact(pid: u32, request: &[u8; 40]) -> Result<[u8; 48]> {
 pub fn world_transact(pid: u32, request: &[u8; 96]) -> Result<[u8; 176]> {
     transact_at::<176>(&socket_path(pid, "world"), pid, request)
 }
-pub fn teleport_transact(pid: u32, request: &[u8; 112]) -> Result<[u8; 14016]> {
-    transact_at::<14016>(&socket_path(pid, "teleport"), pid, request)
-}
 fn transact_at<const N: usize>(path: &Path, pid: u32, request: &[u8]) -> Result<[u8; N]> {
     let directory = fs::symlink_metadata(
         path.parent()
@@ -166,6 +163,36 @@ mod tests {
         assert!(process_exited(u32::MAX).is_err());
     }
     #[test]
+    fn module_hash_rejects_a_changed_or_missing_bundled_library() {
+        let root = tempfile::tempdir().unwrap();
+        let library = root.path().join("module.dylib");
+        fs::write(&library, b"synthetic module").unwrap();
+        let expected = cd_core::fingerprint::hash_bytes(b"synthetic module");
+        assert!(verify_module(&library, &expected).is_ok());
+        fs::write(&library, b"different module").unwrap();
+        assert!(verify_module(&library, &expected).is_err());
+        assert!(verify_module(&root.path().join("missing.dylib"), &expected).is_err());
+    }
+    #[test]
+    fn backup_includes_selected_custom_saves_and_deduplicates_detected_roots() {
+        let root = tempfile::tempdir().unwrap();
+        let detected = root.path().join("detected");
+        let selected = root.path().join("custom");
+        fs::create_dir(&detected).unwrap();
+        fs::create_dir(&selected).unwrap();
+        fs::write(detected.join("save"), b"detected save").unwrap();
+        fs::write(selected.join("save"), b"selected save").unwrap();
+        let backup = root.path().join("backup");
+        backup_saves(&[detected.clone(), detected, selected], &backup).unwrap();
+        let manifest: serde_json::Value =
+            serde_json::from_slice(&fs::read(backup.join("workbench-backup.json")).unwrap())
+                .unwrap();
+        assert_eq!(manifest["files"].as_array().unwrap().len(), 2);
+        assert_eq!(fs::read(backup.join("0/save")).unwrap(), b"detected save");
+        assert!(!backup.join("1").exists());
+        assert_eq!(fs::read(backup.join("2/save")).unwrap(), b"selected save");
+    }
+    #[test]
     fn backup_copies_nested_saves_and_records_verified_hashes() {
         let root = tempfile::tempdir().unwrap();
         let source = root.path().join("saves");
@@ -219,26 +246,6 @@ mod tests {
         assert_eq!(
             transact_at::<176>(&path, std::process::id(), &[7; 96]).unwrap(),
             [9; 176]
-        );
-        server.join().unwrap();
-    }
-    #[test]
-    fn teleport_socket_reads_full_reply_without_resending() {
-        let root = tempfile::tempdir().unwrap();
-        fs::set_permissions(root.path(), fs::Permissions::from_mode(0o700)).unwrap();
-        let path = root.path().join("teleport.sock");
-        let listener = UnixListener::bind(&path).unwrap();
-        let server = std::thread::spawn(move || {
-            let (mut peer, _) = listener.accept().unwrap();
-            let mut request = [0; 112];
-            peer.read_exact(&mut request).unwrap();
-            assert_eq!(request, [7; 112]);
-            peer.write_all(&[9; 14016]).unwrap();
-            assert_eq!(peer.read(&mut [0]).unwrap(), 0);
-        });
-        assert_eq!(
-            transact_at::<14016>(&path, std::process::id(), &[7; 112]).unwrap(),
-            [9; 14016]
         );
         server.join().unwrap();
     }
@@ -298,8 +305,12 @@ fn backup_saves(sources: &[PathBuf], destination: &Path) -> Result<()> {
         .map_err(|e| error(e.to_string()))?;
     let mut files = Vec::new();
     let mut bytes = 0u64;
+    let mut copied_roots = std::collections::HashSet::new();
     for (index, source) in sources.iter().enumerate() {
         let source = source.canonicalize().map_err(|e| error(e.to_string()))?;
+        if !copied_roots.insert(source.clone()) {
+            continue;
+        }
         if destination.starts_with(&source) {
             return Err(error("Backup folder must be outside the save folder."));
         }
@@ -361,7 +372,17 @@ fn backup_saves(sources: &[PathBuf], destination: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn launch(game: &Path, resources: &Path, data: &Path) -> Result<Launch> {
+fn verify_module(path: &Path, expected: &str) -> Result<(u64, String)> {
+    let actual = cd_core::fingerprint::hash_file(path).map_err(|e| error(e.to_string()))?;
+    if actual.1 != expected {
+        return Err(error(
+            "The bundled Mac module does not match this Workbench build. Reinstall the Mac application.",
+        ));
+    }
+    Ok(actual)
+}
+
+pub fn launch(game: &Path, saves: &Path, resources: &Path, data: &Path) -> Result<Launch> {
     static LAUNCH: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let _guard = LAUNCH
         .lock()
@@ -385,19 +406,20 @@ pub fn launch(game: &Path, resources: &Path, data: &Path) -> Result<Launch> {
         .map_err(|_| {
             error("The bundled Mac item module is missing. Reinstall the Mac application.")
         })?;
+    let module_hash = verify_module(&library, env!("CRIMSON_MAC_ITEMS_SHA256"))?;
     fs::create_dir_all(data.join("item-backups")).map_err(|e| error(e.to_string()))?;
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|e| error(e.to_string()))?
         .as_nanos();
     let backup_path = data.join("item-backups").join(stamp.to_string());
-    backup_saves(&cd_core::discovery::locate_saves(), &backup_path)?;
+    let mut sources = cd_core::discovery::locate_saves();
+    sources.push(saves.to_owned());
+    backup_saves(&sources, &backup_path)?;
     if !game_pids(game)?.is_empty() {
         return Err(error("The game started during backup. Launch cancelled."));
     }
     // Keep loaded code stable if the app is rebuilt or updated during gameplay.
-    let module_hash =
-        cd_core::fingerprint::hash_file(&library).map_err(|e| error(e.to_string()))?;
     let launch_library = backup_path.join("libCrimsonItems.dylib");
     fs::copy(&library, &launch_library).map_err(|e| error(e.to_string()))?;
     if cd_core::fingerprint::hash_file(&launch_library).map_err(|e| error(e.to_string()))?

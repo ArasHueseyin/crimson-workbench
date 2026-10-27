@@ -49,7 +49,6 @@ describe('explicit teleport commands',()=>{
  it('reports persistence failure separately from successful capture/removal',()=>{
   const s=snapshot(),st=storage();
   const captured=saveTeleportPending(st,teleportRequest(s,{operation:'save_current',slot:1,name:'Camp'}));
-  expect(teleportOutcome({...s,id:captured.id,state:'captured',storage_status:0},captured)).toEqual({kind:'done',message:'Position captured for this game session.'});
   expect(teleportOutcome({...s,id:captured.id,state:'captured',storage_status:2},captured)).toMatchObject({kind:'done',message:expect.stringContaining('may be lost')});
   const removed=saveTeleportPending(st,teleportRequest(s,{operation:'remove_saved',slot:0}));
   expect(teleportOutcome({...s,id:removed.id,state:'removed',storage_status:2},removed)).toMatchObject({kind:'done',message:expect.stringContaining('may return')});

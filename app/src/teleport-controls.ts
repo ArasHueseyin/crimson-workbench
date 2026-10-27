@@ -56,8 +56,8 @@ export function teleportOutcome(s:TeleportSnapshot,p:PendingTeleport,direct=fals
  if(s.id===p.id){
   if(s.state==='uncertain'||s.state==='faulted')return{kind:'uncertain',message:teleportReason(s.reason)};
   if(s.state==='rejected')return{kind:'done',message:teleportReason(s.reason)};
-  if(p.operation==='save_current'&&s.state==='captured')return{kind:'done',message:s.storage_status===1?'Position saved.':s.storage_status===2?'Position captured for this game session. Bookmark storage failed; it may be lost when the game closes.':'Position captured for this game session.'};
-  if(p.operation==='remove_saved'&&s.state==='removed')return{kind:'done',message:s.storage_status===2?'Position removed for this game session. Bookmark storage failed; it may return after a restart.':'Saved position removed.'};
+  if(p.operation==='save_current'&&s.state==='captured')return{kind:'done',message:s.storage_status===1?'Position saved.':'Position captured for this game session. Bookmark storage failed; it may be lost when the game closes.'};
+  if(p.operation==='remove_saved'&&s.state==='removed')return{kind:'done',message:s.storage_status===1?'Saved position removed.':'Position removed for this game session. Bookmark storage failed; it may return after a restart.'};
   if((p.operation==='travel_saved'||p.operation==='travel_marker')&&s.state==='position_observed')return{kind:'done',message:'The player was observed at the destination. Check the game before continuing.'};
  }
  if(nativeInteger(s.id)>nativeInteger(p.id))return{kind:'uncertain',message:'Another teleport command replaced the receipt. Check the game; the previous command will not be sent again.'};

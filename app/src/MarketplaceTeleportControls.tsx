@@ -4,7 +4,7 @@ import {api,asError} from './api';
 import {clearTeleportPending,markerReason,replacementProof,saveTeleportPending,teleportContext,teleportHistory,teleportOutcome,teleportReason,teleportRequest,validTeleportName,type PendingTeleport} from './teleport-controls';
 import type {TeleportChoice,TeleportSnapshot} from './teleport-types';
 
-export function MarketplaceTeleportControls({session,enabled,platform='windows'}:{session:number;enabled:boolean;platform?:'windows'|'macos'}){
+export function MarketplaceTeleportControls({session,enabled}:{session:number;enabled:boolean}){
  const [snapshot,setSnapshot]=useState<TeleportSnapshot|null>(null),[name,setName]=useState(''),[saveSlot,setSaveSlot]=useState(0),[savedSlot,setSavedSlot]=useState(''),[marker,setMarker]=useState(''),[replaceProof,setReplaceProof]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[historyError,setHistoryError]=useState(''),[message,setMessage]=useState(''),[pending,setPending]=useState<PendingTeleport|null>(null),[uncertain,setUncertain]=useState(false);
  const revision=useRef(0),lock=useRef(false),reading=useRef(false),counter=useRef('0'),pendingRef=useRef<PendingTeleport|null>(null),initialised=useRef(false);
@@ -80,7 +80,7 @@ export function MarketplaceTeleportControls({session,enabled,platform='windows'}
    <button className="primary" disabled={locked||!selectedMarker||selectedMarker.layer!=='mainland'||snapshot?.marker_status!==0||!((snapshot?.features??0)&4)} onClick={()=>{if(selectedMarker)void change({operation:'travel_marker',marker:selectedMarker.id,marker_source:selectedMarker.source})}}><MapPin size={15}/>Teleport to map marker</button>
    <p>The game checks ground and placement before moving you. Only mainland markers in the current main field are supported. Unloaded geometry, unsupported map layers and unsuitable destinations are refused.</p>
   </fieldset>
-  <p>{platform==='macos'?'Saved positions last only for this game session on Mac. Map-pin travel is not available yet.':'Saved positions use local Workbench storage for this Windows user.'} Travel uses the game’s field-transition queue and may trigger loading. Native movement and quest checks still apply. A queued destination is not a confirmed arrival.</p>
+  <p>Saved positions use local Workbench storage for this Windows user. Travel uses the game’s field-transition queue and may trigger loading. Native movement and quest checks still apply. A queued destination is not a confirmed arrival.</p>
   {snapshot?.storage_status===2&&<p role="alert" className="craft-error">Bookmark storage failed. Current changes exist only in this game session. Save a position again explicitly to make another storage attempt.</p>}
   <button className="secondary" disabled={!enabled||busy} onClick={()=>void refresh()}>{busy?<LoaderCircle size={14} className="spin"/>:<RefreshCw size={14}/>}Refresh teleport status</button>
   {pending&&uncertain&&<button className="secondary" disabled={busy||!!historyError} onClick={()=>{clear();setMessage('Previous teleport command dismissed. It will not be sent again.')}}>I checked the result in game</button>}

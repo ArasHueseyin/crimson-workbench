@@ -818,7 +818,7 @@ async fn teleport_change(
         let (game, version) = state.with_session(session, |s| {
             Ok((s.game_root().to_owned(), s.info().exe_version))
         })?;
-        if !cfg!(target_os = "macos") && version.as_deref() != Some("1.0.0.2976") {
+        if version.as_deref() != Some("1.0.0.2976") {
             return Err(AppError {
                 code: "teleport_controls",
                 message: "Teleport controls require game version 1.0.0.2976.".into(),
@@ -846,8 +846,10 @@ async fn spawn_launch(
         })?;
         let state = Arc::clone(&state);
         blocking(move || {
-            let game = state.with_session(session, |s| Ok(s.game_root().to_owned()))?;
-            let launch = spawn_service::macos::launch(&game, &resources, &data)?;
+            let (game, saves) = state.with_session(session, |s| {
+                Ok((s.game_root().to_owned(), s.save_root()?.to_owned()))
+            })?;
+            let launch = spawn_service::macos::launch(&game, &saves, &resources, &data)?;
             serde_json::to_value(launch).map_err(|e| AppError {
                 code: "live_items",
                 message: e.to_string(),
