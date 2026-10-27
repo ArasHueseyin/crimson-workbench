@@ -46,6 +46,7 @@ pub struct Bootstrap {
 #[derive(Serialize)]
 pub struct Catalog {
     pub session: u64,
+    pub read_only: bool,
     pub info: BrowserInfo,
     pub game_path: PathBuf,
     pub item_language: cd_core::language::ItemLanguage,
@@ -229,6 +230,7 @@ impl AppService {
         *session = Some(Session { id, browser });
         Ok(Catalog {
             session: id,
+            read_only: cfg!(target_os = "macos"),
             info,
             game_path,
             item_language,
@@ -619,7 +621,10 @@ fn user_workspace() -> PathBuf {
         .or_else(|| {
             std::env::var_os("USERPROFILE").map(|p| PathBuf::from(p).join("AppData/Local"))
         });
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    let local =
+        std::env::var_os("HOME").map(|p| PathBuf::from(p).join("Library/Application Support"));
+    #[cfg(not(any(windows, target_os = "macos")))]
     let local = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|p| PathBuf::from(p).join(".local/share")));

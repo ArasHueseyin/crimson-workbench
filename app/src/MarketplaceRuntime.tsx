@@ -14,7 +14,7 @@ import {emptyMarketplaceBrowseFilter,matchesMarketplaceBrowse,type MarketplaceBr
 import {discardStartupDraft,readStartupDrafts,reconcileStartupDraft,updateStartupDraft} from './startup-draft-store';
 import './runtime-ui.css';
 
-const mods=[
+export const runtimeMods=[
  {id:'region_return_30min',title:'More time beyond restricted regions',tag:'EXPLORATION',icon:Hourglass,description:'Extend restricted-region return warnings from 30 seconds to 30 minutes. Install once with the game closed. Existing mods are preserved; quest timers and other world boundaries keep their own rules.',detail:'Independent installation · return countdown: 30 seconds → 30 minutes'},
  {id:'glide_speed',title:'Gliding speed',tag:'MOVEMENT',icon:Bird,description:'Increase boosted gliding speed up to 500% (5×) using the game’s glide boost action. Opening the wings and ordinary gliding remain unchanged. Native ability and resource requirements still apply.',detail:'100%–500% boost speed · ordinary wing glide unchanged'},
  {id:'teleport',title:'Teleport',tag:'EXPLORATION',icon:MapPin,description:'Save custom positions and return to them, or travel to mainland map pins and waypoints. The game checks native ground and placement before marker travel. Unloaded or unsuitable marker destinations are refused.',detail:'Live controls · 16 saved positions · current field and native movement rules'},
@@ -37,6 +37,7 @@ const mods=[
  {id:'sleep_duration',title:'30-hour sleep',tag:'TIME',icon:Moon,description:'Advance the game clock by 30 hours when you choose the 12-hour sleep option. The in-game label still says 12 hours; other sleep durations stay unchanged.',detail:'Choose 12 hours in the game → sleep 30 hours'},
  {id:'blackstar',title:'Blackstar anywhere',tag:'DRAGON',icon:Bird,description:'Use Blackstar with regional, city and altitude restrictions lifted, boosted stamina regeneration, a 1-second summon cooldown and a 1,000-minute riding duration.',detail:'Quest, indoor and final placement checks can still block summoning'},
 ] as const;
+const mods=runtimeMods;
 export const runtimeModCount=mods.length;
 const liveMod=(id:string)=>['world_controls','photo_mode','teleport'].includes(id);
 export const runtimeModMatchCount=(query:string,filter:MarketplaceBrowseFilter=emptyMarketplaceBrowseFilter,snapshot:MarketplaceBrowseSnapshot=null)=>mods.filter(mod=>matchesMarketplaceMod(query,mod.id,mod.title,mod.tag,mod.description,mod.detail)&&matchesMarketplaceBrowse(filter,{...mod,live:liveMod(mod.id)},snapshot)).length;

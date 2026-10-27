@@ -7,7 +7,7 @@ const WIRE_VERSION: u16 = 2;
 #[derive(Clone, Deserialize)]
 pub struct GrantRequest {
     pub id: String,
-    #[cfg_attr(not(any(windows, test)), allow(dead_code))]
+    #[cfg_attr(not(any(windows, target_os = "macos", test)), allow(dead_code))]
     pub pid: u32,
     pub epoch: u64,
     pub key: u32,
@@ -27,6 +27,14 @@ fn error(message: impl Into<String>) -> AppError {
     AppError {
         code: "live_items",
         message: message.into(),
+    }
+}
+#[cfg(any(windows, target_os = "macos", test))]
+fn ended_session(request: &GrantRequest) -> Snapshot {
+    Snapshot {
+        state: "uncertain", pid: request.pid, epoch: request.epoch, id: request.id.clone(),
+        key: request.key, quantity: request.quantity,
+        message: "The original game session ended. Its request cannot execute again, but its saved outcome is unknown. Check inventory before making a new request.".into(),
     }
 }
 fn id_bytes(id: &str) -> Result<[u8; 16]> {
@@ -57,7 +65,7 @@ fn encode(operation: u16, request: Option<&GrantRequest>) -> Result<[u8; 40]> {
     }
     Ok(out)
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -> Result<Snapshot> {
     let u16_at = |n| u16::from_le_bytes(bytes[n..n + 2].try_into().unwrap());
     let u32_at = |n| u32::from_le_bytes(bytes[n..n + 4].try_into().unwrap());
@@ -141,6 +149,10 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
         16 => {
             "This item requires a special container or storage interaction that the live item picker does not support yet. Nothing was given. You can continue adding ordinary inventory items without restarting the game."
         }
+        17 => {
+            "This item's native creation data is outside the supported limits. Nothing was added."
+        }
+        18 => "This mount is already registered in the loaded stable.",
         _ => return Err(error("Unknown live module error.")),
     };
     Ok(Snapshot {
@@ -153,7 +165,32 @@ fn decode(bytes: &[u8; 48], expected_pid: u32, request: Option<&GrantRequest>) -
         message: detail.into(),
     })
 }
+#[cfg(any(windows, target_os = "macos", test))]
+fn decode_exchange(
+    bytes: &[u8; 48],
+    pid: u32,
+    request: Option<&GrantRequest>,
+    operation: u16,
+) -> Result<Snapshot> {
+    if operation != 2
+        && operation != 5
+        && let Some(r) = request
+    {
+        let status = decode(bytes, pid, None)?;
+        if status.epoch != r.epoch {
+            return Ok(ended_session(r));
+        }
+    }
+    decode(bytes, pid, request)
+}
 pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> Result<Snapshot> {
+    #[cfg(not(target_os = "macos"))]
+    if operation == 5 || operation == 6 {
+        return Err(error("Live mounts are available only on native macOS."));
+    }
+    if operation == 5 && request.is_none_or(|r| r.key == 0 || r.quantity != 1) {
+        return Err(error("A live mount request must select exactly one mount."));
+    }
     if operation == 2 {
         let r = request.ok_or_else(|| error("Request missing."))?;
         if r.key == 0 || r.quantity == 0 || r.quantity > 10000 {
@@ -163,6 +200,14 @@ pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> 
     let wire = encode(operation, request)?;
     #[cfg(windows)]
     {
+        // Only a proven terminated process retires a persisted receipt. A
+        // disconnected pipe or an inaccessible process must keep the request.
+        if matches!(operation, 3 | 4)
+            && let Some(r) = request
+            && windows::process_exited(r.pid)?
+        {
+            return Ok(ended_session(r));
+        }
         let pid = windows::game_pid(game)?;
         if let Some(r) = request
             && r.pid != pid
@@ -172,12 +217,63 @@ pub fn exchange(game: &Path, operation: u16, request: Option<&GrantRequest>) -> 
             ));
         }
         let bytes = windows::transact(pid, &wire)?;
-        decode(&bytes, pid, request)
+        decode_exchange(&bytes, pid, request, operation)
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        let pids = macos::game_pids(game)?;
+        if let Some(r) = request
+            && !pids.contains(&r.pid)
+        {
+            if macos::process_exited(r.pid)? {
+                return Ok(ended_session(r));
+            }
+            return Err(error(
+                "The original game process cannot be verified. Its request remains saved.",
+            ));
+        }
+        if pids.len() != 1 {
+            return Err(error(
+                "A single running Crimson Desert instance could not be identified. Use Launch game with item spawning.",
+            ));
+        }
+        let pid = pids[0];
+        decode_exchange(&macos::transact(pid, &wire)?, pid, request, operation)
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
     {
         let _ = (game, wire);
         Err(error("The live spawner requires Windows."))
+    }
+}
+pub fn mount_exchange(
+    game: &Path,
+    operation: u16,
+    request: Option<&GrantRequest>,
+) -> Result<Snapshot> {
+    let mut result = exchange(game, operation, request)?;
+    result.message = match result.state {
+        "ready" => "Live mount module connected.",
+        "starting" => "Load a save and move your character briefly to connect.",
+        "queued" => "Mount request queued. Return to the game briefly.",
+        "executing" => "The game is registering the mount.",
+        "applied" => "One additional mount was confirmed in the loaded stable. Save normally now.",
+        "uncertain" => "Mount result is uncertain. Check the stable, save, and restart the game. This request will not be retried.",
+        "expired" => "The request expired before execution. No mount was registered.",
+        _ => return Ok(result),
+    }.into();
+    Ok(result)
+}
+#[cfg(target_os = "macos")]
+pub(crate) mod macos;
+#[cfg(target_os = "macos")]
+pub(crate) fn running_game_pid(game: &Path) -> Result<u32> {
+    match macos::game_pids(game)?.as_slice() {
+        [pid] => Ok(*pid),
+        [] => Err(error(
+            "Start Crimson Desert with Workbench and load a save first.",
+        )),
+        _ => Err(error("More than one game process is running.")),
     }
 }
 #[cfg(windows)]
@@ -194,7 +290,9 @@ mod windows {
         time::{Duration, Instant},
     };
     use windows_sys::Win32::{
-        Foundation::{CloseHandle, INVALID_HANDLE_VALUE},
+        Foundation::{
+            CloseHandle, ERROR_INVALID_PARAMETER, GetLastError, INVALID_HANDLE_VALUE, STILL_ACTIVE,
+        },
         System::{
             Diagnostics::ToolHelp::{
                 CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
@@ -202,10 +300,37 @@ mod windows {
             },
             Pipes::{GetNamedPipeServerProcessId, SetNamedPipeHandleState},
             Threading::{
-                OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
+                GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+                QueryFullProcessImageNameW,
             },
         },
     };
+    pub fn process_exited(pid: u32) -> Result<bool> {
+        if pid == 0 {
+            return Err(error("Invalid game process ID."));
+        }
+        unsafe {
+            let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+            if process.is_null() {
+                return if GetLastError() == ERROR_INVALID_PARAMETER {
+                    Ok(true)
+                } else {
+                    Err(error(
+                        "The original game process cannot be verified. Its request remains saved.",
+                    ))
+                };
+            }
+            let mut code = 0;
+            let checked = GetExitCodeProcess(process, &mut code);
+            CloseHandle(process);
+            if checked == 0 {
+                return Err(error(
+                    "Could not check whether the original game process ended.",
+                ));
+            }
+            Ok(code != STILL_ACTIVE as u32)
+        }
+    }
     pub fn game_pid(game: &Path) -> Result<u32> {
         unsafe {
             let expected = game
@@ -381,6 +506,46 @@ mod tests {
         reply[32] -= 1;
         reply[40] += 1;
         assert!(decode(&reply, 123, Some(&r)).is_err());
+    }
+    #[test]
+    fn ended_session_requires_inventory_check_but_cannot_execute_again() {
+        let r = request();
+        let mut bytes = [0u8; 48];
+        bytes[..4].copy_from_slice(&MAGIC.to_le_bytes());
+        bytes[4..6].copy_from_slice(&WIRE_VERSION.to_le_bytes());
+        bytes[6..8].copy_from_slice(&5u16.to_le_bytes());
+        bytes[8..12].copy_from_slice(&r.pid.to_le_bytes());
+        bytes[40..48].copy_from_slice(&(r.epoch + 1).to_le_bytes());
+        let receipt = decode_exchange(&bytes, r.pid, Some(&r), 3).unwrap();
+        assert_eq!(receipt.state, "uncertain");
+        assert_eq!(receipt.id, r.id);
+        assert!(receipt.message.contains("cannot execute again"));
+        assert!(decode_exchange(&bytes, r.pid, Some(&r), 2).is_err());
+        assert!(decode_exchange(&bytes, r.pid + 1, Some(&r), 3).is_err());
+    }
+    #[cfg(windows)]
+    #[test]
+    fn windows_recovery_after_process_exit_needs_no_running_game_and_never_regrants() {
+        use std::os::windows::process::CommandExt;
+        assert!(!windows::process_exited(std::process::id()).unwrap());
+        assert!(windows::process_exited(0).is_err());
+        let mut child = std::process::Command::new("cmd.exe")
+            .args(["/d", "/c", "exit", "0"])
+            .creation_flags(0x08000000)
+            .spawn()
+            .unwrap();
+        let mut r = request();
+        r.pid = child.id();
+        assert!(child.wait().unwrap().success());
+        let root = tempfile::tempdir().unwrap();
+        for operation in [3, 4] {
+            let receipt = exchange(root.path(), operation, Some(&r)).unwrap();
+            assert_eq!(receipt.state, "uncertain");
+            assert_eq!(receipt.id, r.id);
+            assert!(receipt.message.contains("cannot execute again"));
+        }
+        assert!(exchange(root.path(), 2, Some(&r)).is_err());
+        assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 0);
     }
     #[cfg(windows)]
     #[test]

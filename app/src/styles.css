@@ -16,7 +16,7 @@
 .mount-save-bar{display:flex;gap:16px;align-items:end;margin:0 30px 14px}
 .mount-save-bar label{display:flex;flex:1;flex-direction:column;gap:8px}
 .mount-save-bar select{padding:10px;background:var(--surface,#222);color:inherit;border:1px solid #555;border-radius:6px}
-.mount-status,.mount-pending,.mount-success{padding:14px;border:1px solid #555;border-radius:8px;margin:0 30px 18px}
+.mount-status,.mount-pending,.mount-success,.saved-stable{padding:14px;border:1px solid #555;border-radius:8px;margin:0 30px 18px}
 .mount-pending button{margin:8px 12px 8px 0}.mount-pending small,.mount-success small{display:block;overflow-wrap:anywhere}
 .mount-success{border-color:#589972}.mount-count{margin:12px 0}.mount-list{height:520px;overflow:auto;display:flex;flex-direction:column;gap:4px}
 .mount-status>p{margin:0 0 8px}.mount-status small{display:block;color:var(--muted)}.mount-status button{margin:8px 0 0 12px}
@@ -25,3 +25,7 @@
 .extra-gems .stone-preview{color:#bdd59d;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.stone-values{margin:18px 0;padding:14px;border:1px solid #4e5b40;border-radius:8px;background:#222c1d;font-size:12px}.stone-values h4{margin:0 0 12px;color:#dbe9c8;font-size:12px}.stone-values dl{margin:0}.stone-values dl>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:7px 0}.stone-values dt{color:#c6cfbb;overflow-wrap:anywhere}.stone-values dd{margin:0;color:#c0df9a;font-weight:600;white-space:nowrap}.stone-values ul{padding-left:17px;margin:8px 0 0;color:#c7d6b6}.stone-values li+li{margin-top:9px}.stone-description{white-space:pre-line;font-size:12px;color:var(--muted)}
 .mount-icon{display:grid;place-items:center;width:52px;height:52px;border:1px solid #555;border-radius:8px}
 .knowledge-bar{margin:0 38px 20px;display:flex;align-items:end;gap:14px;flex-wrap:wrap}.knowledge-bar label{display:flex;flex-direction:column;gap:6px;font-size:12px}.knowledge-bar select{max-width:380px;padding:9px;background:var(--surface);color:inherit;border:1px solid var(--line);border-radius:6px}.knowledge-bar small{flex-basis:100%;color:var(--muted)}.knowledge-badge{padding:10px;border:1px solid var(--line);border-radius:6px;font-size:12px}.knowledge-badge.learned{border-color:#589972}.knowledge-badge small{display:block;font-size:10px;color:var(--muted);margin-top:7px}
+
+.saved-stable p{line-height:1.6}.saved-stable small{display:block;color:var(--muted)}.saved-stable h2{margin:0 0 8px}.saved-stable-list{list-style:none;padding:0;margin:12px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;max-height:280px;overflow:auto}.saved-stable-list li{min-width:0}.saved-stable-list .stable-mount{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:12px;margin:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow-wrap:anywhere}.stable-mount.selected,.stable-mount:hover{border-color:var(--accent)}.stable-mount .mount-icon{width:48px;height:48px;flex-shrink:0}.stable-mount strong{display:block}
+
+.item-picker.mount-picker{display:block;overflow-y:auto}.mount-picker .picker-layout{min-height:600px}

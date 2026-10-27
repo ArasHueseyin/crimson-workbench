@@ -4,7 +4,7 @@ export interface UserSettings { version: number; game_dir: string | null; save_d
 export interface Bootstrap { project: string; discovery: { installations: Installation[]; configured_game: string | null; save_directories: string[] }; languages: { language: string }[]; settings?: UserSettings; settings_warning?: string | null }
 export interface Facet { value: number; count: number }
 export interface ItemGroup { key: number; internal_key: string; name: string; order: number; items: number[] }
-export interface Catalog { session: number; game_path: string; item_language?: { language: string; source: 'steam' | 'manual' | 'fallback' }; info: {
+export interface Catalog { session: number; read_only?: boolean; game_path: string; item_language?: { language: string; source: 'steam' | 'manual' | 'fallback' }; info: {
   item_count: number; types: Facet[]; categories: Facet[]; tiers: Facet[]; stats: Facet[];
   groups?: ItemGroup[]; group_error?: string | null;
   exe_version: string | null;

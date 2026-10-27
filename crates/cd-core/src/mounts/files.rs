@@ -136,8 +136,27 @@ pub(crate) fn read_pair(root: &Path, id: &str) -> Result<(Vec<u8>, Vec<u8>)> {
     let p = slot(root, id)?;
     Ok((read(&p.join("save.save"))?, read(&p.join("lobby.save"))?))
 }
+pub(super) fn game_running() -> Result<bool> {
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("/bin/ps")
+            .args(["-axo", "comm="])
+            .output()?;
+        if !output.status.success() {
+            return Err(bad("Could not check game processes."));
+        }
+        let names = String::from_utf8(output.stdout).map_err(|_| bad("Invalid process list"))?;
+        Ok(names
+            .lines()
+            .any(|name| name.to_ascii_lowercase().contains("crimsondesert")))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(crate::apply::guard::game_running()?)
+    }
+}
 fn stopped() -> Result<()> {
-    if crate::apply::guard::game_running()? {
+    if game_running()? {
         return Err(bad(
             "Crimson Desert is running. Save and fully close the game first.",
         ));
@@ -154,7 +173,16 @@ fn exclusive(path: &Path, dir: bool) -> Result<File> {
         opt.share_mode(if dir { 3 } else { 0 })
             .custom_flags(if dir { 0x02200000 } else { 0x00200000 });
     }
-    Ok(opt.open(path)?)
+    let file = opt.open(path)?;
+    #[cfg(target_os = "macos")]
+    if !dir {
+        use std::os::fd::AsRawFd;
+        // Advisory locks serialize Workbench writers; foreign writes are hash checked.
+        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            return Err(std::io::Error::last_os_error().into());
+        }
+    }
+    Ok(file)
 }
 fn put_new(path: &Path, bytes: &[u8]) -> Result<()> {
     let mut f = OpenOptions::new().write(true).create_new(true).open(path)?;
@@ -284,24 +312,42 @@ pub(super) fn register(
 ) -> Result<Receipt> {
     stopped()?;
     let directory = slot(root, &request.save)?;
+    #[cfg(target_os = "macos")]
+    let _slot_lock = {
+        use std::os::fd::AsRawFd;
+        let file = File::open(&directory)?;
+        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            return Err(bad("Another save operation is using this slot."));
+        }
+        file
+    };
     let mut guards = Vec::new();
     for p in directory.ancestors() {
         guards.push(exclusive(p, true)?);
     }
-    for p in game.join("bin64").ancestors() {
-        guards.push(exclusive(p, true)?);
-    }
-    let mut exe = exclusive(&game.join("bin64/CrimsonDesert.exe"), false)?;
-    let mut exe_bytes = Vec::new();
-    exe.read_to_end(&mut exe_bytes)?;
-    if hash_bytes(&exe_bytes) != "57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7"
+    #[cfg(not(target_os = "macos"))]
     {
-        return Err(bad(
-            "Mount registration supports only the verified build 2976.",
-        ));
+        for p in game.join("bin64").ancestors() {
+            guards.push(exclusive(p, true)?);
+        }
+        let mut exe = exclusive(&game.join("bin64/CrimsonDesert.exe"), false)?;
+        let mut exe_bytes = Vec::new();
+        exe.read_to_end(&mut exe_bytes)?;
+        if hash_bytes(&exe_bytes)
+            != "57da440d72f4db974f25fef047cf84c4dadd999a88cb2a3c5af4c9bd67fde1e7"
+        {
+            return Err(bad(
+                "Mount registration supports only the verified build 2976.",
+            ));
+        }
+        drop(exe_bytes);
+        guards.push(exe);
     }
-    drop(exe_bytes);
-    guards.push(exe);
+    #[cfg(target_os = "macos")]
+    {
+        // Revalidate the installed table schema before preparing a save mutation.
+        crate::GameData::open(game, "eng")?;
+    }
     stopped()?;
     ancestors(project)?;
     let local = project.join(".local");
@@ -759,6 +805,62 @@ pub(crate) fn edit_contributions(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn native_file_lock_excludes_another_writer() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("lock");
+        put_new(&path, b"lock").unwrap();
+        let lock = exclusive(&path, false).unwrap();
+        assert!(exclusive(&path, false).is_err());
+        drop(lock);
+        assert!(exclusive(&path, false).is_ok());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    #[ignore = "requires private save and installed game; writes only a temporary copy"]
+    fn native_registration_on_copy_is_idempotent() {
+        let source = PathBuf::from(std::env::var_os("CD_MOUNT_FIXTURE").unwrap());
+        let game = PathBuf::from(std::env::var_os("CD_MOUNT_GAME").unwrap());
+        let temp = tempfile::tempdir().unwrap();
+        let project = temp.path().canonicalize().unwrap();
+        let root = project.join("saves");
+        let slot = root.join("123/slot0");
+        fs::create_dir_all(&slot).unwrap();
+        let save = fs::read(&source).unwrap();
+        let lobby = fs::read(source.with_file_name("lobby.save")).unwrap();
+        put_new(&slot.join("save.save"), &save).unwrap();
+        put_new(&slot.join("lobby.save"), &lobby).unwrap();
+        let data = crate::GameData::open(&game, "eng").unwrap();
+        let mounts = super::super::catalog(&data).unwrap();
+        let snapshot = super::super::snapshot(mounts.clone(), &root, None).unwrap();
+        let mount = snapshot.mounts.iter().find(|m| m.supported).unwrap();
+        let request = Request {
+            id: "a".repeat(32),
+            save: "123/slot0".into(),
+            save_sha256: hash_bytes(&save),
+            lobby_sha256: hash_bytes(&lobby),
+            key: mount.key,
+        };
+        let receipt = super::super::register(&game, &project, &mounts, &root, &request).unwrap();
+        let after = read_pair(&root, "123/slot0").unwrap();
+        let retry = super::super::register(&game, &project, &mounts, &root, &request).unwrap();
+        assert_eq!(receipt.mercenary_no, retry.mercenary_no);
+        assert_eq!(after, read_pair(&root, "123/slot0").unwrap());
+        assert_eq!(read(&receipt.backup.join("original.save")).unwrap(), save);
+        assert_eq!(read(&receipt.backup.join("original.lobby")).unwrap(), lobby);
+        let mut annotated = mounts;
+        edit::annotate(&after.0, &mut annotated).unwrap();
+        assert_eq!(
+            annotated
+                .iter()
+                .find(|m| m.key == request.key)
+                .unwrap()
+                .owned,
+            1
+        );
+    }
     #[test]
     fn pair_failure_restores_both_files_and_removes_stages() {
         let dir = tempfile::tempdir().unwrap();

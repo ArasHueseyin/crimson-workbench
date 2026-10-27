@@ -188,7 +188,7 @@ fn encode(request: Option<&ControlRequest>) -> Result<[u8; 96]> {
     }
     Ok(out)
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "macos", test))]
 fn decode(bytes: &[u8; 176], pid: u32) -> Result<Snapshot> {
     let u16_at = |n| u16::from_le_bytes(bytes[n..n + 2].try_into().unwrap());
     let u32_at = |n| u32::from_le_bytes(bytes[n..n + 4].try_into().unwrap());
@@ -282,7 +282,7 @@ fn decode(bytes: &[u8; 176], pid: u32) -> Result<Snapshot> {
 }
 pub fn exchange(game: &Path, request: Option<&ControlRequest>) -> Result<Snapshot> {
     let wire = encode(request)?;
-    #[cfg(windows)]
+    #[cfg(any(windows, target_os = "macos"))]
     {
         let pid = crate::spawn_service::running_game_pid(game)?;
         if request.is_some_and(|r| r.pid != pid) {
@@ -290,9 +290,13 @@ pub fn exchange(game: &Path, request: Option<&ControlRequest>) -> Result<Snapsho
                 "The game instance changed. Read the live status before another change.",
             ));
         }
-        decode(&windows::transact(pid, &wire)?, pid)
+        #[cfg(windows)]
+        let reply = windows::transact(pid, &wire)?;
+        #[cfg(target_os = "macos")]
+        let reply = crate::spawn_service::macos::world_transact(pid, &wire)?;
+        decode(&reply, pid)
     }
-    #[cfg(not(windows))]
+    #[cfg(not(any(windows, target_os = "macos")))]
     {
         let _ = (game, wire);
         Err(error("Live time and weather controls require Windows."))

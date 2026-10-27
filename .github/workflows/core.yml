@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, ubuntu-latest]
+        os: [windows-2022, ubuntu-latest, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +33,25 @@ jobs:
       - run: cargo test --workspace --locked -- --nocapture
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo build -p app --features custom-protocol --locked
+      - name: Native Mac policy and app bundle (no game files)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          test "$(uname -m)" = arm64
+          make -C runtime/macos-items all test
+          npm run tauri --prefix app -- build --bundles app -- --locked
+          bundle="target/release/bundle/macos/Crimson Workbench.app"
+          module="$bundle/Contents/Resources/libCrimsonItems.dylib"
+          cmp .local/macos-items/libCrimsonItems.dylib "$module"
+          digest=$(/usr/bin/shasum -a 256 "$module" | awk '{print $1}')
+          grep -aF "$digest" "$bundle/Contents/MacOS/crimson-workbench" >/dev/null
+          codesign --verify --deep --strict "$bundle"
+      - name: Mac browser flows
+        if: runner.os == 'macOS'
+        working-directory: app
+        run: |
+          npx --no-install playwright install chromium
+          npm run test:e2e -- tests/setup.spec.ts tests/item-picker.spec.ts tests/mounts.spec.ts tests/mac-mods.spec.ts
       - name: Isolated repair action and native contracts (no game files)
         if: runner.os == 'Windows'
         shell: pwsh

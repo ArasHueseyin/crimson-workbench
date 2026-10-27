@@ -378,6 +378,7 @@ dependencies = [
  "base64 0.22.1",
  "crimson-format",
  "image",
+ "libc",
  "regex",
  "rusqlite",
  "serde",

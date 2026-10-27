@@ -12,7 +12,7 @@ This is the current entry point for building and contributing. Packaged-app user
 | Native game modules and release packaging | Windows x64, the Windows tools above, and CMake |
 | Linux Rust/desktop checks | Tauri's Linux system dependencies; see below |
 
-CI uses Node 22 and stable Rust. `Cargo.lock` and `app/package-lock.json` are committed; use `--locked` and `npm ci`. No game installation, private fixture or `.env` is required for the default synthetic checks. Linux CI validates source portability; it does not provide a supported Linux game-module release.
+CI uses Node 22 and stable Rust on Windows, Linux and Apple Silicon macOS. `Cargo.lock` and `app/package-lock.json` are committed; use `--locked` and `npm ci`. No game installation, private fixture or `.env` is required for the default synthetic checks. Linux CI validates source portability; it does not provide a supported Linux game-module release. See [native macOS](MACOS.md) for Mac build requirements and validation limits.
 
 For OS-specific setup, use the official [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). On Ubuntu/Debian, the dependency list used by this project's CI is:
 

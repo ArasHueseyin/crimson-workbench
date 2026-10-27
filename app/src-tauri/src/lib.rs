@@ -37,6 +37,19 @@ async fn marketplace_game_running(state: State<'_, SharedService>, session: u64)
     .await
 }
 #[tauri::command]
+async fn installed_mods(
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<cd_core::mods::installed::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        state.with_session(session, |s| {
+            cd_core::mods::installed::inspect(s.game_root())
+        })
+    })
+    .await
+}
+#[tauri::command]
 async fn marketplace_mod_status(
     app: tauri::AppHandle,
     state: State<'_, SharedService>,
@@ -515,6 +528,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             bootstrap,
             marketplace_mod_status,
+            installed_mods,
             marketplace_game_running,
             marketplace_mod_change,
             marketplace_runtime_setting,
@@ -527,6 +541,7 @@ pub fn run() {
             extra_socket_candidates,
             extra_socket_add,
             live_status,
+            spawn_launch,
             spawn_status,
             spawn_grant,
             spawn_cancel,
@@ -541,6 +556,8 @@ pub fn run() {
             mount_icon,
             knowledge_snapshot,
             mount_register,
+            mount_live_grant,
+            mount_live_status,
             contribution_preview,
             contribution_apply,
             map_fog_preview,
@@ -735,7 +752,7 @@ async fn world_change(
         let (game, version) = state.with_session(session, |s| {
             Ok((s.game_root().to_owned(), s.info().exe_version))
         })?;
-        if version.as_deref() != Some("1.0.0.2976") {
+        if !cfg!(target_os = "macos") && version.as_deref() != Some("1.0.0.2976") {
             return Err(AppError {
                 code: "world_controls",
                 message: "Live world controls require game version 1.0.0.2976.".into(),
@@ -810,6 +827,44 @@ async fn teleport_change(
         teleport_service::exchange(&game, Some(&request))
     })
     .await
+}
+#[tauri::command]
+async fn spawn_launch(
+    app: tauri::AppHandle,
+    state: State<'_, SharedService>,
+    session: u64,
+) -> Result<serde_json::Value> {
+    #[cfg(target_os = "macos")]
+    {
+        let resources = app.path().resource_dir().map_err(|e| AppError {
+            code: "live_items",
+            message: e.to_string(),
+        })?;
+        let data = app.path().app_local_data_dir().map_err(|e| AppError {
+            code: "live_items",
+            message: e.to_string(),
+        })?;
+        let state = Arc::clone(&state);
+        blocking(move || {
+            let (game, saves) = state.with_session(session, |s| {
+                Ok((s.game_root().to_owned(), s.save_root()?.to_owned()))
+            })?;
+            let launch = spawn_service::macos::launch(&game, &saves, &resources, &data)?;
+            serde_json::to_value(launch).map_err(|e| AppError {
+                code: "live_items",
+                message: e.to_string(),
+            })
+        })
+        .await
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, state, session);
+        Err(AppError {
+            code: "live_items",
+            message: "This launcher is available on macOS.".into(),
+        })
+    }
 }
 #[tauri::command]
 async fn spawn_status(
@@ -938,4 +993,42 @@ async fn foreign_revoke(
 ) -> Result<cd_core::apply::live::foreign::Receipt> {
     let state = Arc::clone(&state);
     blocking(move || state.foreign_revoke(session, &approval_id)).await
+}
+
+#[tauri::command]
+async fn mount_live_status(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: Option<spawn_service::GrantRequest>,
+) -> Result<spawn_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| Ok(s.game_root().to_owned()))?;
+        spawn_service::mount_exchange(
+            &game,
+            if request.is_some() { 3 } else { 6 },
+            request.as_ref(),
+        )
+    })
+    .await
+}
+#[tauri::command]
+async fn mount_live_grant(
+    state: State<'_, SharedService>,
+    session: u64,
+    request: spawn_service::GrantRequest,
+) -> Result<spawn_service::Snapshot> {
+    let state = Arc::clone(&state);
+    blocking(move || {
+        let game = state.with_session(session, |s| {
+            if !s.mounts()?.iter().any(|m| m.key == request.key) {
+                return Err(cd_core::Error::Invalid(
+                    "Select a mount from the verified catalog.".into(),
+                ));
+            }
+            Ok(s.game_root().to_owned())
+        })?;
+        spawn_service::mount_exchange(&game, 5, Some(&request))
+    })
+    .await
 }
